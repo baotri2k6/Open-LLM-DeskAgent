@@ -1,0 +1,501 @@
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+body {
+  user-select: none;
+}
+
+.pet-window {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: transparent;
+}
+
+.avatar-stage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: end center;
+  -webkit-app-region: no-drag;
+}
+
+.avatar-wrap {
+  position: relative;
+  width: min(100vw, 460px);
+  height: 100vh;
+  aspect-ratio: 0.72;
+  display: grid;
+  place-items: end center;
+  transform-origin: bottom center;
+  animation: breathe 4.8s ease-in-out infinite;
+  -webkit-app-region: no-drag;
+}
+
+.avatar-wrap.walking {
+  animation: walkBob 0.46s ease-in-out infinite;
+}
+
+.avatar-wrap.recording {
+  animation: listenPulse 1.1s ease-in-out infinite;
+}
+
+.avatar-wrap[data-motion="nod"] {
+  animation: nod 0.8s ease-in-out 1, breathe 4.8s ease-in-out infinite 0.8s;
+}
+
+.avatar-wrap[data-motion="shake"] {
+  animation: shake 0.5s ease-in-out 1, breathe 4.8s ease-in-out infinite 0.5s;
+}
+
+.avatar-wrap[data-motion="thinking"],
+.avatar-wrap[data-motion="look_side"] {
+  transform: rotate(-2deg) translateX(-4px);
+}
+
+.avatar-wrap.facing-left .avatar-image,
+.avatar-wrap.facing-left canvas {
+  transform: scaleX(-1);
+}
+
+.avatar-image {
+  position: relative;
+  z-index: 2;
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 22px rgba(0, 0, 0, 0.38));
+  cursor: pointer;
+  -webkit-user-drag: none;
+}
+
+.avatar-wrap canvas {
+  pointer-events: none;
+}
+
+.expression-light {
+  position: absolute;
+  inset: auto 18% 8% 18%;
+  height: 24%;
+  border-radius: 50%;
+  background: rgba(90, 180, 255, 0.18);
+  filter: blur(28px);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.expression-light[data-expression="smile"],
+.expression-light[data-expression="happy"] {
+  background: rgba(117, 231, 172, 0.2);
+}
+
+.expression-light[data-expression="focused"] {
+  background: rgba(255, 207, 117, 0.22);
+}
+
+.expression-light[data-expression="sad"] {
+  background: rgba(118, 146, 255, 0.2);
+}
+
+.expression-light[data-expression="surprised"] {
+  background: rgba(255, 143, 143, 0.22);
+}
+
+.pet-console {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+  z-index: 20;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(12, 16, 24, 0.75);
+  box-shadow: none;
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-app-region: no-drag;
+  
+  /* Smooth animation */
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pet-console.hidden {
+  opacity: 0;
+  transform: translateY(16px);
+  pointer-events: none;
+}
+
+.pet-caption {
+  min-height: 40px;
+  max-height: 70px;
+  overflow-y: auto;
+  color: #f1f5f9;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12.5px;
+  line-height: 1.5;
+  font-weight: 400;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  scrollbar-width: none; /* Hide scrollbar for clean look */
+}
+.pet-caption::-webkit-scrollbar {
+  display: none;
+}
+
+.pet-console-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pet-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: rgba(226, 232, 240, 0.75);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pet-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.15);
+  transition: all 0.3s ease;
+}
+
+.pet-status-dot[data-status="listening"] {
+  background: #10b981;
+  box-shadow: 0 0 12px #10b981, 0 0 0 3px rgba(16, 185, 129, 0.25);
+  animation: pulse-dot 1.2s infinite;
+}
+
+.pet-status-dot[data-status="thinking"] {
+  background: #f59e0b;
+  box-shadow: 0 0 12px #f59e0b, 0 0 0 3px rgba(245, 158, 11, 0.25);
+  animation: pulse-dot 1.2s infinite;
+}
+
+.pet-status-dot[data-status="speaking"] {
+  background: #3b82f6;
+  box-shadow: 0 0 12px #3b82f6, 0 0 0 3px rgba(59, 130, 246, 0.25);
+  animation: pulse-dot 1.2s infinite;
+}
+
+.pet-status-dot[data-status="error"] {
+  background: #ef4444;
+  box-shadow: 0 0 12px #ef4444, 0 0 0 3px rgba(239, 68, 68, 0.25);
+}
+
+@keyframes pulse-dot {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(255, 255, 255, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
+.pet-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pet-icon-button,
+.pet-send-button {
+  height: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(248, 250, 252, 0.9);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.pet-icon-button {
+  min-width: 38px;
+  padding: 0 10px;
+}
+
+.pet-icon-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
+}
+
+.pet-icon-button:active {
+  transform: translateY(1px);
+}
+
+.pet-icon-button.active {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+}
+
+.pet-chat-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.pet-chat-form input {
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  outline: none;
+  background: rgba(0, 0, 0, 0.45);
+  color: rgba(248, 250, 252, 0.95);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.pet-chat-form input:focus {
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.25);
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.pet-send-button {
+  min-width: 52px;
+  padding: 0 12px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border: none;
+  color: white;
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.25);
+}
+
+.pet-send-button:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow: 0 4px 16px rgba(29, 78, 216, 0.4);
+  transform: translateY(-1px);
+}
+
+.pet-send-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.pet-icon-button:disabled,
+.pet-send-button:disabled,
+.pet-chat-form input:disabled {
+  cursor: default;
+  opacity: 0.45;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.015);
+  }
+}
+
+@keyframes walkBob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1deg);
+  }
+}
+
+@keyframes listenPulse {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.025);
+  }
+}
+
+@keyframes nod {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  45% {
+    transform: rotate(3deg) translateY(4px);
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-8px);
+  }
+  75% {
+    transform: translateX(8px);
+  }
+}
+
+.model-switcher-row {
+  display: flex;
+  gap: 12px;
+  padding: 4px 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 11px;
+  color: #7f96aa;
+}
+
+.model-select-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.model-select-group label {
+  white-space: nowrap;
+}
+
+.model-select-group select {
+  flex: 1;
+  min-width: 0;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  color: #dbeaff;
+  padding: 2px 4px;
+  outline: none;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.model-select-group select:focus {
+  border-color: rgba(100, 180, 255, 0.55);
+}
+
+/* Pose and Prop Control Styles */
+.pet-mic-prop {
+  position: absolute;
+  z-index: 10; /* Make sure it draws over the live2d model */
+  pointer-events: none;
+  width: 70px;
+  height: 70px;
+  bottom: 25%;
+  left: 42%;
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35));
+}
+
+.pet-mic-prop.hidden {
+  opacity: 0;
+  transform: scale(0.6) translateY(20px);
+}
+
+.pose-controls-row {
+  display: flex;
+  gap: 8px;
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.pose-button {
+  flex: 1;
+  height: 24px;
+  font-size: 10px;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(248, 250, 252, 0.85);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.pose-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.pose-button.active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.45);
+  color: #60a5fa;
+}
+
+.feature-switcher-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 11px;
+  color: #7f96aa;
+}
+
+.feature-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.feature-checkbox input {
+  cursor: pointer;
+  margin: 0;
+}

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IceGirl Settings</title>
+    <link rel="stylesheet" href="./styles/settings.css" />
+  </head>
+  <body>
+    <main class="settings-shell">
+      <h1>Cài đặt IceGirl (Settings)</h1>
+      
+      <section>
+        <h2>Mô hình & Trí tuệ (Model & Brain)</h2>
+        <label>
+          Bộ não AI (LLM Provider)
+          <select id="llmSelect">
+            <option value="ollama">Ollama (Chạy local trên máy)</option>
+            <option value="gemini">Gemini API (Đám mây siêu nhẹ)</option>
+            <option value="openai">OpenAI API (Đám mây)</option>
+          </select>
+        </label>
+        <label>
+          Mô hình Nhận diện Giọng nói (STT Model)
+          <select id="sttSelect">
+            <option value="tiny">Tiny (Rất nhanh, nhẹ)</option>
+            <option value="base">Base (Chính xác vừa phải)</option>
+          </select>
+        </label>
+      </section>
+
+      <section>
+        <h2>Nhân vật (Character Model)</h2>
+        <label>
+          Chọn nhân vật (Live2D Character)
+          <select id="avatarSelect">
+            <option value="assets/live2d/IceGirl/IceGirl.model3.json">IceGirl (Mặc định)</option>
+            <option value="assets/live2d/hiyori_en/hiyori_pro/runtime/hiyori_pro_t11.model3.json">Hiyori (Free Model)</option>
+            <option value="assets/live2d/mao_en/runtime/mao_pro.model3.json">Mao (Pro Model)</option>
+            <option value="assets/live2d/huohuo2/huohuo/huohuo.model3.json">Huohuo (HSR Model)</option>
+          </select>
+        </label>
+      </section>
+
+      <section>
+        <h2>Chế độ Hoạt động (Interaction Mode)</h2>
+        <label class="radio-label">
+          <input type="radio" name="interactionMode" value="streamer" id="radModeStreamer" />
+          <span>Chế độ Streamer (Kiểu Neuro-Sama - Ẩn khung chat)</span>
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="interactionMode" value="assistant" id="radModeAssistant" />
+          <span>Chế độ Trợ lý (Kiểu Chat Box - Hiện khung chat để nhập)</span>
+        </label>
+      </section>
+
+      <section>
+        <h2>Tính năng Tự động (Automation Features)</h2>
+        <label class="checkbox-label">
+          <input type="checkbox" id="chkScreenAwareness" />
+          <span>Tự động nhận thức màn hình (Screen Auto)</span>
+        </label>
+        <p class="feature-desc">IceGirl sẽ tự chụp màn hình mỗi 3 phút và thốt lời bình luận/quan tâm khi bạn rảnh.</p>
+      </section>
+
+      <section>
+        <h2>Livestream (Twitch Live Mode)</h2>
+        <label class="checkbox-label">
+          <input type="checkbox" id="chkTwitchMode" />
+          <span>Đọc chat livestream Twitch (Twitch Live)</span>
+        </label>
+        <label id="twitchChannelLabel">
+          Kênh Twitch cần đọc chat (Twitch Channel Name)
+          <input type="text" id="txtTwitchChannel" placeholder="Ví dụ: mixigaming" />
+        </label>
+      </section>
+
+      <div class="save-status" id="saveStatus">Đã lưu cấu hình tự động.</div>
+    </main>
+
+    <script type="module" src="./scripts/settings.js"></script>
+  </body>
+</html>

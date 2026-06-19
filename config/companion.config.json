@@ -1,0 +1,55 @@
+{
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8765
+  },
+  "app": {
+    "name": "AI Companion Desktop 2D",
+    "locale": "vi-VN",
+    "avatarModel": "assets/live2d/IceGirl/IceGirl.model3.json",
+    "interactionMode": "assistant"
+  },
+  "llm": {
+    "provider": "gemini",
+    "model": "qwen2.5:1.5b",
+    "host": "http://127.0.0.1:11434",
+    "gemini_api_key": "",
+    "gemini_model": "gemini-2.5-flash",
+    "openai_api_key": "",
+    "openai_model": "gpt-5.5-pro"
+  },
+  "stt": {
+    "model": "base",
+    "language": "vi"
+  },
+  "tts": {
+    "backend": "edge_tts",
+    "fish_audio_api_key": "",
+    "fish_audio_model_id": "83c19893c4974594839bd2d101b1fd66",
+    "voice": "vi-VN-HoaiMyNeural",
+    "pitch": "+20%",
+    "rate": "+10%",
+    "gpt_sovits_api_url": "http://127.0.0.1:9880/tts",
+    "gpt_sovits_text_lang": "vi",
+    "gpt_sovits_ref_audio_path": "",
+    "gpt_sovits_prompt_lang": "vi",
+    "gpt_sovits_prompt_text": ""
+  },
+  "rag": {
+    "collection": "documents",
+    "chunk_size": 400,
+    "overlap": 80,
+    "top_k": 4
+  },
+  "features": {
+    "voice": true,
+    "memory": true,
+    "desktopControl": true,
+    "screenAwareness": false,
+    "documentRag": true,
+    "twitchMode": false
+  },
+  "twitch": {
+    "channel": ""
+  }
+}

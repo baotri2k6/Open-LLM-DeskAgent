@@ -1,0 +1,150 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  background: #101418;
+  color: #eef3f8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(79, 171, 255, 0.18), transparent 34%),
+    linear-gradient(180deg, #101418 0%, #161b20 100%);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-rows: minmax(260px, 42vh) minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.avatar-stage {
+  position: relative;
+  display: grid;
+  place-items: end center;
+  overflow: hidden;
+  padding: 20px 18px 0;
+}
+
+.status-pill {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(8, 11, 14, 0.72);
+  color: #aeb9c5;
+  font-size: 12px;
+}
+
+.status-pill[data-status="ok"] {
+  color: #9ce6bd;
+}
+
+.avatar-wrap {
+  position: relative;
+  width: min(76vw, 290px);
+  aspect-ratio: 0.72;
+  display: grid;
+  place-items: end center;
+  transform-origin: bottom center;
+  animation: breathe 4.8s ease-in-out infinite;
+}
+
+.avatar-wrap[data-motion="nod"] {
+  animation: nod 0.8s ease-in-out 1, breathe 4.8s ease-in-out infinite 0.8s;
+}
+
+.avatar-wrap[data-motion="shake"] {
+  animation: shake 0.5s ease-in-out 1, breathe 4.8s ease-in-out infinite 0.5s;
+}
+
+.avatar-wrap[data-motion="thinking"],
+.avatar-wrap[data-motion="look_side"] {
+  transform: rotate(-2deg) translateX(-4px);
+}
+
+.avatar-image {
+  position: relative;
+  z-index: 2;
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.42));
+  user-select: none;
+  pointer-events: none;
+}
+
+.expression-light {
+  position: absolute;
+  inset: auto 20% 8% 20%;
+  height: 24%;
+  border-radius: 50%;
+  background: rgba(90, 180, 255, 0.24);
+  filter: blur(28px);
+  z-index: 1;
+}
+
+.expression-light[data-expression="smile"],
+.expression-light[data-expression="happy"] {
+  background: rgba(117, 231, 172, 0.26);
+}
+
+.expression-light[data-expression="focused"] {
+  background: rgba(255, 207, 117, 0.24);
+}
+
+.expression-light[data-expression="sad"] {
+  background: rgba(118, 146, 255, 0.22);
+}
+
+.expression-light[data-expression="surprised"] {
+  background: rgba(255, 143, 143, 0.24);
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.015);
+  }
+}
+
+@keyframes nod {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  45% {
+    transform: rotate(3deg) translateY(4px);
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-8px);
+  }
+  75% {
+    transform: translateX(8px);
+  }
+}

@@ -1,0 +1,487 @@
+import { AvatarController } from "./avatar/live2d-manager.js";
+import { AudioPlayer } from "./voice/audio-player.js";
+import { VoiceRecorder } from "./voice/recoder.js";
+
+const avatarWrap = document.getElementById("avatarWrap");
+const petCaption = document.getElementById("petCaption");
+const petStatusDot = document.getElementById("petStatusDot");
+const petStatusText = document.getElementById("petStatusText");
+const petChatForm = document.getElementById("petChatForm");
+const petChatInput = document.getElementById("petChatInput");
+const petMicButton = document.getElementById("petMicButton");
+const petPowerButton = document.getElementById("petPowerButton");
+const btnPoseStand = document.getElementById("btnPoseStand");
+const btnPoseSit = document.getElementById("btnPoseSit");
+const btnToggleMicProp = document.getElementById("btnToggleMicProp");
+
+const avatar = new AvatarController({
+  wrap: avatarWrap,
+  light: document.getElementById("expressionLight"),
+  img: document.getElementById("avatarImage"),
+});
+const recorder = new VoiceRecorder();
+const audioPlayer = new AudioPlayer();
+
+let isRecording = false;
+let busy = false;
+let pointerDrag = null;
+let currentReply = "";
+let clickResetTimeout = null;
+
+let ttsQueue = [];
+let ttsPlaying = false;
+let chatDone = false;
+
+function setCaption(text) {
+  if (!petCaption || !text) return;
+  petCaption.textContent = text;
+}
+
+function setStatus(status) {
+  const label = status || "idle";
+  if (petStatusText) petStatusText.textContent = label;
+  if (petStatusDot) petStatusDot.dataset.status = label;
+  if (petMicButton)
+    petMicButton.classList.toggle("active", label === "listening");
+}
+
+function setControlsDisabled(disabled) {
+  if (petChatInput) petChatInput.disabled = disabled;
+  const sendButton = petChatForm?.querySelector('button[type="submit"]');
+  if (sendButton) sendButton.disabled = disabled;
+}
+
+function setFacing(dx) {
+  avatarWrap.classList.toggle("facing-left", dx < 0);
+}
+
+function setWalking(active) {
+  avatarWrap.classList.toggle("walking", active);
+}
+
+function setRecording(active) {
+  avatarWrap.classList.toggle("recording", active);
+}
+
+async function sleep(ms) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function ask(text) {
+  const clean = text.trim();
+  if (!clean) return;
+
+  busy = true;
+  currentReply = "";
+  setCaption(clean);
+  setStatus("thinking");
+  setControlsDisabled(true);
+  setWalking(false);
+  avatar.setState({ expression: "thinking", motion: "thinking" });
+
+  // Reset audio queue state
+  ttsQueue = [];
+  ttsPlaying = false;
+  chatDone = false;
+
+  const res = await window.companion.chat(clean, {
+    locale: "vi-VN",
+    mode: "voice",
+  });
+  if (!res?.ok) {
+    setCaption("Backend dang offline. Khoi dong lai Python service nhe.");
+    setStatus("error");
+    avatar.setState({ expression: "sad", motion: "shake", lipsync: false });
+    busy = false;
+    setControlsDisabled(false);
+  }
+}
+
+async function startRecording() {
+  try {
+    busy = true;
+    setStatus("listening");
+    setCaption("Dang nghe...");
+    setWalking(false);
+    window.companion.invoke('ai:interact').catch(() => null);
+    await recorder.start();
+    isRecording = true;
+    setRecording(true);
+    avatar.setState({ expression: "focused", motion: "look_side" });
+  } catch {
+    busy = false;
+    avatar.setState({ expression: "sad", motion: "shake" });
+  }
+}
+
+async function stopRecording() {
+  isRecording = false;
+  setRecording(false);
+  setStatus("thinking");
+  setCaption("Dang xu ly giong noi...");
+  avatar.setState({ expression: "thinking", motion: "thinking" });
+
+  const b64 = await recorder.stop();
+  if (!b64) {
+    busy = false;
+    setStatus("idle");
+    setControlsDisabled(false);
+    avatar.setState({ expression: "normal", motion: "idle" });
+    return;
+  }
+
+  const res = await window.companion.invoke("ai:voice-input", {
+    audio_b64: b64,
+  });
+  if (!res?.ok) {
+    busy = false;
+    setStatus("error");
+    setCaption("Minh chua nghe ro. Thu lai nhe.");
+    setControlsDisabled(false);
+    avatar.setState({ expression: "sad", motion: "shake" });
+  }
+}
+
+petChatForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const text = petChatInput?.value.trim() || "";
+  if (!text || busy) return;
+  petChatInput.value = "";
+  window.companion.invoke('ai:interact').catch(() => null);
+  ask(text);
+});
+
+petMicButton?.addEventListener("click", () => {
+  if (isRecording) stopRecording();
+  else if (!busy) startRecording();
+});
+
+petPowerButton?.addEventListener("click", () => {
+  window.companion.hideAvatar();
+});
+
+avatarWrap.addEventListener("pointerdown", async (event) => {
+  event.preventDefault();
+  window.companion.invoke('ai:interact').catch(() => null);
+  const bounds = await window.companion.petBounds();
+  if (!bounds) return;
+  pointerDrag = {
+    id: event.pointerId,
+    screenX: event.screenX,
+    screenY: event.screenY,
+    startX: bounds.x,
+    startY: bounds.y,
+    moved: false,
+  };
+  avatarWrap.setPointerCapture(event.pointerId);
+});
+
+avatarWrap.addEventListener("pointermove", (event) => {
+  if (!pointerDrag || pointerDrag.id !== event.pointerId) return;
+  const dx = event.screenX - pointerDrag.screenX;
+  const dy = event.screenY - pointerDrag.screenY;
+  if (Math.hypot(dx, dy) > 5) pointerDrag.moved = true;
+  setFacing(dx);
+  window.companion.petMoveTo({
+    x: pointerDrag.startX + dx,
+    y: pointerDrag.startY + dy,
+  });
+});
+
+avatarWrap.addEventListener("pointerup", (event) => {
+  if (!pointerDrag || pointerDrag.id !== event.pointerId) return;
+  const wasClick = !pointerDrag.moved;
+  pointerDrag = null;
+  avatarWrap.releasePointerCapture(event.pointerId);
+
+  if (wasClick) {
+    // Play a gentle reaction instead of starting voice recording
+    if (!busy && !isRecording) {
+      // Calculate coordinates relative to the wrapper bounds
+      const rect = avatarWrap.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      avatar.handleTap(x, y);
+      
+      if (clickResetTimeout) clearTimeout(clickResetTimeout);
+      clickResetTimeout = setTimeout(() => {
+        if (!busy && !isRecording) {
+          avatar.setState({ expression: "normal", motion: "idle" });
+        }
+      }, 3000);
+    }
+  }
+});
+
+window.addEventListener("keydown", (event) => {
+  if (event.target === petChatInput) return;
+  if (event.code === "Space") {
+    event.preventDefault();
+    if (isRecording) stopRecording();
+    else startRecording();
+  }
+});
+
+window.companion.on("python:ready", () => {
+  setStatus("idle");
+  avatar.setState({ expression: "smile", motion: "nod" });
+  applyInitialMode();
+});
+
+window.companion.on("set:emotion", (emotion) => {
+  avatar.setState({
+    expression: emotion,
+    motion: emotion === "excited" ? "excited" : "idle",
+  });
+});
+
+window.companion.on("set:lipsync", (active) => {
+  if (!active && (ttsPlaying || ttsQueue.length > 0)) {
+    return;
+  }
+  avatar.setState({ lipsync: Boolean(active) });
+});
+
+window.companion.on("stt:result", (text) => {
+  if (text) ask(text);
+  else {
+    busy = false;
+    setStatus("error");
+    setCaption("Minh chua nghe ro. Thu lai nhe.");
+    setControlsDisabled(false);
+    avatar.setState({ expression: "sad", motion: "shake" });
+  }
+});
+
+window.companion.on("chat:chunk", (chunk) => {
+  if (chunk) {
+    currentReply += chunk;
+    setCaption(currentReply);
+  }
+});
+
+async function processTtsQueue() {
+  if (ttsPlaying) return;
+  if (ttsQueue.length === 0) {
+    if (chatDone) {
+      avatar.setState({ expression: "smile", motion: "idle", lipsync: false });
+      busy = false;
+      setStatus("idle");
+      setControlsDisabled(false);
+    }
+    return;
+  }
+
+  ttsPlaying = true;
+  const { url } = ttsQueue.shift();
+  const absoluteUrl = url.startsWith("http")
+    ? url
+    : `http://127.0.0.1:8765${url}`;
+
+  try {
+    busy = true;
+    setStatus("speaking");
+    await audioPlayer.play(absoluteUrl, amp => avatar.startLipSync(amp));
+  } catch (err) {
+    console.warn("[tts] pet audio playback failed:", err);
+  } finally {
+    avatar.stopLipSync();
+    ttsPlaying = false;
+    setTimeout(processTtsQueue, 50);
+  }
+}
+
+window.companion.on("chat:done", (reply) => {
+  if (!currentReply && reply) setCaption(reply);
+  chatDone = true;
+  if (!ttsPlaying && ttsQueue.length === 0) {
+    avatar.setState({ expression: "smile", motion: "idle", lipsync: false });
+    busy = false;
+    setStatus("idle");
+    setControlsDisabled(false);
+  }
+});
+
+window.companion.on("tts:audio", async ({ url } = {}) => {
+  if (!url) return;
+  ttsQueue.push({ url });
+  processTtsQueue();
+});
+
+window.companion.on("tts:done", () => {
+  ttsPlaying = false;
+  busy = false;
+  setStatus("idle");
+  setControlsDisabled(false);
+  avatar.stopLipSync();
+});
+
+window.companion.on("trigger:screenshot", async () => {
+  busy = true;
+  setStatus("thinking");
+  setControlsDisabled(true);
+  await window.companion.invoke("ai:screenshot", {
+    question: "Man hinh dang hien thi gi?",
+  });
+});
+
+function toggleConsole() {
+  const petConsole = document.getElementById("petConsole");
+  if (petConsole) {
+    petConsole.classList.toggle("hidden");
+  }
+}
+
+// Double click on avatar to toggle console
+avatarWrap?.addEventListener("dblclick", (event) => {
+  event.stopPropagation();
+  toggleConsole();
+});
+
+// Listen from Electron IPC
+window.companion.on("toggle:console", () => {
+  toggleConsole();
+});
+
+window.companion.health().catch(() => null);
+setInterval(() => window.companion.health().catch(() => null), 5000);
+
+// Listen to config updates from the options window
+window.companion.on('config:updated', ({ key, value }) => {
+  if (key === 'llm.provider') {
+    const names = {
+      ollama: "Ollama (Local)",
+      gemini: "Gemini API",
+      openai: "OpenAI API"
+    };
+    setCaption(`Bộ não đã được đổi sang: ${names[value] || value}`);
+  } else if (key === 'features.screenAwareness') {
+    setCaption(`Tự động nhận thức màn hình đã: ${value ? 'BẬT' : 'TẮT'}`);
+  } else if (key === 'features.twitchMode') {
+    setCaption(`Đọc chat livestream Twitch đã: ${value ? 'BẬT' : 'TẮT'}`);
+  } else if (key === 'twitch.channel') {
+    setCaption(`Đã lưu kênh Twitch: ${value}`);
+  } else if (key === 'app.interactionMode') {
+    const petConsole = document.getElementById("petConsole");
+    if (petConsole) {
+      petConsole.classList.toggle("hidden", value === 'streamer');
+    }
+    setCaption(`Chế độ tương tác: ${value === 'streamer' ? 'Streamer (Neuro-Sama)' : 'Trợ lý (Chat Box)'}`);
+  } else if (key === 'app.avatarModel') {
+    avatar.changeModel(value);
+    setCaption(`Đã đổi nhân vật thành công!`);
+  }
+});
+
+// Commands execution (sit / stand / mic)
+function executeCommand(cmd) {
+  const c = cmd.trim().toLowerCase();
+  if (c === "sit") {
+    const canvas = document.querySelector("#avatarWrap canvas");
+    if (canvas) {
+      canvas.style.transform = "translateY(90px) scale(0.95)";
+      canvas.style.transition = "transform 0.4s ease-in-out";
+    }
+    btnPoseSit?.classList.add("active");
+    btnPoseStand?.classList.remove("active");
+  } else if (c === "stand") {
+    const canvas = document.querySelector("#avatarWrap canvas");
+    if (canvas) {
+      canvas.style.transform = "translateY(0) scale(1)";
+      canvas.style.transition = "transform 0.4s ease-in-out";
+    }
+    btnPoseStand?.classList.add("active");
+    btnPoseSit?.classList.remove("active");
+  } else if (c === "mic") {
+    const micProp = document.getElementById("petMicProp");
+    if (micProp) {
+      const isHidden = micProp.classList.toggle("hidden");
+      btnToggleMicProp?.classList.toggle("active", !isHidden);
+    }
+  }
+}
+
+// Bind click listeners for pose controls
+btnPoseStand?.addEventListener('click', () => {
+  executeCommand('stand');
+  ask('/stand');
+});
+
+btnPoseSit?.addEventListener('click', () => {
+  executeCommand('sit');
+  ask('/sit');
+});
+
+btnToggleMicProp?.addEventListener('click', () => {
+  executeCommand('mic');
+  ask('/mic');
+});
+
+window.companion.on("chat:command", (cmd) => {
+  if (cmd) executeCommand(cmd);
+});
+
+// Notifications polling and handling
+async function handleNotification(note) {
+  if (note.type === "screen_comment" || note.type === "twitch_comment") {
+    busy = true;
+    currentReply = note.text;
+    setCaption(note.text);
+    
+    setStatus("speaking");
+    if (note.emotion) {
+      avatar.setState({ expression: note.emotion, motion: "nod" });
+    }
+    
+    // Clear and play TTS
+    ttsQueue = [];
+    ttsPlaying = false;
+    chatDone = true;
+    
+    if (note.audio_url) {
+      ttsQueue.push({ url: note.audio_url });
+      processTtsQueue();
+    } else {
+      await sleep(3500);
+      avatar.setState({ expression: "smile", motion: "idle", lipsync: false });
+      busy = false;
+      setStatus("idle");
+    }
+  }
+}
+
+setInterval(async () => {
+  if (busy || isRecording) return;
+  try {
+    const res = await window.companion.invoke('ai:get-notifications');
+    if (res && res.notifications && res.notifications.length > 0) {
+      for (const note of res.notifications) {
+        await handleNotification(note);
+      }
+    }
+  } catch (err) {
+    console.warn('[notifications] Failed to fetch notifications:', err);
+  }
+}, 3000);
+
+async function applyInitialMode() {
+  try {
+    const res = await window.companion.invoke('ai:get-config');
+    if (res && !res.error) {
+      const mode = res.interaction_mode || 'assistant';
+      const petConsole = document.getElementById("petConsole");
+      if (petConsole) {
+        petConsole.classList.toggle("hidden", mode === 'streamer');
+      }
+    }
+  } catch (err) {
+    console.warn('[config] Failed to apply initial interaction mode:', err);
+  }
+}
+applyInitialMode();
+
+setTimeout(() => {
+  setStatus("idle");
+  avatar.setState({ expression: "smile", motion: "idle" });
+}, 500);

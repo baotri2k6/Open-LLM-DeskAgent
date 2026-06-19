@@ -1,0 +1,10 @@
+node_modules/
+__pycache__/
+*.pyc
+.env
+logs/*.log
+cache/
+data/screenshots/
+data/memory/
+reference/
+Neuro-master/

@@ -1,0 +1,122 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #0b0f17;
+  color: #f1f5f9;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.settings-shell {
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 30px 20px;
+  position: relative;
+}
+
+h1 {
+  margin: 0 0 24px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #60a5fa;
+  text-shadow: 0 2px 4px rgba(96, 165, 250, 0.15);
+}
+
+section {
+  padding: 20px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+h2 {
+  margin: 0 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+}
+
+label {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+  color: #cbd5e1;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+input[type="text"],
+select {
+  min-height: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  color: #f8fafc;
+  padding: 0 12px;
+  outline: none;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+input[type="text"]:focus,
+select:focus {
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.25);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.checkbox-label,
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 500;
+}
+
+.checkbox-label input,
+.radio-label input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.feature-desc {
+  margin: -8px 0 16px 26px;
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.save-status {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34d399;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.save-status.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
