@@ -47,6 +47,7 @@ _rag_retriever = None
 _notifications_lock = threading.Lock()
 _pending_notifications = []
 _ai_busy = False
+_generation_interrupted = False
 
 _twitch_reader = None
 _twitch_messages_lock = threading.Lock()
@@ -474,6 +475,9 @@ class SentenceAudioStreamer:
         self.worker_task = asyncio.create_task(self._worker())
 
     async def feed_text(self, text: str):
+        global _generation_interrupted
+        if _generation_interrupted:
+            return
         self.buffer += text
         parts = self.delimiters.split(self.buffer)
         
@@ -490,10 +494,20 @@ class SentenceAudioStreamer:
                     self.queue.put_nowait(s)
 
     async def flush(self):
-        s = self.buffer.strip()
-        self.buffer = ""
-        if s:
-            self.queue.put_nowait(s)
+        global _generation_interrupted
+        if _generation_interrupted:
+            while not self.queue.empty():
+                try:
+                    self.queue.get_nowait()
+                    self.queue.task_done()
+                except asyncio.QueueEmpty:
+                    break
+            self.buffer = ""
+        else:
+            s = self.buffer.strip()
+            self.buffer = ""
+            if s:
+                self.queue.put_nowait(s)
         
         # Đợi tất cả câu trong queue được xử lý xong
         await self.queue.join()
@@ -507,9 +521,13 @@ class SentenceAudioStreamer:
                 pass
 
     async def _worker(self):
+        global _generation_interrupted
         while True:
             try:
                 sentence = await self.queue.get()
+                if _generation_interrupted:
+                    self.queue.task_done()
+                    continue
                 try:
                     await self._speak_sentence(sentence)
                 finally:
@@ -676,6 +694,12 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                 pass
             return
 
+        if path == "/chat/cancel":
+            global _generation_interrupted
+            _generation_interrupted = True
+            self._send_json({"success": True})
+            return
+
         if path == "/voice/transcribe":
             _last_interaction_time = time.time()
             
@@ -736,6 +760,8 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
             logger.warning("Failed to send chunk: %s", e)
 
     async def _actual_handle_chat_stream(self, payload: dict) -> None:
+        global _generation_interrupted
+        _generation_interrupted = False
         text = str(payload.get("text", "")).strip()
         context = payload.get("context", {})
 
@@ -888,6 +914,9 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
             current_emotion = initial_emotion
 
             async for chunk in cognition.reason_stream(text, context):
+                if _generation_interrupted:
+                    logger.info("Generation interrupted by client request.")
+                    break
                 if chunk["type"] == "emotion":
                     current_emotion = chunk["emotion"]
                     self._send_chunk(chunk)
@@ -1016,6 +1045,12 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                 "success": False,
                 "error": "STT chưa sẵn sàng. Cài: pip install faster-whisper",
             }
+
+        sequence = payload.get("sequence")
+        timestamp = payload.get("timestamp")
+        is_draft = payload.get("is_draft", False)
+        if sequence is not None:
+            logger.info("ASR Transcribing Frame: seq=%s, ts=%s, is_draft=%s", sequence, timestamp, is_draft)
 
         audio_bytes_list = payload.get("audio_bytes")
         mime_type = payload.get("mime_type", "audio/webm")

@@ -32,6 +32,24 @@ let ttsQueue = [];
 let ttsPlaying = false;
 let chatDone = false;
 
+const VoiceState = {
+  IDLE: "idle",
+  LISTENING: "listening",
+  USER_SPEAKING: "user_speaking",
+  THINKING: "thinking",
+  SPEAKING: "speaking",
+};
+let currentVoiceState = VoiceState.IDLE;
+let currentInteractionMode = "assistant";
+let streamerLoopActive = false;
+let draftInterval = null;
+let voiceSequence = 0;
+
+function setVoiceState(state) {
+  currentVoiceState = state;
+  setStatus(state);
+}
+
 function setCaption(text) {
   if (!petCaption || !text) return;
   petCaption.textContent = text;
@@ -41,8 +59,10 @@ function setStatus(status) {
   const label = status || "idle";
   if (petStatusText) petStatusText.textContent = label;
   if (petStatusDot) petStatusDot.dataset.status = label;
-  if (petMicButton)
-    petMicButton.classList.toggle("active", label === "listening");
+  if (petMicButton) {
+    const isMicActive = label === "listening" || label === "user_speaking" || (currentInteractionMode === "streamer" && streamerLoopActive);
+    petMicButton.classList.toggle("active", isMicActive);
+  }
 }
 
 function setControlsDisabled(disabled) {
@@ -97,34 +117,107 @@ async function ask(text) {
   }
 }
 
+async function handleBargeIn() {
+  console.log("[Barge-in] User interrupted the AI!");
+  setVoiceState(VoiceState.USER_SPEAKING);
+
+  // Cancel active LLM/TTS streams on backend
+  window.companion.invoke("ai:cancel-chat").catch(() => null);
+
+  // Abort local playback and lipsync
+  audioPlayer.stop();
+  avatar.stopLipSync();
+
+  // Clear audio player queue
+  ttsQueue = [];
+  ttsPlaying = false;
+  chatDone = false;
+
+  // Reset recorder's sample buffer
+  recorder.clearBuffer();
+  voiceSequence = 0;
+  setCaption("Đang nghe...");
+  avatar.setState({ expression: "focused", motion: "nod" });
+}
+
 async function startRecording() {
   try {
     busy = true;
-    setStatus("listening");
-    setCaption("Dang nghe...");
+    setVoiceState(VoiceState.LISTENING);
+    setCaption("Đang nghe...");
     setWalking(false);
     window.companion.invoke('ai:interact').catch(() => null);
-    await recorder.start();
+
+    voiceSequence = 0;
+
+    // Bind VAD callbacks
+    recorder.onSpeechStartCallback = () => {
+      if (currentVoiceState === VoiceState.SPEAKING) {
+        handleBargeIn();
+      } else {
+        setVoiceState(VoiceState.USER_SPEAKING);
+      }
+    };
+
+    await recorder.start(() => {
+      console.log("[VAD] Silence/Timeout detected, auto stopping.");
+      stopRecording();
+    });
+
     isRecording = true;
     setRecording(true);
     avatar.setState({ expression: "focused", motion: "look_side" });
-  } catch {
+
+    // Start ASR streaming draft interval
+    if (draftInterval) clearInterval(draftInterval);
+    draftInterval = setInterval(async () => {
+      if (!isRecording) return;
+      const b64 = await recorder.getWavBase64();
+      if (!b64) return;
+
+      const seq = ++voiceSequence;
+      const ts = Date.now();
+
+      const res = await window.companion.invoke("ai:voice-input", {
+        audio_b64: b64,
+        is_draft: true,
+        sequence: seq,
+        timestamp: ts,
+      });
+
+      if (res?.ok && res.response?.success) {
+        const draftText = res.response.text;
+        if (draftText && isRecording) {
+          setCaption(`Đang nghe: "${draftText}"`);
+          recorder.lastDraftText = draftText;
+        }
+      }
+    }, 1500);
+
+  } catch (err) {
+    console.error("[startRecording] error:", err);
     busy = false;
+    setVoiceState(VoiceState.IDLE);
     avatar.setState({ expression: "sad", motion: "shake" });
   }
 }
 
 async function stopRecording() {
+  if (draftInterval) {
+    clearInterval(draftInterval);
+    draftInterval = null;
+  }
+
   isRecording = false;
   setRecording(false);
-  setStatus("thinking");
-  setCaption("Dang xu ly giong noi...");
+  setVoiceState(VoiceState.THINKING);
+  setCaption("Đang xử lý giọng nói...");
   avatar.setState({ expression: "thinking", motion: "thinking" });
 
   const b64 = await recorder.stop();
   if (!b64) {
     busy = false;
-    setStatus("idle");
+    setVoiceState(VoiceState.IDLE);
     setControlsDisabled(false);
     avatar.setState({ expression: "normal", motion: "idle" });
     return;
@@ -132,11 +225,15 @@ async function stopRecording() {
 
   const res = await window.companion.invoke("ai:voice-input", {
     audio_b64: b64,
+    is_draft: false,
+    sequence: ++voiceSequence,
+    timestamp: Date.now(),
   });
+
   if (!res?.ok) {
     busy = false;
-    setStatus("error");
-    setCaption("Minh chua nghe ro. Thu lai nhe.");
+    setVoiceState(VoiceState.IDLE);
+    setCaption("Mình chưa nghe rõ. Thử lại nhé.");
     setControlsDisabled(false);
     avatar.setState({ expression: "sad", motion: "shake" });
   }
@@ -151,9 +248,41 @@ petChatForm?.addEventListener("submit", (event) => {
   ask(text);
 });
 
+function toggleMic() {
+  if (currentInteractionMode === 'streamer') {
+    streamerLoopActive = !streamerLoopActive;
+    if (streamerLoopActive) {
+      startRecording();
+    } else {
+      isRecording = false;
+      busy = false;
+      setRecording(false);
+      setVoiceState(VoiceState.IDLE);
+      setControlsDisabled(false);
+
+      window.companion.invoke("ai:cancel-chat").catch(() => null);
+      audioPlayer.stop();
+      avatar.stopLipSync();
+      ttsQueue = [];
+      ttsPlaying = false;
+      chatDone = false;
+
+      recorder.stop().catch(() => null);
+      if (draftInterval) {
+        clearInterval(draftInterval);
+        draftInterval = null;
+      }
+      setCaption("Đã dừng nghe.");
+      avatar.setState({ expression: "smile", motion: "idle" });
+    }
+  } else {
+    if (isRecording) stopRecording();
+    else if (!busy) startRecording();
+  }
+}
+
 petMicButton?.addEventListener("click", () => {
-  if (isRecording) stopRecording();
-  else if (!busy) startRecording();
+  toggleMic();
 });
 
 petPowerButton?.addEventListener("click", () => {
@@ -218,8 +347,7 @@ window.addEventListener("keydown", (event) => {
   if (event.target === petChatInput) return;
   if (event.code === "Space") {
     event.preventDefault();
-    if (isRecording) stopRecording();
-    else startRecording();
+    toggleMic();
   }
 });
 
@@ -267,8 +395,20 @@ async function processTtsQueue() {
     if (chatDone) {
       avatar.setState({ expression: "smile", motion: "idle", lipsync: false });
       busy = false;
-      setStatus("idle");
-      setControlsDisabled(false);
+      
+      if (currentInteractionMode === 'streamer') {
+        setTimeout(() => {
+          if (currentInteractionMode === 'streamer' && streamerLoopActive) {
+            startRecording();
+          } else {
+            setVoiceState(VoiceState.IDLE);
+            setControlsDisabled(false);
+          }
+        }, 500);
+      } else {
+        setVoiceState(VoiceState.IDLE);
+        setControlsDisabled(false);
+      }
     }
     return;
   }
@@ -281,7 +421,7 @@ async function processTtsQueue() {
 
   try {
     busy = true;
-    setStatus("speaking");
+    setVoiceState(VoiceState.SPEAKING);
     await audioPlayer.play(absoluteUrl, amp => avatar.startLipSync(amp));
   } catch (err) {
     console.warn("[tts] pet audio playback failed:", err);
@@ -298,8 +438,19 @@ window.companion.on("chat:done", (reply) => {
   if (!ttsPlaying && ttsQueue.length === 0) {
     avatar.setState({ expression: "smile", motion: "idle", lipsync: false });
     busy = false;
-    setStatus("idle");
-    setControlsDisabled(false);
+    if (currentInteractionMode === 'streamer') {
+      setTimeout(() => {
+        if (currentInteractionMode === 'streamer' && streamerLoopActive) {
+          startRecording();
+        } else {
+          setVoiceState(VoiceState.IDLE);
+          setControlsDisabled(false);
+        }
+      }, 500);
+    } else {
+      setVoiceState(VoiceState.IDLE);
+      setControlsDisabled(false);
+    }
   }
 });
 
@@ -312,8 +463,10 @@ window.companion.on("tts:audio", async ({ url } = {}) => {
 window.companion.on("tts:done", () => {
   ttsPlaying = false;
   busy = false;
-  setStatus("idle");
-  setControlsDisabled(false);
+  if (currentInteractionMode !== 'streamer') {
+    setVoiceState(VoiceState.IDLE);
+    setControlsDisabled(false);
+  }
   avatar.stopLipSync();
 });
 
@@ -363,11 +516,19 @@ window.companion.on('config:updated', ({ key, value }) => {
   } else if (key === 'twitch.channel') {
     setCaption(`Đã lưu kênh Twitch: ${value}`);
   } else if (key === 'app.interactionMode') {
+    currentInteractionMode = value;
     const petConsole = document.getElementById("petConsole");
     if (petConsole) {
       petConsole.classList.toggle("hidden", value === 'streamer');
     }
     setCaption(`Chế độ tương tác: ${value === 'streamer' ? 'Streamer (Neuro-Sama)' : 'Trợ lý (Chat Box)'}`);
+    if (value === 'streamer') {
+      streamerLoopActive = true;
+      startRecording();
+    } else if (streamerLoopActive) {
+      streamerLoopActive = false;
+      toggleMic();
+    }
   } else if (key === 'app.avatarModel') {
     avatar.changeModel(value);
     setCaption(`Đã đổi nhân vật thành công!`);
@@ -469,10 +630,14 @@ async function applyInitialMode() {
   try {
     const res = await window.companion.invoke('ai:get-config');
     if (res && !res.error) {
-      const mode = res.interaction_mode || 'assistant';
+      currentInteractionMode = res.interaction_mode || 'assistant';
       const petConsole = document.getElementById("petConsole");
       if (petConsole) {
-        petConsole.classList.toggle("hidden", mode === 'streamer');
+        petConsole.classList.toggle("hidden", currentInteractionMode === 'streamer');
+      }
+      if (currentInteractionMode === 'streamer') {
+        streamerLoopActive = true;
+        startRecording();
       }
     }
   } catch (err) {

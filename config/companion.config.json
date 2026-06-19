@@ -6,7 +6,7 @@
   "app": {
     "name": "AI Companion Desktop 2D",
     "locale": "vi-VN",
-    "avatarModel": "assets/live2d/IceGirl/IceGirl.model3.json",
+    "avatarModel": "assets/live2d/huohuo2/huohuo/huohuo.model3.json",
     "interactionMode": "assistant"
   },
   "llm": {

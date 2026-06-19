@@ -212,16 +212,28 @@ function registerAiIpc(ipcMain, windows) {
     });
   });
 
-  ipcMain.handle('ai:voice-input', async (_e, { audio_b64 }) => {
+  ipcMain.handle('ai:voice-input', async (_e, { audio_b64, is_draft, sequence, timestamp }) => {
     try {
       const response = await requestJSON('POST', '/voice/transcribe', {
         audio_bytes: audioBase64ToByteArray(audio_b64),
         mime_type: 'audio/wav',
+        is_draft,
+        sequence,
+        timestamp,
       });
-      if (response.success) {
+      if (response.success && !is_draft) {
         sendToTargets('stt:result', response.text);
       }
       return { ok: response.success, response };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('ai:cancel-chat', async () => {
+    try {
+      const response = await requestJSON('POST', '/chat/cancel', {});
+      return { ok: true, response };
     } catch (err) {
       return { ok: false, error: err.message };
     }

@@ -1,81 +1,202 @@
 /**
- * WAV recorder adapted from Open-LLM-VTuber's web_tool recorder.
- * Output: base64 PCM16 mono WAV at 16 kHz, suitable for Whisper.
+ * WAV recorder based on Web Audio API (AudioContext + ScriptProcessorNode).
+ * Outputs: base64 PCM16 mono WAV at 16 kHz, suitable for Whisper.
+ * Includes Adaptive VAD (moving average Noise Floor) and End-of-Utterance (EoU) detection.
  */
 export class VoiceRecorder {
   constructor() {
-    this._mediaRecorder = null;
     this._stream = null;
-    this._chunks = [];
-    this._isRecording = false;
     this._audioCtx = null;
+    this._source = null;
+    this._processor = null;
+    this._samples = [];
+    this._isRecording = false;
+
+    // VAD & EoU Configuration
+    this._noiseFloor = 0.015;
+    this._minThreshold = 0.012;
+    this._maxThreshold = 0.08;
+    this._margin = 0.012;
+    
+    this._hasSpoken = false;
+    this._isSpeaking = false;
+    this._silenceStart = null;
+    this._recordingStart = 0;
+    this._silenceCallbackTriggered = false;
+    
+    // Callbacks
+    this._onSilenceCallback = null;
+    this.onSpeechStartCallback = null;
+    
+    // Settings
+    this.initialTimeoutMs = 6000; // Auto-cancel if no speech in 6s
+    this.lastDraftText = "";
   }
 
-  async start() {
+  async start(onSilenceCallback) {
     if (this._isRecording) return true;
 
-    this._chunks = [];
+    this._samples = [];
+    this._hasSpoken = false;
+    this._isSpeaking = false;
+    this._silenceStart = null;
+    this._silenceCallbackTriggered = false;
+    this._recordingStart = Date.now();
+    this._onSilenceCallback = onSilenceCallback;
+    this.lastDraftText = "";
+
+    // Web Audio API setup with dynamic resampling to 16000 Hz
     this._stream = await navigator.mediaDevices.getUserMedia({
-      audio: { channelCount: 1, sampleRate: 16000 },
+      audio: {
+        channelCount: 1,
+        sampleRate: 16000,
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
     });
 
-    this._mediaRecorder = new MediaRecorder(
-      this._stream,
-      this._getRecorderOptions(),
-    );
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    this._audioCtx = new AudioContextClass({ sampleRate: 16000 });
+    this._source = this._audioCtx.createMediaStreamSource(this._stream);
+    this._processor = this._audioCtx.createScriptProcessor(4096, 1, 1);
+
+    this._processor.onaudioprocess = (e) => {
+      if (!this._isRecording) return;
+      const inputData = e.inputBuffer.getChannelData(0);
+
+      // Store samples
+      const chunk = new Float32Array(inputData.length);
+      chunk.set(inputData);
+      this._samples.push(chunk);
+
+      // RMS calculation
+      let sum = 0;
+      for (let i = 0; i < inputData.length; i++) {
+        sum += inputData[i] * inputData[i];
+      }
+      const rms = Math.sqrt(sum / inputData.length);
+
+      // Adaptive Noise Floor update (only if not active speech)
+      if (rms < this._noiseFloor * 1.5 || rms < 0.02) {
+        this._noiseFloor = this._noiseFloor * 0.95 + rms * 0.05;
+      }
+
+      // Compute dynamic threshold
+      const threshold = Math.max(
+        this._minThreshold,
+        Math.min(this._maxThreshold, this._noiseFloor + this._margin)
+      );
+
+      // Voice Activity Detection (VAD)
+      if (rms > threshold) {
+        if (!this._isSpeaking) {
+          this._isSpeaking = true;
+          if (!this._hasSpoken) {
+            this._hasSpoken = true;
+            if (this.onSpeechStartCallback) {
+              this.onSpeechStartCallback();
+            }
+          }
+        }
+        this._silenceStart = null;
+      } else {
+        this._isSpeaking = false;
+        
+        // Silence detection
+        if (this._hasSpoken) {
+          if (this._silenceStart === null) {
+            this._silenceStart = Date.now();
+          } else {
+            const silenceMs = Date.now() - this._silenceStart;
+            
+            // End-of-Utterance (EoU) Detection
+            const text = (this.lastDraftText || "").trim();
+            const endsWithPunctuation = /[.!?]$/.test(text);
+            const requiredSilenceMs = endsWithPunctuation ? 600 : 1500;
+
+            if (silenceMs >= requiredSilenceMs) {
+              this._triggerSilence();
+            }
+          }
+        } else {
+          // Initial timeout if no speech started yet
+          const elapsed = Date.now() - this._recordingStart;
+          if (elapsed >= this.initialTimeoutMs) {
+            console.log("[VoiceRecorder] Initial timeout reached: no speech detected");
+            this._triggerSilence();
+          }
+        }
+      }
+    };
+
+    this._source.connect(this._processor);
+    this._processor.connect(this._audioCtx.destination);
     this._isRecording = true;
-    this._mediaRecorder.addEventListener("dataavailable", (event) => {
-      if (event.data.size > 0) this._chunks.push(event.data);
-    });
-    this._mediaRecorder.start();
     return true;
+  }
+
+  _triggerSilence() {
+    if (this._silenceCallbackTriggered) return;
+    this._silenceCallbackTriggered = true;
+    if (this._onSilenceCallback) {
+      this._onSilenceCallback();
+    }
   }
 
   stop() {
     return new Promise((resolve) => {
-      if (!this._mediaRecorder || !this._isRecording) {
+      this._isRecording = false;
+
+      // Disconnect and clean up Audio Nodes
+      try {
+        this._processor?.disconnect();
+        this._source?.disconnect();
+        if (this._audioCtx && this._audioCtx.state !== "closed") {
+          this._audioCtx.close();
+        }
+      } catch (err) {
+        console.warn("[VoiceRecorder] cleanup error:", err);
+      }
+
+      this._stream?.getTracks().forEach((track) => track.stop());
+      this._stream = null;
+      this._source = null;
+      this._processor = null;
+      this._audioCtx = null;
+
+      // Concatenate all float samples
+      const concatenated = this._getConcatenatedSamples();
+      if (concatenated.length === 0) {
         resolve(null);
         return;
       }
 
-      this._mediaRecorder.addEventListener(
-        "stop",
-        async () => {
-          this._isRecording = false;
+      const wavBuffer = this._buildWAV(concatenated);
+      const wavBlob = new Blob([wavBuffer], { type: "audio/wav" });
+      
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(",")[1]);
+      reader.readAsDataURL(wavBlob);
+    });
+  }
 
-          const blob = new Blob(this._chunks, {
-            type: this._mediaRecorder.mimeType || "audio/webm",
-          });
-          const arrayBuffer = await blob.arrayBuffer();
+  clearBuffer() {
+    this._samples = [];
+    this._silenceStart = null;
+    this._recordingStart = Date.now();
+  }
 
-          let audioBuffer;
-          try {
-            this._audioCtx ??= new (
-              window.AudioContext || window.webkitAudioContext
-            )();
-            audioBuffer = await this._audioCtx.decodeAudioData(arrayBuffer);
-          } catch (err) {
-            console.error("[VoiceRecorder] decodeAudioData failed:", err);
-            this._cleanup();
-            resolve(null);
-            return;
-          }
-
-          const wavBuffer = this._buildWAV(audioBuffer);
-          const wavBlob = new Blob([wavBuffer], { type: "audio/wav" });
-          const b64 = await new Promise((res) => {
-            const reader = new FileReader();
-            reader.onload = () => res(reader.result.split(",")[1]);
-            reader.readAsDataURL(wavBlob);
-          });
-
-          this._cleanup();
-          resolve(b64);
-        },
-        { once: true },
-      );
-
-      this._mediaRecorder.stop();
+  async getWavBase64() {
+    const concatenated = this._getConcatenatedSamples();
+    if (concatenated.length === 0) return null;
+    const wavBuffer = this._buildWAV(concatenated);
+    const wavBlob = new Blob([wavBuffer], { type: "audio/wav" });
+    
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(",")[1]);
+      reader.readAsDataURL(wavBlob);
     });
   }
 
@@ -83,38 +204,24 @@ export class VoiceRecorder {
     return this._isRecording;
   }
 
-  _getRecorderOptions() {
-    const candidates = [
-      "audio/webm;codecs=opus",
-      "audio/webm",
-      "audio/ogg;codecs=opus",
-    ];
-    const mimeType = candidates.find((type) =>
-      MediaRecorder.isTypeSupported?.(type),
-    );
-    return mimeType ? { mimeType } : {};
+  _getConcatenatedSamples() {
+    let totalLength = 0;
+    for (const chunk of this._samples) {
+      totalLength += chunk.length;
+    }
+    const result = new Float32Array(totalLength);
+    let offset = 0;
+    for (const chunk of this._samples) {
+      result.set(chunk, offset);
+      offset += chunk.length;
+    }
+    return result;
   }
 
-  _cleanup() {
-    this._stream?.getTracks().forEach((track) => track.stop());
-    this._stream = null;
-    this._mediaRecorder = null;
-    this._chunks = [];
-  }
-
-  _buildWAV(audioBuffer) {
+  _buildWAV(samples) {
     const targetSampleRate = 16000;
     const numChannels = 1;
     const bitDepth = 16;
-
-    let samples = audioBuffer.getChannelData(0);
-    if (audioBuffer.sampleRate !== targetSampleRate) {
-      samples = this._resample(
-        samples,
-        audioBuffer.sampleRate,
-        targetSampleRate,
-      );
-    }
 
     const dataLength = samples.length * (bitDepth / 8);
     const buffer = new ArrayBuffer(44 + dataLength);
@@ -151,22 +258,5 @@ export class VoiceRecorder {
     for (let i = 0; i < text.length; i++) {
       view.setUint8(offset + i, text.charCodeAt(i));
     }
-  }
-
-  _resample(data, fromSampleRate, toSampleRate) {
-    const ratio = toSampleRate / fromSampleRate;
-    const output = new Float32Array(Math.round(data.length * ratio));
-
-    for (let i = 0; i < output.length; i++) {
-      const position = i / ratio;
-      const index = Math.floor(position);
-      const fraction = position - index;
-      output[i] =
-        index + 1 < data.length
-          ? data[index] * (1 - fraction) + data[index + 1] * fraction
-          : data[index];
-    }
-
-    return output;
   }
 }

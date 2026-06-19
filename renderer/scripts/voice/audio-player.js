@@ -85,4 +85,10 @@ export class AudioPlayer {
       this.audio.addEventListener("error", onError);
     });
   }
+
+  stop() {
+    this.audio.pause();
+    this.audio.currentTime = 0;
+    this.audio.dispatchEvent(new Event("ended"));
+  }
 }
