@@ -3,7 +3,6 @@ console.log("[settings] settings.js script loaded.");
 const llmSelect = document.getElementById("llmSelect");
 const sttSelect = document.getElementById("sttSelect");
 const avatarSelect = document.getElementById("avatarSelect");
-const chkScreenAwareness = document.getElementById("chkScreenAwareness");
 const chkTwitchMode = document.getElementById("chkTwitchMode");
 const txtTwitchChannel = document.getElementById("txtTwitchChannel");
 const radModeStreamer = document.getElementById("radModeStreamer");
@@ -31,7 +30,6 @@ async function loadConfig() {
       if (llmSelect) llmSelect.value = res.llm_provider || 'ollama';
       if (sttSelect) sttSelect.value = res.stt_model || 'base';
       if (avatarSelect) avatarSelect.value = res.avatar_model || 'assets/live2d/IceGirl/IceGirl.model3.json';
-      if (chkScreenAwareness) chkScreenAwareness.checked = Boolean(res.screen_awareness);
       if (chkTwitchMode) chkTwitchMode.checked = Boolean(res.twitch_mode);
       if (txtTwitchChannel) txtTwitchChannel.value = res.twitch_channel || '';
       
@@ -79,13 +77,7 @@ if (!window.companion) {
     });
   }
 
-  if (chkScreenAwareness) {
-    chkScreenAwareness.addEventListener('change', async () => {
-      console.log("[settings] screen awareness changed:", chkScreenAwareness.checked);
-      const res = await window.companion.invoke('ai:update-config', { key: 'features.screenAwareness', value: chkScreenAwareness.checked });
-      if (res && !res.error) showStatus();
-    });
-  }
+
 
   if (chkTwitchMode) {
     chkTwitchMode.addEventListener('change', async () => {

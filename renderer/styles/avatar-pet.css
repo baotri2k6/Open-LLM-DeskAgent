@@ -51,7 +51,7 @@ body {
 }
 
 .avatar-wrap.recording {
-  animation: listenPulse 1.1s ease-in-out infinite;
+  animation: breathe 4.8s ease-in-out infinite;
 }
 
 .avatar-wrap[data-motion="nod"] {
@@ -89,14 +89,7 @@ body {
 }
 
 .expression-light {
-  position: absolute;
-  inset: auto 18% 8% 18%;
-  height: 24%;
-  border-radius: 50%;
-  background: rgba(90, 180, 255, 0.18);
-  filter: blur(28px);
-  z-index: 1;
-  pointer-events: none;
+  display: none !important;
 }
 
 .expression-light[data-expression="smile"],

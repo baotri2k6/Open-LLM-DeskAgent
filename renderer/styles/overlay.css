@@ -90,13 +90,7 @@ select {
 }
 
 .expression-light {
-  position: absolute;
-  inset: auto 20% 8% 20%;
-  height: 24%;
-  border-radius: 50%;
-  background: rgba(90, 180, 255, 0.24);
-  filter: blur(28px);
-  z-index: 1;
+  display: none !important;
 }
 
 .expression-light[data-expression="smile"],
