@@ -8,69 +8,192 @@
   </head>
   <body>
     <main class="settings-shell">
-      <h1>Cài đặt IceGirl (Settings)</h1>
-      
-      <section>
-        <h2>Mô hình & Trí tuệ (Model & Brain)</h2>
-        <label>
-          Bộ não AI (LLM Provider)
+      <!-- Header -->
+      <div class="settings-header">
+        <div class="settings-header-icon">⚙️</div>
+        <div>
+          <h1>Cài đặt</h1>
+          <p>Tùy chỉnh AI companion của bạn</p>
+        </div>
+      </div>
+
+      <!-- Card: AI Brain -->
+      <div class="settings-card">
+        <div class="card-header">
+          <div class="card-icon">🧠</div>
+          <span class="card-title">Trí tuệ AI</span>
+        </div>
+        <div class="card-divider"></div>
+
+        <div class="field">
+          <span class="field-label">Bộ não AI (LLM Provider)</span>
           <select id="llmSelect">
-            <option value="ollama">Ollama (Chạy local trên máy)</option>
-            <option value="gemini">Gemini API (Đám mây siêu nhẹ)</option>
-            <option value="openai">OpenAI API (Đám mây)</option>
+            <option value="ollama">🏠 Ollama — Chạy local, miễn phí</option>
+            <option value="gemini">✨ Gemini API — Đám mây Google</option>
+            <option value="openai">⚡ OpenAI API — Đám mây OpenAI</option>
           </select>
-        </label>
-        <label>
-          Mô hình Nhận diện Giọng nói (STT Model)
+        </div>
+
+        <div class="field">
+          <span class="field-label">Mô hình nhận diện giọng nói (STT)</span>
           <select id="sttSelect">
-            <option value="tiny">Tiny (Rất nhanh, nhẹ)</option>
-            <option value="base">Base (Chính xác vừa phải)</option>
+            <option value="tiny">🚀 Tiny — Rất nhanh, nhẹ máy</option>
+            <option value="base">🎯 Base — Chính xác hơn, vừa phải</option>
           </select>
-        </label>
-      </section>
+        </div>
+      </div>
 
-      <section>
-        <h2>Nhân vật (Character Model)</h2>
-        <label>
-          Chọn nhân vật (Live2D Character)
-          <select id="avatarSelect">
-            <option value="assets/live2d/IceGirl/IceGirl.model3.json">IceGirl (Mặc định)</option>
-            <option value="assets/live2d/hiyori_en/hiyori_pro/runtime/hiyori_pro_t11.model3.json">Hiyori (Free Model)</option>
-            <option value="assets/live2d/mao_en/runtime/mao_pro.model3.json">Mao (Pro Model)</option>
-            <option value="assets/live2d/huohuo2/huohuo/huohuo.model3.json">Huohuo (HSR Model)</option>
-          </select>
-        </label>
-      </section>
+      <!-- Card: Character -->
+      <div class="settings-card">
+        <div class="card-header">
+          <div class="card-icon">🎭</div>
+          <span class="card-title">Nhân vật</span>
+        </div>
+        <div class="card-divider"></div>
 
-      <section>
-        <h2>Chế độ Hoạt động (Interaction Mode)</h2>
-        <label class="radio-label">
-          <input type="radio" name="interactionMode" value="streamer" id="radModeStreamer" />
-          <span>Chế độ Streamer (Kiểu Neuro-Sama - Ẩn khung chat)</span>
-        </label>
-        <label class="radio-label">
-          <input type="radio" name="interactionMode" value="assistant" id="radModeAssistant" />
-          <span>Chế độ Trợ lý (Kiểu Chat Box - Hiện khung chat để nhập)</span>
-        </label>
-      </section>
+        <div class="avatar-grid">
+          <label class="avatar-card">
+            <input
+              type="radio"
+              name="avatarModel"
+              id="avatarIcegirl"
+              value="assets/live2d/IceGirl/IceGirl.model3.json"
+            />
+            <div class="avatar-card-inner">
+              <span class="avatar-emoji">🧊</span>
+              <div>
+                <div class="avatar-card-name">IceGirl</div>
+                <div class="avatar-card-sub">Mặc định</div>
+              </div>
+            </div>
+          </label>
 
+          <label class="avatar-card">
+            <input
+              type="radio"
+              name="avatarModel"
+              id="avatarHiyori"
+              value="assets/live2d/hiyori_en/hiyori_pro/runtime/hiyori_pro_t11.model3.json"
+            />
+            <div class="avatar-card-inner">
+              <span class="avatar-emoji">🌸</span>
+              <div>
+                <div class="avatar-card-name">Hiyori</div>
+                <div class="avatar-card-sub">Free Model</div>
+              </div>
+            </div>
+          </label>
 
+          <label class="avatar-card">
+            <input
+              type="radio"
+              name="avatarModel"
+              id="avatarMao"
+              value="assets/live2d/mao_en/runtime/mao_pro.model3.json"
+            />
+            <div class="avatar-card-inner">
+              <span class="avatar-emoji">🐱</span>
+              <div>
+                <div class="avatar-card-name">Mao</div>
+                <div class="avatar-card-sub">Pro Model</div>
+              </div>
+            </div>
+          </label>
 
-      <section>
-        <h2>Livestream (Twitch Live Mode)</h2>
-        <label class="checkbox-label">
-          <input type="checkbox" id="chkTwitchMode" />
-          <span>Đọc chat livestream Twitch (Twitch Live)</span>
-        </label>
-        <label id="twitchChannelLabel">
-          Kênh Twitch cần đọc chat (Twitch Channel Name)
-          <input type="text" id="txtTwitchChannel" placeholder="Ví dụ: mixigaming" />
-        </label>
-      </section>
+          <label class="avatar-card">
+            <input
+              type="radio"
+              name="avatarModel"
+              id="avatarHuohuo"
+              value="assets/live2d/huohuo2/huohuo/huohuo.model3.json"
+            />
+            <div class="avatar-card-inner">
+              <span class="avatar-emoji">🦋</span>
+              <div>
+                <div class="avatar-card-name">Huohuo</div>
+                <div class="avatar-card-sub">HSR Model</div>
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
 
-      <div class="save-status" id="saveStatus">Đã lưu cấu hình tự động.</div>
+      <!-- Card: Interaction Mode -->
+      <div class="settings-card">
+        <div class="card-header">
+          <div class="card-icon">🎮</div>
+          <span class="card-title">Chế độ hoạt động</span>
+        </div>
+        <div class="card-divider"></div>
+
+        <div class="radio-grid">
+          <label class="radio-card">
+            <input
+              type="radio"
+              name="interactionMode"
+              value="streamer"
+              id="radModeStreamer"
+            />
+            <div class="radio-card-inner">
+              <span class="radio-card-icon">🎙️</span>
+              <span class="radio-card-name">Streamer</span>
+              <span class="radio-card-desc"
+                >Kiểu Neuro-Sama — nghe liên tục, ẩn chat</span
+              >
+            </div>
+          </label>
+
+          <label class="radio-card">
+            <input
+              type="radio"
+              name="interactionMode"
+              value="assistant"
+              id="radModeAssistant"
+            />
+            <div class="radio-card-inner">
+              <span class="radio-card-icon">💬</span>
+              <span class="radio-card-name">Trợ lý</span>
+              <span class="radio-card-desc"
+                >Kiểu Chat Box — hiện khung chat để nhập</span
+              >
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Card: Livestream -->
+      <div class="settings-card">
+        <div class="card-header">
+          <div class="card-icon">📺</div>
+          <span class="card-title">Livestream Twitch</span>
+        </div>
+        <div class="card-divider"></div>
+
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-name">Đọc chat Twitch</div>
+            <div class="toggle-desc">AI tự bình luận tin nhắn từ viewer</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="chkTwitchMode" />
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="twitch-channel-wrap" id="twitchChannelWrap">
+          <div class="field">
+            <span class="field-label">Tên kênh Twitch</span>
+            <input
+              type="text"
+              id="txtTwitchChannel"
+              placeholder="Ví dụ: mixigaming"
+            />
+          </div>
+        </div>
+      </div>
     </main>
 
+    <div class="save-status" id="saveStatus">Đã lưu cài đặt</div>
     <script type="module" src="./scripts/settings.js"></script>
   </body>
 </html>
