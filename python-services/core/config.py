@@ -17,7 +17,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "name": "AI Companion Desktop 2.5D",
         "locale": "vi-VN",
         "avatarModel": "assets/live2d/IceGirl/IceGirl.model3.json",
-        "interactionMode": "assistant",
+        "interactionMode": "streamer",
     },
     "persona": {
         "name": "IceGirl",

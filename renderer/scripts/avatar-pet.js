@@ -162,7 +162,7 @@ const VoiceState = {
   SPEAKING: "speaking",
 };
 let currentVoiceState = VoiceState.IDLE;
-let currentInteractionMode = "assistant";
+let currentInteractionMode = "streamer";
 let streamerLoopActive = false;
 let draftInterval = null;
 let voiceSequence = 0;
