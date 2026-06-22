@@ -23,7 +23,7 @@ contextBridge.exposeInMainWorld('companion', {
       'chat:chunk','chat:done','trigger:screenshot',
       'stt:result','tts:audio','tts:done','voice:start-recording',
       'voice:stop-recording','doc:loaded','toggle:console','chat:command',
-      'config:updated',
+      'config:updated', 'chat:request-approval',
     ];
     if (ALLOWED.includes(channel)) {
       ipcRenderer.on(channel, (_e, ...args) => cb(...args));

@@ -604,6 +604,12 @@ window.companion.on("tts:done", () => {
   avatar.stopLipSync();
 });
 
+window.companion.on("chat:request-approval", async ({ req_id, action, details }) => {
+  avatar.setState({ expression: 'focused', motion: 'thinking' });
+  const approved = confirm(`IceGirl muốn thực hiện hành động:\n${action}\n\nChi tiết:\n${JSON.stringify(details, null, 2)}\n\nBạn có đồng ý không?`);
+  await window.companion.invoke('ai:submit-approval', { req_id, approved });
+});
+
 window.companion.on("trigger:screenshot", async () => {
   busy = true;
   setStatus("thinking");

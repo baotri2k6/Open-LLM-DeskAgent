@@ -1,6 +1,6 @@
 import { AvatarController } from './avatar/live2d-manager.js';
 import { ChatHistory } from './chat/history.js';
-import { renderMessage, renderChunk } from './chat/message.js';
+import { renderMessage, renderChunk, renderApprovalCard } from './chat/message.js';
 import { AudioPlayer } from './voice/audio-player.js';
 import { VoiceRecorder } from './voice/recoder.js';
 
@@ -172,6 +172,13 @@ voiceButton.addEventListener('click', async () => {
 window.companion.on('stt:result', text => {
   input.value = text;
   setBusy(false);
+});
+
+window.companion.on('chat:request-approval', ({ req_id, action, details }) => {
+  avatar.setState({ expression: 'focused', motion: 'thinking' });
+  const approvalEl = renderApprovalCard(req_id, action, details);
+  log.appendChild(approvalEl);
+  log.scrollTop = log.scrollHeight;
 });
 
 window.companion.on('tts:done', () => avatar.stopLipSync());

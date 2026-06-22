@@ -700,6 +700,14 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
             self._send_json({"success": True})
             return
 
+        if path == "/chat/approve":
+            req_id = payload.get("req_id")
+            approved = payload.get("approved", False)
+            from utils.approval_registry import submit_approval
+            success = submit_approval(req_id, approved)
+            self._send_json({"success": success})
+            return
+
         if path == "/voice/transcribe":
             _last_interaction_time = time.time()
             
@@ -920,7 +928,9 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                 if _generation_interrupted:
                     logger.info("Generation interrupted by client request.")
                     break
-                if chunk["type"] == "emotion":
+                if chunk["type"] == "request_approval":
+                    self._send_chunk(chunk)
+                elif chunk["type"] == "emotion":
                     current_emotion = chunk["emotion"]
                     self._send_chunk(chunk)
                 elif chunk["type"] == "text":

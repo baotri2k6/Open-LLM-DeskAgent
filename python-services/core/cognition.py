@@ -19,6 +19,11 @@ class CognitionEngine:
         parser = EmotionStreamParser()
         
         async for token in self.llm.chat_stream(prompt, context):
+            # Chuyển tiếp trực tiếp nếu token là dict (sự kiện hệ thống hoặc phê duyệt)
+            if isinstance(token, dict):
+                yield token
+                continue
+                
             # 1. Feed token vào parser để tìm thẻ cảm xúc [emotion] hoặc emoji
             emotion_chunk = parser.feed(token)
             if emotion_chunk:
@@ -33,3 +38,4 @@ class CognitionEngine:
         leftover = parser.flush_all()
         if leftover:
             yield {"type": "text", "text": leftover}
+

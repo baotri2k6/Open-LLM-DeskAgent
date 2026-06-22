@@ -173,6 +173,12 @@ function registerAiIpc(ipcMain, windows) {
           if (chunk.type === 'start') {
             sendToTargets('set:emotion', chunk.emotion || 'normal');
             if (chunk.motion) sendToTargets('set:lipsync', chunk.motion === 'thinking');
+          } else if (chunk.type === 'request_approval') {
+            sendToTargets('chat:request-approval', {
+              req_id: chunk.req_id,
+              action: chunk.action,
+              details: chunk.details
+            });
           } else if (chunk.type === 'text') {
             sendToTargets('chat:chunk', chunk.text);
             fullText += chunk.text;
@@ -293,6 +299,15 @@ function registerAiIpc(ipcMain, windows) {
   ipcMain.handle('ai:interact', async () => {
     try {
       const response = await requestJSON('POST', '/interact');
+      return response;
+    } catch (err) {
+      return { error: err.message };
+    }
+  });
+
+  ipcMain.handle('ai:submit-approval', async (_e, { req_id, approved }) => {
+    try {
+      const response = await requestJSON('POST', '/chat/approve', { req_id, approved });
       return response;
     } catch (err) {
       return { error: err.message };
