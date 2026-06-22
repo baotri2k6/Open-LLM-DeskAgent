@@ -10,9 +10,131 @@ const petChatForm = document.getElementById("petChatForm");
 const petChatInput = document.getElementById("petChatInput");
 const petMicButton = document.getElementById("petMicButton");
 const petPowerButton = document.getElementById("petPowerButton");
-const btnPoseStand = document.getElementById("btnPoseStand");
-const btnPoseSit = document.getElementById("btnPoseSit");
-const btnToggleMicProp = document.getElementById("btnToggleMicProp");
+
+let currentModelPath = "assets/live2d/IceGirl/IceGirl.model3.json"; // default
+
+// Helper to identify character model from path
+function getModelKey(modelPath) {
+  if (!modelPath) return "icegirl";
+  const pathLower = modelPath.toLowerCase();
+  if (pathLower.includes("hiyori")) return "hiyori";
+  if (pathLower.includes("mao")) return "mao";
+  if (pathLower.includes("huohuo")) return "huohuo";
+  return "icegirl";
+}
+
+const MODEL_ACCESSORIES = {
+  icegirl: [
+    { id: "gamepad", label: "🎮 Tay cầm", paramId: "ShouBing", type: "toggle", defaultValue: 0, activeValue: 1 },
+    { id: "catears", label: "🐱 Tai mèo", paramId: "Param53", type: "toggle", defaultValue: 0, activeValue: 1 },
+    { id: "crown", label: "👑 Vương miện", paramId: "Param40", type: "toggle", defaultValue: 0, activeValue: 1 },
+    { id: "wings", label: "🪶 Cánh", paramId: "Param41", type: "toggle", defaultValue: 0, activeValue: 1 },
+    { id: "headset", label: "🎧 Tai nghe", paramId: "JiaJu", type: "toggle", defaultValue: 0, activeValue: 1 },
+    { id: "ponytail", label: "💇 Đuôi ngựa", paramId: "Param51", type: "hair", activeValue: 1, defaultValue: 0 },
+    { id: "loosehair", label: "💇 Tóc xõa", paramId: "Param51", type: "hair", activeValue: 2, defaultValue: 0 },
+  ],
+  huohuo: [
+    { id: "cushion", label: "🧸 Gối ôm", paramId: ["Param99", "Param119", "Param120", "Param121", "Param122"], type: "toggle", defaultValue: 0, activeValue: 1 },
+    { id: "flag1", label: "🚩 Lá cờ 1", paramId: "Param63", type: "flag", activeValue: 1, defaultValue: 0 },
+    { id: "flag2", label: "🚩 Lá cờ 2", paramId: ["Param63", "Param127"], type: "flag", activeValue: 1, defaultValue: 0 }
+  ],
+  mao: [
+    { id: "exp02", label: "😊 Cười", expressionName: "exp_02", type: "expression" },
+    { id: "exp04", label: "😃 Vui vẻ", expressionName: "exp_04", type: "expression" },
+    { id: "exp05", label: "😢 Buồn", expressionName: "exp_05", type: "expression" },
+    { id: "exp06", label: "🤔 Suy nghĩ", expressionName: "exp_06", type: "expression" },
+    { id: "exp07", label: "😮 Ngạc nhiên", expressionName: "exp_07", type: "expression" },
+    { id: "exp08", label: "😠 Tức giận", expressionName: "exp_08", type: "expression" }
+  ],
+  hiyori: []
+};
+
+function rebuildAccessoryButtons(modelPath) {
+  const container = document.getElementById("characterPropsRow");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const modelKey = getModelKey(modelPath);
+  const accessories = MODEL_ACCESSORIES[modelKey] || [];
+
+  if (accessories.length === 0) {
+    container.style.display = "none";
+    return;
+  }
+  container.style.display = "flex";
+
+  accessories.forEach(acc => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "pose-button";
+    btn.textContent = acc.label;
+    btn.dataset.id = acc.id;
+
+    btn.addEventListener("click", () => {
+      const isActive = btn.classList.toggle("active");
+
+      if (acc.type === "expression") {
+        // Expression buttons are mutually exclusive
+        if (isActive) {
+          container.querySelectorAll(".pose-button").forEach(b => {
+            if (b !== btn) b.classList.remove("active");
+          });
+          avatar.setState({ expression: acc.expressionName });
+        } else {
+          avatar.setState({ expression: "normal" });
+        }
+      } else if (acc.type === "hair") {
+        if (isActive) {
+          // Deactivate other hair buttons
+          accessories.forEach(otherAcc => {
+            if (otherAcc.type === "hair" && otherAcc.id !== acc.id) {
+              const otherBtn = container.querySelector(`[data-id="${otherAcc.id}"]`);
+              if (otherBtn) otherBtn.classList.remove("active");
+            }
+          });
+          avatar.setAccessory(acc.paramId, acc.activeValue);
+        } else {
+          avatar.setAccessory(acc.paramId, acc.defaultValue);
+        }
+      } else if (acc.type === "flag") {
+        if (isActive) {
+          // Deactivate other flag buttons
+          accessories.forEach(otherAcc => {
+            if (otherAcc.type === "flag" && otherAcc.id !== acc.id) {
+              const otherBtn = container.querySelector(`[data-id="${otherAcc.id}"]`);
+              if (otherBtn) otherBtn.classList.remove("active");
+              // Reset other flag parameters
+              if (Array.isArray(otherAcc.paramId)) {
+                otherAcc.paramId.forEach(pid => avatar.setAccessory(pid, otherAcc.defaultValue));
+              } else {
+                avatar.setAccessory(otherAcc.paramId, otherAcc.defaultValue);
+              }
+            }
+          });
+          // Apply this flag
+          if (Array.isArray(acc.paramId)) {
+            acc.paramId.forEach(pid => avatar.setAccessory(pid, acc.activeValue));
+          } else {
+            avatar.setAccessory(acc.paramId, acc.activeValue);
+          }
+        } else {
+          // Reset this flag parameters
+          if (Array.isArray(acc.paramId)) {
+            acc.paramId.forEach(pid => avatar.setAccessory(pid, acc.defaultValue));
+          } else {
+            avatar.setAccessory(acc.paramId, acc.defaultValue);
+          }
+        }
+      } else {
+        // Normal toggle
+        const val = isActive ? acc.activeValue : acc.defaultValue;
+        avatar.setAccessory(acc.paramId, val);
+      }
+    });
+
+    container.appendChild(btn);
+  });
+}
 
 const avatar = new AvatarController({
   wrap: avatarWrap,
@@ -44,6 +166,7 @@ let currentInteractionMode = "assistant";
 let streamerLoopActive = false;
 let draftInterval = null;
 let voiceSequence = 0;
+let sttProcessing = false;
 
 function setVoiceState(state) {
   currentVoiceState = state;
@@ -172,25 +295,36 @@ async function startRecording() {
     if (draftInterval) clearInterval(draftInterval);
     draftInterval = setInterval(async () => {
       if (!isRecording) return;
+      if (sttProcessing) {
+        console.log("[ASR] Skipping draft chunk transcription: previous STT request is still processing.");
+        return;
+      }
       const b64 = await recorder.getWavBase64();
       if (!b64) return;
 
       const seq = ++voiceSequence;
       const ts = Date.now();
 
-      const res = await window.companion.invoke("ai:voice-input", {
-        audio_b64: b64,
-        is_draft: true,
-        sequence: seq,
-        timestamp: ts,
-      });
+      sttProcessing = true;
+      try {
+        const res = await window.companion.invoke("ai:voice-input", {
+          audio_b64: b64,
+          is_draft: true,
+          sequence: seq,
+          timestamp: ts,
+        });
 
-      if (res?.ok && res.response?.success) {
-        const draftText = res.response.text;
-        if (draftText && isRecording) {
-          setCaption(`Đang nghe: "${draftText}"`);
-          recorder.lastDraftText = draftText;
+        if (res?.ok && res.response?.success) {
+          const draftText = res.response.text;
+          if (draftText && isRecording) {
+            setCaption(`Đang nghe: "${draftText}"`);
+            recorder.lastDraftText = draftText;
+          }
         }
+      } catch (err) {
+        console.error("[ASR] Draft error:", err);
+      } finally {
+        sttProcessing = false;
       }
     }, 1500);
 
@@ -531,56 +665,10 @@ window.companion.on('config:updated', ({ key, value }) => {
     }
   } else if (key === 'app.avatarModel') {
     avatar.changeModel(value);
+    currentModelPath = value;
+    rebuildAccessoryButtons(value);
     setCaption(`Đã đổi nhân vật thành công!`);
   }
-});
-
-// Commands execution (sit / stand / mic)
-function executeCommand(cmd) {
-  const c = cmd.trim().toLowerCase();
-  if (c === "sit") {
-    const canvas = document.querySelector("#avatarWrap canvas");
-    if (canvas) {
-      canvas.style.transform = "translateY(90px) scale(0.95)";
-      canvas.style.transition = "transform 0.4s ease-in-out";
-    }
-    btnPoseSit?.classList.add("active");
-    btnPoseStand?.classList.remove("active");
-  } else if (c === "stand") {
-    const canvas = document.querySelector("#avatarWrap canvas");
-    if (canvas) {
-      canvas.style.transform = "translateY(0) scale(1)";
-      canvas.style.transition = "transform 0.4s ease-in-out";
-    }
-    btnPoseStand?.classList.add("active");
-    btnPoseSit?.classList.remove("active");
-  } else if (c === "mic") {
-    const micProp = document.getElementById("petMicProp");
-    if (micProp) {
-      const isHidden = micProp.classList.toggle("hidden");
-      btnToggleMicProp?.classList.toggle("active", !isHidden);
-    }
-  }
-}
-
-// Bind click listeners for pose controls
-btnPoseStand?.addEventListener('click', () => {
-  executeCommand('stand');
-  ask('/stand');
-});
-
-btnPoseSit?.addEventListener('click', () => {
-  executeCommand('sit');
-  ask('/sit');
-});
-
-btnToggleMicProp?.addEventListener('click', () => {
-  executeCommand('mic');
-  ask('/mic');
-});
-
-window.companion.on("chat:command", (cmd) => {
-  if (cmd) executeCommand(cmd);
 });
 
 // Notifications polling and handling
@@ -635,6 +723,10 @@ async function applyInitialMode() {
       if (petConsole) {
         petConsole.classList.toggle("hidden", currentInteractionMode === 'streamer');
       }
+      if (res.avatar_model) {
+        currentModelPath = res.avatar_model;
+      }
+      rebuildAccessoryButtons(currentModelPath);
       if (currentInteractionMode === 'streamer') {
         streamerLoopActive = true;
         startRecording();
@@ -647,6 +739,36 @@ async function applyInitialMode() {
 applyInitialMode();
 
 setTimeout(() => {
-  setStatus("idle");
-  avatar.setState({ expression: "smile", motion: "idle" });
+  if (currentInteractionMode !== 'streamer' && currentVoiceState === VoiceState.IDLE) {
+    setStatus("idle");
+    avatar.setState({ expression: "smile", motion: "idle" });
+  }
 }, 500);
+
+window.addEventListener('mousemove', (e) => {
+  if (pointerDrag) {
+    if (window.companion && typeof window.companion.setIgnoreMouseEvents === 'function') {
+      window.companion.setIgnoreMouseEvents(false);
+    }
+    return;
+  }
+  
+  const petConsole = document.getElementById("petConsole");
+  let isOverConsole = false;
+  if (petConsole && !petConsole.classList.contains("hidden")) {
+    const rect = petConsole.getBoundingClientRect();
+    isOverConsole = e.clientX >= rect.left && e.clientX <= rect.right &&
+                    e.clientY >= rect.top && e.clientY <= rect.bottom;
+  }
+  
+  const isOverAvatar = avatar.containsPoint(e.clientX, e.clientY);
+  const isOverInteractive = isOverAvatar || isOverConsole;
+  
+  if (window.companion && typeof window.companion.setIgnoreMouseEvents === 'function') {
+    if (isOverInteractive) {
+      window.companion.setIgnoreMouseEvents(false);
+    } else {
+      window.companion.setIgnoreMouseEvents(true, { forward: true });
+    }
+  }
+});

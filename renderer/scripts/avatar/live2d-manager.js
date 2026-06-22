@@ -119,18 +119,28 @@ class PixiLive2DBackend {
       return false;
     }
 
-    // Override motionManager.update to reset waving arm and heart trail parameters
+    // Override motionManager.update to reset waving arm and heart trail parameters and apply accessories
     try {
       const motionManager = this._model.internalModel.motionManager;
       const originalUpdate = motionManager.update;
+      const self = this;
       motionManager.update = function (model, now) {
+        const res = originalUpdate.call(this, model, now);
+        
         // Param58: waving motion (-1 to 1)
         // Param59: waving opacity (0 to 1)
         // Param60: heart trail (0 to 1)
         model.setParameterValueById("Param58", 0);
         model.setParameterValueById("Param59", 0);
         model.setParameterValueById("Param60", 0);
-        return originalUpdate.call(this, model, now);
+
+        // Apply active accessories/hairstyles
+        if (self._activeAccessories) {
+          for (const [pid, val] of Object.entries(self._activeAccessories)) {
+            model.setParameterValueById(pid, val);
+          }
+        }
+        return res;
       };
     } catch (err) {
       console.warn("[Live2D] Failed to override motionManager.update:", err);
@@ -162,6 +172,19 @@ class PixiLive2DBackend {
     this._model.scale.set(scale);
     this._model.position.set(w / 2, h * 0.98);
     this._model.anchor.set(0.5, 1.0);
+  }
+
+  setAccessory(paramId, value) {
+    if (!this._activeAccessories) {
+      this._activeAccessories = {};
+    }
+    if (Array.isArray(paramId)) {
+      paramId.forEach(pid => {
+        this._activeAccessories[pid] = value;
+      });
+    } else {
+      this._activeAccessories[paramId] = value;
+    }
   }
 
   setExpression(expressionName) {
@@ -232,6 +255,13 @@ class PixiLive2DBackend {
 
   stopLipSync() {
     this.startLipSync(0);
+  }
+
+  containsPoint(x, y) {
+    if (!this._model) return false;
+    const bounds = this._model.getBounds();
+    return x >= bounds.x && x <= (bounds.x + bounds.width) &&
+           y >= bounds.y && y <= (bounds.y + bounds.height);
   }
 
   handleTap(x, y) {
@@ -332,6 +362,10 @@ class CSSFallbackBackend {
     return true;
   }
 
+  setAccessory(paramId, value) {
+    // No-op for CSS fallback
+  }
+
   setExpression(name) {
     if (this._wrap) this._wrap.dataset.expression = name;
     if (this._light) this._light.dataset.expression = name;
@@ -366,6 +400,12 @@ class CSSFallbackBackend {
       this._wrap.classList.remove("lipsync-active");
       this._wrap.removeAttribute("data-lipsync");
     }
+  }
+
+  containsPoint(x, y) {
+    const w = this._wrap.clientWidth || 280;
+    const h = this._wrap.clientHeight || 390;
+    return x >= w * 0.15 && x <= w * 0.85 && y >= h * 0.05 && y <= h * 0.95;
   }
 
   destroy() {
@@ -448,6 +488,10 @@ export class AvatarController {
     }
   }
 
+  setAccessory(paramId, value) {
+    this._backend?.setAccessory(paramId, value);
+  }
+
   setState({ expression, emotion, motion, lipsync } = {}) {
     const expr = normalizeExpression(expression ?? emotion ?? "normal");
     const mot = normalizeMotion(motion ?? "idle");
@@ -474,6 +518,15 @@ export class AvatarController {
 
   stopLipSync() {
     this._backend?.stopLipSync();
+  }
+
+  containsPoint(x, y) {
+    if (this._backend && typeof this._backend.containsPoint === "function") {
+      return this._backend.containsPoint(x, y);
+    }
+    const w = this._wrap.clientWidth || 280;
+    const h = this._wrap.clientHeight || 390;
+    return x >= w * 0.15 && x <= w * 0.85 && y >= h * 0.05 && y <= h * 0.95;
   }
 
   handleTap(x, y) {

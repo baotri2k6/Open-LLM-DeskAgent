@@ -758,6 +758,9 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
             self.wfile.flush()
         except Exception as e:
             logger.warning("Failed to send chunk: %s", e)
+            global _generation_interrupted
+            _generation_interrupted = True
+            raise ConnectionError("Client disconnected")
 
     async def _actual_handle_chat_stream(self, payload: dict) -> None:
         global _generation_interrupted

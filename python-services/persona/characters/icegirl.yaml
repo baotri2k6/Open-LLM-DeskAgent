@@ -19,4 +19,6 @@ tts:
   voice: "vi-VN-HoaiMyNeural"
   pitch: "+15%"
   rate: "+12%"
+  kokoro_voice: "af_sarah"
+  kokoro_speed: 1.05
 

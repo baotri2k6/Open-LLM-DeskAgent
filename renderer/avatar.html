@@ -167,12 +167,6 @@
           src="../assets/live2d/IceGirl/textures/texture_05.jpg"
           alt="IceGirl"
         />
-        <img
-          id="petMicProp"
-          class="pet-mic-prop hidden"
-          src="./assets/props/mic.png"
-          alt="Microphone Prop"
-        />
         <div class="expression-light" id="expressionLight"></div>
       </div>
       <section class="pet-console hidden" id="petConsole" aria-label="Mini chat">
@@ -205,11 +199,7 @@
             </button>
           </div>
         </div>
-        <div class="pose-controls-row">
-          <button id="btnPoseStand" type="button" class="pose-button active">Stand</button>
-          <button id="btnPoseSit" type="button" class="pose-button">Sit</button>
-          <button id="btnToggleMicProp" type="button" class="pose-button">Mic</button>
-        </div>
+        <div class="pose-controls-row" id="characterPropsRow"></div>
         <form class="pet-chat-form" id="petChatForm">
           <input
             id="petChatInput"

@@ -230,7 +230,7 @@ class LLMService:
         self._persona = self.persona_mgr.load_persona("icegirl")
         self._system_prompt = self._build_system_prompt()
 
-    def _build_system_prompt(self, rel_level: str = "Người quen", mood: str = "vui vẻ", time_note: str = "") -> str:
+    def _build_system_prompt(self, rel_level: str = "Người quen", mood: str = "vui vẻ", time_note: str = "", force_english: bool = False) -> str:
         avatar_model = config.get("app.avatarModel", "IceGirl")
         persona_name = "icegirl"
         if "hiyori" in avatar_model.lower():
@@ -241,7 +241,25 @@ class LLMService:
             persona_name = "huohuo"
         
         self._persona = self.persona_mgr.load_persona(persona_name)
-        return build_system_prompt(self._persona, rel_level, mood, time_note)
+        return build_system_prompt(self._persona, rel_level, mood, time_note, force_english=force_english)
+
+    def _is_vietnamese(self, text: str) -> bool:
+        vi_chars = set("áàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ"
+                       "ÁÀẢÃẠĂẮẰẲẴẶÂẤẦẨẪẬÉÈẺẼẸÊẾỀỂỄỆÍÌỈĨỊÓÒỎÕỌÔỐỒỔỖỘƠỚỜỞỠỢÚÙỦŨỤƯỨỪỬỮỰÝỲỶỸỴĐ")
+        if any(c in vi_chars for c in text):
+            return True
+            
+        vi_words = {
+            "và", "của", "cho", "như", "được", "trong", "có", "một", "không", "tôi", 
+            "bạn", "cậu", "tớ", "này", "đó", "nè", "nha", "đang", "là", "với", "hơn", 
+            "lại", "nếu", "thế", "cái", "con", "gì", "nào", "ở", "về", "đã", "mới",
+            "chào", "khoe", "học", "làm", "chơi"
+        }
+        words = [w.strip(",.!?()\"'").lower() for w in text.split()]
+        if any(w in vi_words for w in words):
+            return True
+            
+        return False
 
     async def chat(self, message: str, context: dict | None = None) -> str:
         context = context or {}
@@ -250,7 +268,8 @@ class LLMService:
         rel_level = companion_ctx.get("rel_level", "Người quen")
         mood = companion_ctx.get("mood", "vui vẻ")
         time_note = companion_ctx.get("time_note", "")
-        system_prompt = self._build_system_prompt(rel_level, mood, time_note)
+        force_eng = not self._is_vietnamese(message)
+        system_prompt = self._build_system_prompt(rel_level, mood, time_note, force_english=force_eng)
 
         messages = [{"role": "system", "content": system_prompt}]
 
@@ -357,7 +376,8 @@ class LLMService:
         rel_level = companion_ctx.get("rel_level", "Người quen")
         mood = companion_ctx.get("mood", "vui vẻ")
         time_note = companion_ctx.get("time_note", "")
-        system_prompt = self._build_system_prompt(rel_level, mood, time_note)
+        force_eng = not self._is_vietnamese(message)
+        system_prompt = self._build_system_prompt(rel_level, mood, time_note, force_english=force_eng)
 
         messages = [{"role": "system", "content": system_prompt}]
 

@@ -6,8 +6,8 @@
   "app": {
     "name": "AI Companion Desktop 2D",
     "locale": "vi-VN",
-    "avatarModel": "assets/live2d/hiyori_en/hiyori_pro/runtime/hiyori_pro_t11.model3.json",
-    "interactionMode": "streamer"
+    "avatarModel": "assets/live2d/IceGirl/IceGirl.model3.json",
+    "interactionMode": "assistant"
   },
   "llm": {
     "provider": "gemini",
@@ -23,7 +23,7 @@
     "language": "vi"
   },
   "tts": {
-    "backend": "fish_audio",
+    "backend": "kokoro",
     "fish_audio_api_key": "",
     "fish_audio_model_id": "83c19893c4974594839bd2d101b1fd66",
     "voice": "vi-VN-HoaiMyNeural",

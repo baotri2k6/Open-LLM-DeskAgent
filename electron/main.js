@@ -10,6 +10,8 @@ const path = require("path");
 const { spawn } = require("child_process");
 const fs = require("fs");
 
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+
 const { registerAiIpc } = require("./ipc/ai.ipc");
 const { registerAvatarIpc } = require("./ipc/avatar.ipc");
 const { registerSystemIpc } = require("./ipc/system.ipc");
@@ -184,6 +186,12 @@ function toggleChat() {
 function setupCrossWindowIpc() {
   ipcMain.on("avatar:click", () => avatarWin?.show());
   ipcMain.on("avatar:hide", () => avatarWin?.hide());
+  ipcMain.on("window:set-ignore-mouse-events", (event, ignore, options) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) {
+      win.setIgnoreMouseEvents(ignore, options);
+    }
+  });
   ipcMain.on("avatar:emotion", (_e, emotion) => {
     avatarWin?.webContents.send("set:emotion", emotion);
   });

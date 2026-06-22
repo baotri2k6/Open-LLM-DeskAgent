@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+import threading
 from pathlib import Path
 from typing import Literal
 
@@ -33,9 +34,10 @@ class _FasterWhisperSTT:
         logger.info("faster-whisper ready")
 
     def transcribe(self, audio_path: str, language: str = "vi") -> str:
-        segments, info = self._model.transcribe(audio_path, language=language, beam_size=5)
+        lang = None if language in ("auto", None) else language
+        segments, info = self._model.transcribe(audio_path, language=lang, beam_size=5)
         text = " ".join(seg.text.strip() for seg in segments).strip()
-        logger.info("Transcribed %d chars (lang=%s, prob=%.2f)", len(text), info.language, info.language_probability)
+        logger.info("Transcribed %d chars (detected_lang=%s, prob=%.2f)", len(text), info.language, info.language_probability)
         return text
 
 
@@ -49,7 +51,8 @@ class _OpenAIWhisperSTT:
         logger.info("openai-whisper ready")
 
     def transcribe(self, audio_path: str, language: str = "vi") -> str:
-        result = self._model.transcribe(audio_path, language=language, fp16=False)
+        lang = None if language in ("auto", None) else language
+        result = self._model.transcribe(audio_path, language=lang, fp16=False)
         return result["text"].strip()
 
 
@@ -61,6 +64,7 @@ class STTService:
         language: str = config.get("stt.language", "vi")
         self._language = language
         self._backend = self._load_backend(model_size)
+        self._lock = threading.Lock()
 
     def _load_backend(self, model_size: str):
         try:
@@ -95,7 +99,8 @@ class STTService:
             }
         lang = language or self._language
         try:
-            text = self._backend.transcribe(audio_path, language=lang)
+            with self._lock:
+                text = self._backend.transcribe(audio_path, language=lang)
             return {"success": True, "text": text, "language": lang}
         except Exception as exc:
             logger.error("STT error: %s", exc)

@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('companion', {
   petBounds:   ()               => ipcRenderer.invoke('pet:get-bounds'),
   petMoveTo:   (point)          => ipcRenderer.invoke('pet:move-to', point),
   invoke:      (ch, data)       => ipcRenderer.invoke(ch, data),
+  setIgnoreMouseEvents: (ignore, options) => ipcRenderer.send('window:set-ignore-mouse-events', ignore, options),
 
   on: (channel, cb) => {
     const ALLOWED = [

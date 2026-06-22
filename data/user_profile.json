@@ -3,11 +3,18 @@
   "preferences": {
     "language": "vi-VN"
   },
-  "facts": [],
+  "facts": [
+    {
+      "text": "Oa! Tớ ghi nhớ nè! Người dùng có ý muốn chơi đó! [happy] Thế cậu muốn chơi gì với tớ nè? [wink]",
+      "category": "turn_reflection",
+      "createdAt": "2026-06-21T09:44:06"
+    }
+  ],
   "relationship": {
-    "score": 15,
-    "level": "Người quen",
-    "last_interaction": "2026-06-19T22:07:52"
+    "score": 9,
+    "level": "Người lạ",
+    "last_interaction": "2026-06-21T11:07:47"
   },
-  "mood": "buồn"
+  "mood": "vui vẻ",
+  "mood_updated_at": "2026-06-21T11:07:47.648692"
 }

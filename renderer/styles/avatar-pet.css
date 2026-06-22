@@ -416,34 +416,18 @@ body {
 }
 
 /* Pose and Prop Control Styles */
-.pet-mic-prop {
-  position: absolute;
-  z-index: 10; /* Make sure it draws over the live2d model */
-  pointer-events: none;
-  width: 70px;
-  height: 70px;
-  bottom: 25%;
-  left: 42%;
-  opacity: 1;
-  transform: scale(1);
-  transition: opacity 0.3s ease, transform 0.3s ease;
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35));
-}
-
-.pet-mic-prop.hidden {
-  opacity: 0;
-  transform: scale(0.6) translateY(20px);
-}
-
 .pose-controls-row {
   display: flex;
-  gap: 8px;
-  padding: 4px 6px;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .pose-button {
-  flex: 1;
+  flex: 1 1 auto;
+  padding: 0 8px;
+  min-width: 50px;
   height: 24px;
   font-size: 10px;
   font-weight: 500;

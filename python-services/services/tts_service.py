@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import os
 import struct
 import urllib.request
 import urllib.error
@@ -52,6 +53,26 @@ def _get_active_persona_tts_config() -> dict:
     except Exception as exc:
         logger.warning("Failed to load persona for TTS: %s", exc)
     return {}
+
+
+def is_vietnamese(text: str) -> bool:
+    """Định dạng nhanh để kiểm tra xem văn bản là Tiếng Việt hay Tiếng Anh."""
+    vi_chars = set("áàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ"
+                   "ÁÀẢÃẠĂẮẰẲẴẶÂẤẦẨẪẬÉÈẺẼẸÊẾỀỂỄỆÍÌỈĨỊÓÒỎÕỌÔỐỒỔỖỘƠỚỜỞỠỢÚÙỦŨỤƯỨỪỬỮỰÝỲỶỸỴĐ")
+    if any(c in vi_chars for c in text):
+        return True
+        
+    vi_words = {
+        "và", "của", "cho", "như", "được", "trong", "có", "một", "không", "tôi", 
+        "bạn", "cậu", "tớ", "này", "đó", "nè", "nha", "đang", "là", "với", "hơn", 
+        "lại", "nếu", "thế", "cái", "con", "gì", "nào", "ở", "về", "đã", "mới",
+        "chào", "khoe", "học", "làm", "chơi"
+    }
+    words = [w.strip(",.!?()\"'").lower() for w in text.split()]
+    if any(w in vi_words for w in words):
+        return True
+        
+    return False
 
 
 # ─── Fish Audio backend ───────────────────────────────────────────────────────
@@ -136,6 +157,11 @@ class _EdgeTTS:
         tts_cfg = _get_active_persona_tts_config()
         voice = tts_cfg.get("voice") or config.get("tts.voice", self.DEFAULT_VOICE)
         pitch = tts_cfg.get("pitch") or config.get("tts.pitch", "+20%")
+        
+        # Nếu là tiếng Anh mà cấu hình giọng nói lại là tiếng Việt, tự động chuyển sang giọng tiếng Anh dễ thương
+        if not is_vietnamese(text) and voice.startswith("vi-"):
+            voice = "en-US-EmmaNeural"
+            pitch = "+10%"
         
         rate_cfg = tts_cfg.get("rate") or config.get("tts.rate")
         if isinstance(rate_cfg, str) and rate_cfg.endswith("%"):
@@ -270,6 +296,99 @@ class _GPTSoVITSTTS:
 
 
 
+# ─── Kokoro TTS backend ───────────────────────────────────────────────────────
+
+class _KokoroTTS:
+    """
+    Kokoro-82M offline TTS backend.
+    Yêu cầu:
+    1. pip install kokoro soundfile
+    2. Cài đặt espeak-ng trên hệ thống (để chuyển text thành phonemes)
+    """
+
+    def __init__(self) -> None:
+        import sys
+        
+        # Tự động thiết lập đường dẫn espeak-ng mặc định trên Windows nếu chưa được thiết lập
+        if sys.platform == "win32":
+            if not os.environ.get("PHONEMIZER_ESPEAK_PATH"):
+                paths_to_check = [
+                    r"C:\Program Files\eSpeak NG",
+                    r"C:\Program Files (x86)\eSpeak NG"
+                ]
+                for p in paths_to_check:
+                    if os.path.exists(p):
+                        os.environ["PHONEMIZER_ESPEAK_PATH"] = p
+                        lib_path = os.path.join(p, "libespeak-ng.dll")
+                        if os.path.exists(lib_path):
+                            os.environ["PHONEMIZER_ESPEAK_LIBRARY"] = lib_path
+                        logger.info("Auto-configured espeak-ng paths: %s", p)
+                        break
+
+        try:
+            from kokoro import KPipeline
+        except ImportError:
+            raise ImportError(
+                "Không tìm thấy thư viện kokoro. Vui lòng cài đặt:\n"
+                "  pip install kokoro soundfile\n"
+                "Và cài đặt phần mềm espeak-ng trên hệ thống."
+            )
+
+        lang_code = config.get("tts.kokoro_lang", "a")
+        logger.info("Initializing Kokoro KPipeline with lang_code '%s'", lang_code)
+        
+        # Khởi tạo pipeline
+        try:
+            self._pipeline = KPipeline(lang_code=lang_code)
+        except Exception as e:
+            logger.error("Failed to initialize Kokoro KPipeline: %s", e)
+            raise RuntimeError(
+                f"Lỗi khởi tạo Kokoro pipeline: {e}. "
+                "Hãy đảm bảo bạn đã cài đặt espeak-ng và đặt đúng biến môi trường."
+            )
+        
+        logger.info("Kokoro TTS backend ready")
+
+    async def synthesize(self, text: str) -> dict:
+        import soundfile as sf
+        import numpy as np
+
+        tts_cfg = _get_active_persona_tts_config()
+        voice = tts_cfg.get("kokoro_voice") or config.get("tts.kokoro_voice", "af_sarah")
+        speed = float(tts_cfg.get("kokoro_speed") or config.get("tts.kokoro_speed", 1.0))
+
+        out_path = _cache_path(text, f"kokoro:{voice}:{speed}", ext=".wav")
+        if out_path.exists():
+            return {"success": True, "audio_path": str(out_path), "cached": True}
+
+        def _generate():
+            generator = self._pipeline(text, voice=voice, speed=speed, split_pattern=r'\n+')
+            all_audio = []
+            for _, _, audio in generator:
+                if audio is not None and len(audio) > 0:
+                    all_audio.append(audio)
+            
+            if not all_audio:
+                raise ValueError("Kokoro không tạo ra dữ liệu âm thanh nào.")
+            
+            combined = np.concatenate(all_audio)
+            sf.write(str(out_path), combined, 24000)
+
+        loop = asyncio.get_event_loop()
+        try:
+            await loop.run_in_executor(None, _generate)
+        except Exception as e:
+            logger.error("Kokoro synthesis error: %s", e)
+            return {"success": False, "error": str(e)}
+
+        if out_path.exists() and out_path.stat().st_size > 0:
+            logger.info("Kokoro synthesized → %s (voice=%s, speed=%s)", out_path.name, voice, speed)
+            return {"success": True, "audio_path": str(out_path), "cached": False}
+
+        return {"success": False, "error": "Kokoro không tạo được file audio."}
+
+
+
 # ─── TTSService facade ────────────────────────────────────────────────────────
 
 class TTSService:
@@ -298,6 +417,12 @@ class TTSService:
 
     def _load_backend(self):
         preferred = config.get("tts.backend", "edge")
+
+        if preferred == "kokoro":
+            try:
+                return _KokoroTTS()
+            except Exception as exc:
+                logger.warning("Kokoro TTS init failed: %s", exc)
 
         if preferred == "gpt_sovits":
             try:
@@ -335,18 +460,35 @@ class TTSService:
         if not text:
             return {"success": False, "error": "Text rỗng."}
 
+        is_vi = is_vietnamese(text)
         backends_to_try = []
-        if self._backend:
-            backends_to_try.append(self._backend)
 
-        # Fallback 1: EdgeTTS
-        if not isinstance(self._backend, _EdgeTTS):
+        # Định tuyến động dựa trên ngôn ngữ câu thoại thực tế
+        if is_vi:
+            # Tiếng Việt: Bỏ qua Kokoro vì Kokoro chỉ hỗ trợ Tiếng Anh
+            if self._backend and self._backend.__class__.__name__ != "_KokoroTTS":
+                backends_to_try.append(self._backend)
+            
+            # Đảm bảo EdgeTTS được thêm vào để đọc tiếng Việt
             if not self._edge_backend:
                 try:
                     self._edge_backend = _EdgeTTS()
                 except Exception:
                     pass
-            if self._edge_backend:
+            if self._edge_backend and self._edge_backend not in backends_to_try:
+                backends_to_try.append(self._edge_backend)
+        else:
+            # Tiếng Anh: Ưu tiên Kokoro trước (nếu được chọn làm mặc định)
+            if self._backend and self._backend.__class__.__name__ == "_KokoroTTS":
+                backends_to_try.append(self._backend)
+            
+            # Thêm EdgeTTS (EdgeTTS sẽ tự động dịch sang giọng en-US nhờ bộ lọc bên trong lớp _EdgeTTS)
+            if not self._edge_backend:
+                try:
+                    self._edge_backend = _EdgeTTS()
+                except Exception:
+                    pass
+            if self._edge_backend and self._edge_backend not in backends_to_try:
                 backends_to_try.append(self._edge_backend)
 
         # Fallback 2: Pyttsx3
