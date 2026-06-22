@@ -26,26 +26,32 @@ Không phải chatbot. Không phải assistant. Là một người bạn ảo th
 
 ## Tính năng
 
-|     | Tính năng                | Mô tả                                                                            |
-| --- | ------------------------ | -------------------------------------------------------------------------------- |
-| 🧠  | **Cognitive Loop**       | Perception → Memory → Emotion → Cognition → Action — vòng lặp nhận thức liên tục |
-| 🎭  | **4 nhân vật Live2D**    | IceGirl · Hiyori · Mao · Huohuo — tính cách, biểu cảm và phụ kiện riêng          |
-| 🎤  | **Voice conversation**   | VAD → Whisper STT → LLM → TTS phát gối đầu từng câu                              |
-| ⚡  | **Barge-in**             | Ngắt AI đang nói, nói đè lên — AI dừng ngay lập tức                              |
-| 📝  | **ASR streaming**        | Nhận dạng giọng nói realtime trong lúc đang nói                                  |
-| 🔊  | **Giọng anime**          | Fish Audio clone · GPT-SoVITS local · Kokoro offline · edge-tts fallback         |
-| 😊  | **Emotion realtime**     | LLM nhúng `[happy]` `[wink]`... → Live2D thay expression ngay lập tức            |
-| 👄  | **Lipsync**              | Web Audio API phân tích amplitude → drive miệng Live2D                           |
-| 🧠  | **Bộ nhớ đầy đủ**        | Short-term hội thoại + Long-term ChromaDB + write-back sau mỗi turn              |
-| 💞  | **Relationship system**  | Điểm quan hệ tăng qua tương tác, ảnh hưởng cách nói chuyện                       |
-| 🌡️  | **Mood drift**           | Tâm trạng thay đổi theo thời gian idle và nội dung hội thoại                     |
-| 🤖  | **Autonomous loop**      | Tự nhận xét màn hình, tự phá vỡ im lặng khi idle > 30 giây                       |
-| 🛠️  | **Agent + Tool Calling** | Mở app, chạy lệnh, ghi file, điều khiển chuột/bàn phím, tìm Google               |
-| 🔒  | **Approval flow**        | Hành động nguy hiểm cần xác nhận trước khi chạy                                  |
-| 📂  | **RAG tài liệu**         | Import PDF, DOCX, TXT — hỏi trực tiếp nội dung tài liệu                          |
-| 👁️  | **Screen awareness**     | Screenshot + OCR, hỏi về nội dung đang hiện trên màn hình                        |
-| 🎮  | **Twitch mode**          | Đọc Twitch chat, tự comment vào tin nhắn viewer                                  |
-| 🔀  | **Multi LLM**            | Ollama local · Gemini · OpenAI — đổi ngay trong chat                             |
+<<<<<<< HEAD
+| | Tính năng | Chi tiết |
+| --- | ---------------------- | -------------------------------------------------------------- |
+| 🎤 | **Voice conversation** | Nói chuyện bằng giọng — Whisper nhận dạng, AI trả lời bằng TTS |
+| 🎭 | **Avatar Live2D** | IceGirl với biểu cảm realtime theo từng câu AI nói |
+| 🗣️ | **Giọng anime** | Fish Audio voice cloning · GPT-SoVITS · edge-tts fallback |
+| 🧠 | **Bộ nhớ** | Nhớ thông tin về mày qua các cuộc trò chuyện |
+| 💬 | **Tính cách** | Neuro-sama style — lém lỉnh, hay trêu, ngắn gọn |
+| 📂 | **RAG tài liệu** | Hỏi về PDF, DOCX, TXT của mày |
+| 🖥️ | **Desktop control** | Mở app, đọc clipboard, tìm file |
+| 👁️ | **Screen awareness** | Screenshot + OCR, hỏi về lỗi đang hiện trên màn hình |
+| 🤖 | **Multi LLM** | Ollama (local) · Gemini · OpenAI — đổi provider trong config |
+=======
+| | Tính năng | Chi tiết |
+|---|---|---|
+| 🎤 | **Voice conversation** | Nói chuyện bằng giọng — Whisper nhận dạng, AI trả lời bằng TTS |
+| 🎭 | **Avatar Live2D** | IceGirl với biểu cảm realtime theo từng câu AI nói |
+| 🗣️ | **Giọng anime** | Fish Audio voice cloning · GPT-SoVITS · edge-tts fallback |
+| 🧠 | **Bộ nhớ** | Nhớ thông tin về mày qua các cuộc trò chuyện |
+| 💬 | **Tính cách** | Neuro-sama style — lém lỉnh, hay trêu, ngắn gọn |
+| 📂 | **RAG tài liệu** | Hỏi về PDF, DOCX, TXT của mày |
+| 🖥️ | **Desktop control** | Mở app, đọc clipboard, tìm file |
+| 👁️ | **Screen awareness** | Screenshot + OCR, hỏi về lỗi đang hiện trên màn hình |
+| 🤖 | **Multi LLM** | Ollama (local) · Gemini · OpenAI — đổi provider trong config |
+
+> > > > > > > f6ef09bc53661869a0ca38120c70b7df5e75184e
 
 ---
 
@@ -81,19 +87,6 @@ Không phải chatbot. Không phải assistant. Là một người bạn ảo th
 
 ---
 
-## Nhân vật
-
-| Nhân vật    | Tính cách                                                        | Phụ kiện                                          |
-| ----------- | ---------------------------------------------------------------- | ------------------------------------------------- |
-| **IceGirl** | Neuro-sama style — lém lỉnh, trêu chọc, tự tin thái quá          | Tay cầm, tai mèo, vương miện, cánh, tai nghe, tóc |
-| **Hiyori**  | Nữ sinh năng động, cổ vũ nhiệt tình, luôn tươi cười              | —                                                 |
-| **Mao**     | Tsundere thời trang, sắc sảo, hay châm chọc nhẹ                  | 6 expression preset                               |
-| **Huohuo**  | Phán quan nhút nhát từ Honkai Star Rail, sợ ma nhưng trách nhiệm | Gối ôm, lá cờ                                     |
-
-Đổi nhân vật trong **Settings → Avatar Model** hoặc chỉnh `config/companion.config.json`.
-
----
-
 ## Cài đặt
 
 ### Yêu cầu
@@ -101,7 +94,10 @@ Không phải chatbot. Không phải assistant. Là một người bạn ảo th
 - Windows 10 / 11
 - Python 3.10 – 3.12
 - Node.js 18+
+  <<<<<<< HEAD
+- # [Ollama](https://ollama.com) _(nếu dùng LLM local)_
 - [Ollama](https://ollama.com) _(nếu dùng LLM local)_
+  > > > > > > > f6ef09bc53661869a0ca38120c70b7df5e75184e
 
 ### Bước 1 — Clone và cài dependencies
 
@@ -120,14 +116,17 @@ npm install
 
 ### Bước 2 — Cài LLM
 
-**Ollama (local, miễn phí — khuyến nghị):**
+**Option A — Ollama (chạy local, miễn phí)**
+<<<<<<< HEAD
 
 ```bash
 # Cài tại https://ollama.com, sau đó:
 ollama pull qwen2.5:1.5b
 ```
 
-**Gemini API (chất lượng cao, miễn phí quota hàng ngày):**
+**Option B — Gemini (cần API key)**
+
+Vào `config/companion.config.json`, sửa:
 
 ```json
 "llm": {
@@ -137,7 +136,7 @@ ollama pull qwen2.5:1.5b
 }
 ```
 
-**OpenAI:**
+**Option C — OpenAI**
 
 ```json
 "llm": {
@@ -149,7 +148,9 @@ ollama pull qwen2.5:1.5b
 
 ### Bước 3 — Cài giọng anime (tùy chọn)
 
-**Fish Audio** — clone giọng từ sample:
+### Bước 3 — Cài giọng nói (tùy chọn)
+
+**Fish Audio** — clone giọng anime từ sample của mày:
 
 1. Đăng ký tại [fish.audio](https://fish.audio) → API Keys → tạo key
 2. Upload 15–30 giây audio anime/VTuber → **Create Model** → copy **Model ID**
@@ -163,17 +164,7 @@ ollama pull qwen2.5:1.5b
 }
 ```
 
-**Kokoro TTS (offline, không cần internet):**
-
-```bash
-pip install kokoro soundfile
-```
-
-```json
-"tts": { "backend": "kokoro" }
-```
-
-Nếu không cấu hình, app tự fallback về `edge-tts` với giọng `vi-VN-HoaiMyNeural`.
+Nếu không dùng Fish Audio thì tự fallback về `edge-tts`.
 
 ### Bước 4 — Chạy
 
@@ -190,40 +181,41 @@ npm start
 
 ## Sử dụng
 
-### Tương tác cơ bản
+<<<<<<< HEAD
+| Thao tác | Kết quả |
+| ------------------------ | ---------------------------- |
+| **Click vào avatar** | Bắt đầu / dừng ghi âm |
+| **Space** | Toggle ghi âm bật/tắt |
+| **Ctrl+Shift+Space** | Ẩn / hiện avatar |
+| **Kéo avatar** | Di chuyển trên màn hình |
+| **Chuột phải tray icon** | Menu: Settings / Hide / Quit |
 
-| Thao tác             | Kết quả                      |
-| -------------------- | ---------------------------- |
-| **Click avatar**     | Phản ứng theo vùng được chạm |
-| **Space**            | Toggle ghi âm bật/tắt        |
-| **Ctrl+Shift+Space** | Ẩn / hiện avatar             |
-| **Ctrl+Shift+H**     | Ẩn / hiện chat console       |
-| **Ctrl+Shift+S**     | Chụp màn hình + hỏi AI       |
-| **Kéo avatar**       | Di chuyển trên màn hình      |
-| **Double click**     | Toggle console log           |
-| **Chuột phải tray**  | Settings / Hide / Quit       |
+---
 
-### Chat commands
+## Cấu hình
 
-| Lệnh            | Tác dụng                                |
-| --------------- | --------------------------------------- |
-| `/model ollama` | Chuyển sang Ollama local                |
-| `/model gemini` | Chuyển sang Gemini API                  |
-| `/model openai` | Chuyển sang OpenAI                      |
-| `/stt tiny`     | Đổi Whisper model (tiny / base / small) |
-| `/sit`          | Avatar ngồi xuống                       |
-| `/stand`        | Avatar đứng lên                         |
-| `/mic`          | Toggle mic prop                         |
+Tất cả cấu hình nằm trong `config/companion.config.json`:
 
-### Chế độ tương tác
-
-**Assistant mode** — chat box hiện, nói chuyện khi hỏi (mặc định).
-
-**Streamer mode** — mic luôn bật, loop voice liên tục như VTuber thật:
-
-```json
-"app": { "interactionMode": "streamer" }
-```
+````json
+{
+  "llm": {
+    "provider": "ollama", // ollama | gemini | openai
+    "model": "qwen2.5:1.5b"
+  },
+  "stt": {
+    "model": "base", // tiny | base | small | medium
+    "language": "vi"
+  },
+  "tts": {
+    "backend": "fish_audio", // fish_audio | edge | pyttsx3
+=======
+| Thao tác | Kết quả |
+|---|---|
+| **Click vào avatar** | Bắt đầu / dừng ghi âm |
+| **Space** | Toggle ghi âm bật/tắt |
+| **Ctrl+Shift+Space** | Ẩn / hiện avatar |
+| **Kéo avatar** | Di chuyển trên màn hình |
+| **Chuột phải tray icon** | Menu: Settings / Hide / Quit |
 
 ---
 
@@ -378,3 +370,4 @@ Open-LLM-DeskAgent/
 <div align="center">
 <sub>Dự án cá nhân · Nguyễn Bảo Trí</sub>
 </div>
+````
