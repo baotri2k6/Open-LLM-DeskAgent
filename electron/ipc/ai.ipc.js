@@ -344,8 +344,12 @@ function registerAiIpc(ipcMain, windows) {
           const [curW, curH] = avatarWin.getSize();
           const newX = curX + curW - newW;
           const newY = curY + curH - newH;
+          
+          const wasResizable = avatarWin.isResizable();
+          avatarWin.setResizable(true);
           avatarWin.setSize(newW, newH);
           avatarWin.setPosition(newX, newY);
+          avatarWin.setResizable(wasResizable);
         }
       }
 

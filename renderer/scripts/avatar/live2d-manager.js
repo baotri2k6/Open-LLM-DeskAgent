@@ -181,14 +181,10 @@ class PixiLive2DBackend {
       scaleMultiplier = 0.75; // Huohuo needs more space at the top/sides for her floating ghost and tail
     }
     
-    // Safeguard to capture original size when ready (avoid using already-scaled size)
-    if (!this._origWidth && this._model.width > 0) {
-      this._origWidth = this._model.width;
-      this._origHeight = this._model.height;
-    }
-    
-    const origW = this._origWidth || this._model.width || 400;
-    const origH = this._origHeight || this._model.height || 500;
+    // Get true original size from Live2D core model canvas size to prevent scaling accumulation bugs
+    const coreModel = this._model.internalModel?.coreModel;
+    const origW = coreModel?.canvasWidth || this._model.internalModel?.originalWidth || 400;
+    const origH = coreModel?.canvasHeight || this._model.internalModel?.originalHeight || 500;
     
     const scale =
       Math.min(w / origW, h / origH) * scaleMultiplier;

@@ -6,12 +6,12 @@
   "app": {
     "name": "AI Companion Desktop 2D",
     "locale": "vi-VN",
-    "avatarModel": "assets/live2d/hiyori_en/hiyori_pro/runtime/hiyori_pro_t11.model3.json",
+    "avatarModel": "assets/live2d/IceGirl/IceGirl.model3.json",
     "avatarScale": "1.0",
-    "interactionMode": "streamer"
+    "interactionMode": "assistant"
   },
   "llm": {
-    "provider": "ollama",
+    "provider": "gemini",
     "model": "qwen2.5:1.5b",
     "host": "http://127.0.0.1:11434",
     "gemini_api_key": "",

@@ -25,28 +25,128 @@ function getModelKey(modelPath) {
 
 const MODEL_ACCESSORIES = {
   icegirl: [
-    { id: "gamepad", label: "🎮 Tay cầm", paramId: "ShouBing", type: "toggle", defaultValue: 0, activeValue: 1 },
-    { id: "catears", label: "🐱 Tai mèo", paramId: "Param53", type: "toggle", defaultValue: 0, activeValue: 1 },
-    { id: "crown", label: "👑 Vương miện", paramId: "Param40", type: "toggle", defaultValue: 0, activeValue: 1 },
-    { id: "wings", label: "🪶 Cánh", paramId: "Param41", type: "toggle", defaultValue: 0, activeValue: 1 },
-    { id: "headset", label: "🎧 Tai nghe", paramId: "JiaJu", type: "toggle", defaultValue: 0, activeValue: 1 },
-    { id: "ponytail", label: "💇 Đuôi ngựa", paramId: "Param51", type: "hair", activeValue: 1, defaultValue: 0 },
-    { id: "loosehair", label: "💇 Tóc xõa", paramId: "Param51", type: "hair", activeValue: 2, defaultValue: 0 },
+    {
+      id: "gamepad",
+      label: "🎮 Tay cầm",
+      paramId: "ShouBing",
+      type: "toggle",
+      defaultValue: 0,
+      activeValue: 1,
+    },
+    {
+      id: "catears",
+      label: "🐱 Tai mèo",
+      paramId: "Param53",
+      type: "toggle",
+      defaultValue: 0,
+      activeValue: 1,
+    },
+    {
+      id: "crown",
+      label: "👑 Vương miện",
+      paramId: "Param40",
+      type: "toggle",
+      defaultValue: 0,
+      activeValue: 1,
+    },
+    {
+      id: "wings",
+      label: "🪶 Cánh",
+      paramId: "Param41",
+      type: "toggle",
+      defaultValue: 0,
+      activeValue: 1,
+    },
+    {
+      id: "headset",
+      label: "🎧 Tai nghe",
+      paramId: "JiaJu",
+      type: "toggle",
+      defaultValue: 0,
+      activeValue: 1,
+    },
+    {
+      id: "ponytail",
+      label: "💇 Đuôi ngựa",
+      paramId: "Param51",
+      type: "hair",
+      activeValue: 1,
+      defaultValue: 0,
+    },
+    {
+      id: "loosehair",
+      label: "💇 Tóc xõa",
+      paramId: "Param51",
+      type: "hair",
+      activeValue: 2,
+      defaultValue: 0,
+    },
   ],
   huohuo: [
-    { id: "cushion", label: "🧸 Gối ôm", paramId: ["Param99", "Param119", "Param120", "Param121", "Param122"], type: "toggle", defaultValue: 0, activeValue: 1 },
-    { id: "flag1", label: "🚩 Lá cờ 1", paramId: "Param63", type: "flag", activeValue: 1, defaultValue: 0 },
-    { id: "flag2", label: "🚩 Lá cờ 2", paramId: ["Param63", "Param127"], type: "flag", activeValue: 1, defaultValue: 0 }
+    {
+      id: "cushion",
+      label: "🧸 Gối ôm",
+      paramId: ["Param99", "Param119", "Param120", "Param121", "Param122"],
+      type: "toggle",
+      defaultValue: 0,
+      activeValue: 1,
+    },
+    {
+      id: "flag1",
+      label: "🚩 Lá cờ 1",
+      paramId: "Param63",
+      type: "flag",
+      activeValue: 1,
+      defaultValue: 0,
+    },
+    {
+      id: "flag2",
+      label: "🚩 Lá cờ 2",
+      paramId: ["Param63", "Param127"],
+      type: "flag",
+      activeValue: 1,
+      defaultValue: 0,
+    },
   ],
   mao: [
-    { id: "exp02", label: "😊 Cười", expressionName: "exp_02", type: "expression" },
-    { id: "exp04", label: "😃 Vui vẻ", expressionName: "exp_04", type: "expression" },
-    { id: "exp05", label: "😢 Buồn", expressionName: "exp_05", type: "expression" },
-    { id: "exp06", label: "🤔 Suy nghĩ", expressionName: "exp_06", type: "expression" },
-    { id: "exp07", label: "😮 Ngạc nhiên", expressionName: "exp_07", type: "expression" },
-    { id: "exp08", label: "😠 Tức giận", expressionName: "exp_08", type: "expression" }
+    {
+      id: "exp02",
+      label: "😊 Cười",
+      expressionName: "exp_02",
+      type: "expression",
+    },
+    {
+      id: "exp04",
+      label: "😃 Vui vẻ",
+      expressionName: "exp_04",
+      type: "expression",
+    },
+    {
+      id: "exp05",
+      label: "😢 Buồn",
+      expressionName: "exp_05",
+      type: "expression",
+    },
+    {
+      id: "exp06",
+      label: "🤔 Suy nghĩ",
+      expressionName: "exp_06",
+      type: "expression",
+    },
+    {
+      id: "exp07",
+      label: "😮 Ngạc nhiên",
+      expressionName: "exp_07",
+      type: "expression",
+    },
+    {
+      id: "exp08",
+      label: "😠 Tức giận",
+      expressionName: "exp_08",
+      type: "expression",
+    },
   ],
-  hiyori: []
+  hiyori: [],
 };
 
 function rebuildAccessoryButtons(modelPath) {
@@ -63,7 +163,7 @@ function rebuildAccessoryButtons(modelPath) {
   }
   container.style.display = "flex";
 
-  accessories.forEach(acc => {
+  accessories.forEach((acc) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "pose-button";
@@ -76,7 +176,7 @@ function rebuildAccessoryButtons(modelPath) {
       if (acc.type === "expression") {
         // Expression buttons are mutually exclusive
         if (isActive) {
-          container.querySelectorAll(".pose-button").forEach(b => {
+          container.querySelectorAll(".pose-button").forEach((b) => {
             if (b !== btn) b.classList.remove("active");
           });
           avatar.setState({ expression: acc.expressionName });
@@ -86,9 +186,11 @@ function rebuildAccessoryButtons(modelPath) {
       } else if (acc.type === "hair") {
         if (isActive) {
           // Deactivate other hair buttons
-          accessories.forEach(otherAcc => {
+          accessories.forEach((otherAcc) => {
             if (otherAcc.type === "hair" && otherAcc.id !== acc.id) {
-              const otherBtn = container.querySelector(`[data-id="${otherAcc.id}"]`);
+              const otherBtn = container.querySelector(
+                `[data-id="${otherAcc.id}"]`,
+              );
               if (otherBtn) otherBtn.classList.remove("active");
             }
           });
@@ -99,13 +201,17 @@ function rebuildAccessoryButtons(modelPath) {
       } else if (acc.type === "flag") {
         if (isActive) {
           // Deactivate other flag buttons
-          accessories.forEach(otherAcc => {
+          accessories.forEach((otherAcc) => {
             if (otherAcc.type === "flag" && otherAcc.id !== acc.id) {
-              const otherBtn = container.querySelector(`[data-id="${otherAcc.id}"]`);
+              const otherBtn = container.querySelector(
+                `[data-id="${otherAcc.id}"]`,
+              );
               if (otherBtn) otherBtn.classList.remove("active");
               // Reset other flag parameters
               if (Array.isArray(otherAcc.paramId)) {
-                otherAcc.paramId.forEach(pid => avatar.setAccessory(pid, otherAcc.defaultValue));
+                otherAcc.paramId.forEach((pid) =>
+                  avatar.setAccessory(pid, otherAcc.defaultValue),
+                );
               } else {
                 avatar.setAccessory(otherAcc.paramId, otherAcc.defaultValue);
               }
@@ -113,14 +219,18 @@ function rebuildAccessoryButtons(modelPath) {
           });
           // Apply this flag
           if (Array.isArray(acc.paramId)) {
-            acc.paramId.forEach(pid => avatar.setAccessory(pid, acc.activeValue));
+            acc.paramId.forEach((pid) =>
+              avatar.setAccessory(pid, acc.activeValue),
+            );
           } else {
             avatar.setAccessory(acc.paramId, acc.activeValue);
           }
         } else {
           // Reset this flag parameters
           if (Array.isArray(acc.paramId)) {
-            acc.paramId.forEach(pid => avatar.setAccessory(pid, acc.defaultValue));
+            acc.paramId.forEach((pid) =>
+              avatar.setAccessory(pid, acc.defaultValue),
+            );
           } else {
             avatar.setAccessory(acc.paramId, acc.defaultValue);
           }
@@ -183,7 +293,10 @@ function setStatus(status) {
   if (petStatusText) petStatusText.textContent = label;
   if (petStatusDot) petStatusDot.dataset.status = label;
   if (petMicButton) {
-    const isMicActive = label === "listening" || label === "user_speaking" || (currentInteractionMode === "streamer" && streamerLoopActive);
+    const isMicActive =
+      label === "listening" ||
+      label === "user_speaking" ||
+      (currentInteractionMode === "streamer" && streamerLoopActive);
     petMicButton.classList.toggle("active", isMicActive);
   }
 }
@@ -269,7 +382,7 @@ async function startRecording() {
     setVoiceState(VoiceState.LISTENING);
     setCaption("Đang nghe...");
     setWalking(false);
-    window.companion.invoke('ai:interact').catch(() => null);
+    window.companion.invoke("ai:interact").catch(() => null);
 
     voiceSequence = 0;
 
@@ -280,7 +393,9 @@ async function startRecording() {
         if (rms >= BARGE_IN_ENERGY_THRESHOLD) {
           handleBargeIn();
         } else {
-          console.log(`[Barge-in] Ignored voice activity below threshold: ${rms.toFixed(4)} < ${BARGE_IN_ENERGY_THRESHOLD}`);
+          console.log(
+            `[Barge-in] Ignored voice activity below threshold: ${rms.toFixed(4)} < ${BARGE_IN_ENERGY_THRESHOLD}`,
+          );
           recorder.resetSpeakingState();
         }
       } else {
@@ -332,7 +447,6 @@ async function startRecording() {
         sttProcessing = false;
       }
     }, 2500);
-
   } catch (err) {
     console.error("[startRecording] error:", err);
     busy = false;
@@ -383,12 +497,12 @@ petChatForm?.addEventListener("submit", (event) => {
   const text = petChatInput?.value.trim() || "";
   if (!text || busy) return;
   petChatInput.value = "";
-  window.companion.invoke('ai:interact').catch(() => null);
+  window.companion.invoke("ai:interact").catch(() => null);
   ask(text);
 });
 
 function toggleMic() {
-  if (currentInteractionMode === 'streamer') {
+  if (currentInteractionMode === "streamer") {
     streamerLoopActive = !streamerLoopActive;
     if (streamerLoopActive) {
       startRecording();
@@ -430,7 +544,7 @@ petPowerButton?.addEventListener("click", () => {
 
 avatarWrap.addEventListener("pointerdown", async (event) => {
   event.preventDefault();
-  window.companion.invoke('ai:interact').catch(() => null);
+  window.companion.invoke("ai:interact").catch(() => null);
   const bounds = await window.companion.petBounds();
   if (!bounds) return;
   pointerDrag = {
@@ -471,7 +585,7 @@ avatarWrap.addEventListener("pointerup", (event) => {
       const y = event.clientY - rect.top;
 
       avatar.handleTap(x, y);
-      
+
       if (clickResetTimeout) clearTimeout(clickResetTimeout);
       clickResetTimeout = setTimeout(() => {
         if (!busy && !isRecording) {
@@ -534,10 +648,10 @@ async function processTtsQueue() {
     if (chatDone) {
       avatar.setState({ expression: "smile", motion: "idle", lipsync: false });
       busy = false;
-      
-      if (currentInteractionMode === 'streamer') {
+
+      if (currentInteractionMode === "streamer") {
         setTimeout(() => {
-          if (currentInteractionMode === 'streamer' && streamerLoopActive) {
+          if (currentInteractionMode === "streamer" && streamerLoopActive) {
             startRecording();
           } else {
             setVoiceState(VoiceState.IDLE);
@@ -561,7 +675,7 @@ async function processTtsQueue() {
   try {
     busy = true;
     setVoiceState(VoiceState.SPEAKING);
-    await audioPlayer.play(absoluteUrl, amp => avatar.startLipSync(amp));
+    await audioPlayer.play(absoluteUrl, (amp) => avatar.startLipSync(amp));
   } catch (err) {
     console.warn("[tts] pet audio playback failed:", err);
   } finally {
@@ -577,9 +691,9 @@ window.companion.on("chat:done", (reply) => {
   if (!ttsPlaying && ttsQueue.length === 0) {
     avatar.setState({ expression: "smile", motion: "idle", lipsync: false });
     busy = false;
-    if (currentInteractionMode === 'streamer') {
+    if (currentInteractionMode === "streamer") {
       setTimeout(() => {
-        if (currentInteractionMode === 'streamer' && streamerLoopActive) {
+        if (currentInteractionMode === "streamer" && streamerLoopActive) {
           startRecording();
         } else {
           setVoiceState(VoiceState.IDLE);
@@ -602,18 +716,23 @@ window.companion.on("tts:audio", async ({ url } = {}) => {
 window.companion.on("tts:done", () => {
   ttsPlaying = false;
   busy = false;
-  if (currentInteractionMode !== 'streamer') {
+  if (currentInteractionMode !== "streamer") {
     setVoiceState(VoiceState.IDLE);
     setControlsDisabled(false);
   }
   avatar.stopLipSync();
 });
 
-window.companion.on("chat:request-approval", async ({ req_id, action, details }) => {
-  avatar.setState({ expression: 'focused', motion: 'thinking' });
-  const approved = confirm(`IceGirl muốn thực hiện hành động:\n${action}\n\nChi tiết:\n${JSON.stringify(details, null, 2)}\n\nBạn có đồng ý không?`);
-  await window.companion.invoke('ai:submit-approval', { req_id, approved });
-});
+window.companion.on(
+  "chat:request-approval",
+  async ({ req_id, action, details }) => {
+    avatar.setState({ expression: "focused", motion: "thinking" });
+    const approved = confirm(
+      `IceGirl muốn thực hiện hành động:\n${action}\n\nChi tiết:\n${JSON.stringify(details, null, 2)}\n\nBạn có đồng ý không?`,
+    );
+    await window.companion.invoke("ai:submit-approval", { req_id, approved });
+  },
+);
 
 window.companion.on("trigger:screenshot", async () => {
   busy = true;
@@ -650,40 +769,42 @@ window.companion.health().catch(() => null);
 setInterval(() => window.companion.health().catch(() => null), 5000);
 
 // Listen to config updates from the options window
-window.companion.on('config:updated', ({ key, value }) => {
-  if (key === 'llm.provider') {
+window.companion.on("config:updated", ({ key, value }) => {
+  if (key === "llm.provider") {
     const names = {
       ollama: "Ollama (Local)",
       gemini: "Gemini API",
-      openai: "OpenAI API"
+      openai: "OpenAI API",
     };
     setCaption(`Bộ não đã được đổi sang: ${names[value] || value}`);
-  } else if (key === 'features.screenAwareness') {
-    setCaption(`Tự động nhận thức màn hình đã: ${value ? 'BẬT' : 'TẮT'}`);
-  } else if (key === 'features.twitchMode') {
-    setCaption(`Đọc chat livestream Twitch đã: ${value ? 'BẬT' : 'TẮT'}`);
-  } else if (key === 'twitch.channel') {
+  } else if (key === "features.screenAwareness") {
+    setCaption(`Tự động nhận thức màn hình đã: ${value ? "BẬT" : "TẮT"}`);
+  } else if (key === "features.twitchMode") {
+    setCaption(`Đọc chat livestream Twitch đã: ${value ? "BẬT" : "TẮT"}`);
+  } else if (key === "twitch.channel") {
     setCaption(`Đã lưu kênh Twitch: ${value}`);
-  } else if (key === 'app.interactionMode') {
+  } else if (key === "app.interactionMode") {
     currentInteractionMode = value;
     const petConsole = document.getElementById("petConsole");
     const avatarStage = document.querySelector(".avatar-stage");
     if (petConsole) {
-      const isStreamer = value === 'streamer';
+      const isStreamer = value === "streamer";
       petConsole.classList.toggle("hidden", isStreamer);
       if (avatarStage) {
         avatarStage.classList.toggle("console-hidden", isStreamer);
       }
     }
-    setCaption(`Chế độ tương tác: ${value === 'streamer' ? 'Streamer (Neuro-Sama)' : 'Trợ lý (Chat Box)'}`);
-    if (value === 'streamer') {
+    setCaption(
+      `Chế độ tương tác: ${value === "streamer" ? "Streamer (Neuro-Sama)" : "Trợ lý (Chat Box)"}`,
+    );
+    if (value === "streamer") {
       streamerLoopActive = true;
       startRecording();
     } else if (streamerLoopActive) {
       streamerLoopActive = false;
       toggleMic();
     }
-  } else if (key === 'app.avatarModel') {
+  } else if (key === "app.avatarModel") {
     avatar.changeModel(value);
     currentModelPath = value;
     rebuildAccessoryButtons(value);
@@ -697,17 +818,17 @@ async function handleNotification(note) {
     busy = true;
     currentReply = note.text;
     setCaption(note.text);
-    
+
     setStatus("speaking");
     if (note.emotion) {
       avatar.setState({ expression: note.emotion, motion: "nod" });
     }
-    
+
     // Clear and play TTS
     ttsQueue = [];
     ttsPlaying = false;
     chatDone = true;
-    
+
     if (note.audio_url) {
       ttsQueue.push({ url: note.audio_url });
       processTtsQueue();
@@ -723,14 +844,14 @@ async function handleNotification(note) {
 setInterval(async () => {
   if (busy || isRecording) return;
   try {
-    const res = await window.companion.invoke('ai:get-notifications');
+    const res = await window.companion.invoke("ai:get-notifications");
     if (res && res.notifications && res.notifications.length > 0) {
       for (const note of res.notifications) {
         await handleNotification(note);
       }
     }
   } catch (err) {
-    console.warn('[notifications] Failed to fetch notifications:', err);
+    console.warn("[notifications] Failed to fetch notifications:", err);
   }
 }, 3000);
 
@@ -739,14 +860,14 @@ let initialModeApplied = false;
 async function applyInitialMode() {
   if (initialModeApplied) return;
   try {
-    const res = await window.companion.invoke('ai:get-config');
+    const res = await window.companion.invoke("ai:get-config");
     if (res && !res.error) {
       initialModeApplied = true;
-      currentInteractionMode = res.interaction_mode || 'streamer';
+      currentInteractionMode = res.interaction_mode || "streamer";
       const petConsole = document.getElementById("petConsole");
       const avatarStage = document.querySelector(".avatar-stage");
       if (petConsole) {
-        const isStreamer = currentInteractionMode === 'streamer';
+        const isStreamer = currentInteractionMode === "streamer";
         petConsole.classList.toggle("hidden", isStreamer);
         if (avatarStage) {
           avatarStage.classList.toggle("console-hidden", isStreamer);
@@ -759,44 +880,56 @@ async function applyInitialMode() {
         }
       }
       rebuildAccessoryButtons(currentModelPath);
-      if (currentInteractionMode === 'streamer') {
+      if (currentInteractionMode === "streamer") {
         streamerLoopActive = true;
         startRecording();
       }
     }
   } catch (err) {
-    console.warn('[config] Failed to apply initial interaction mode:', err);
+    console.warn("[config] Failed to apply initial interaction mode:", err);
   }
 }
 applyInitialMode();
 
 setTimeout(() => {
-  if (currentInteractionMode !== 'streamer' && currentVoiceState === VoiceState.IDLE) {
+  if (
+    currentInteractionMode !== "streamer" &&
+    currentVoiceState === VoiceState.IDLE
+  ) {
     setStatus("idle");
     avatar.setState({ expression: "smile", motion: "idle" });
   }
 }, 500);
 
-window.addEventListener('mousemove', (e) => {
+window.addEventListener("mousemove", (e) => {
   if (pointerDrag) {
-    if (window.companion && typeof window.companion.setIgnoreMouseEvents === 'function') {
+    if (
+      window.companion &&
+      typeof window.companion.setIgnoreMouseEvents === "function"
+    ) {
       window.companion.setIgnoreMouseEvents(false);
     }
     return;
   }
-  
+
   const petConsole = document.getElementById("petConsole");
   let isOverConsole = false;
   if (petConsole && !petConsole.classList.contains("hidden")) {
     const rect = petConsole.getBoundingClientRect();
-    isOverConsole = e.clientX >= rect.left && e.clientX <= rect.right &&
-                    e.clientY >= rect.top && e.clientY <= rect.bottom;
+    isOverConsole =
+      e.clientX >= rect.left &&
+      e.clientX <= rect.right &&
+      e.clientY >= rect.top &&
+      e.clientY <= rect.bottom;
   }
-  
+
   const isOverAvatar = avatar.containsPoint(e.clientX, e.clientY);
   const isOverInteractive = isOverAvatar || isOverConsole;
-  
-  if (window.companion && typeof window.companion.setIgnoreMouseEvents === 'function') {
+
+  if (
+    window.companion &&
+    typeof window.companion.setIgnoreMouseEvents === "function"
+  ) {
     if (isOverInteractive) {
       window.companion.setIgnoreMouseEvents(false);
     } else {
@@ -804,3 +937,41 @@ window.addEventListener('mousemove', (e) => {
     }
   }
 });
+
+// ─── Size controls ───────────────────────────────────────────
+(function initSizeControls() {
+  const btns = document.querySelectorAll(".size-btn");
+  if (!btns.length) return;
+
+  // Restore saved scale
+  const saved = parseFloat(localStorage.getItem("avatar_scale") || "1.0");
+  if (saved && saved !== 1.0) _applyScale(saved, false);
+
+  btns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const scale = parseFloat(btn.dataset.scale);
+      if (scale) _applyScale(scale, true);
+    });
+  });
+
+  async function _applyScale(scale, save) {
+    // Update active button
+    document
+      .querySelectorAll(".size-btn")
+      .forEach((b) =>
+        b.classList.toggle("active", parseFloat(b.dataset.scale) === scale),
+      );
+    // Resize Electron window
+    try {
+      await window.companion.petSetSize(scale);
+    } catch (e) {}
+    // Save preference
+    if (save) localStorage.setItem("avatar_scale", String(scale));
+    // Caption feedback
+    const labels = { 0.6: "Nhỏ", 1.0: "Mặc định", 1.5: "Lớn", 2.0: "Rất lớn" };
+    setCaption(`Cỡ nhân vật: ${labels[scale] || scale + "x"}`);
+    setTimeout(() => {
+      if (!busy) setCaption("");
+    }, 1800);
+  }
+})();

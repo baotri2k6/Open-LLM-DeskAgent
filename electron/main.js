@@ -10,7 +10,7 @@ const path = require("path");
 const { spawn } = require("child_process");
 const fs = require("fs");
 
-app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
 const { registerAiIpc } = require("./ipc/ai.ipc");
 const { registerAvatarIpc } = require("./ipc/avatar.ipc");
@@ -30,7 +30,12 @@ function getCompanionConfig() {
   let configPath = "";
   if (isPackaged) {
     const os = require("os");
-    configPath = path.join(os.homedir(), ".deskagent", "config", "companion.config.json");
+    configPath = path.join(
+      os.homedir(),
+      ".deskagent",
+      "config",
+      "companion.config.json",
+    );
   } else {
     configPath = path.join(app.getAppPath(), "config", "companion.config.json");
   }
@@ -44,7 +49,11 @@ function getCompanionConfig() {
     }
   }
 
-  const fallbackPath = path.join(app.getAppPath(), "config", "companion.config.json");
+  const fallbackPath = path.join(
+    app.getAppPath(),
+    "config",
+    "companion.config.json",
+  );
   if (fs.existsSync(fallbackPath)) {
     try {
       return JSON.parse(fs.readFileSync(fallbackPath, "utf8"));
@@ -60,7 +69,7 @@ function getAvatarWindowSize() {
   const scale = parseFloat(conf.app && conf.app.avatarScale) || 1.0;
   return {
     width: Math.round(AVATAR_WINDOW_WIDTH * scale),
-    height: Math.round(AVATAR_WINDOW_HEIGHT * scale)
+    height: Math.round(AVATAR_WINDOW_HEIGHT * scale),
   };
 }
 
@@ -76,7 +85,10 @@ function getPythonCommand() {
     if (fs.existsSync(pythonProgramsDir)) {
       try {
         const dirs = fs.readdirSync(pythonProgramsDir);
-        const versionDirs = dirs.filter(d => d.startsWith("Python")).sort().reverse();
+        const versionDirs = dirs
+          .filter((d) => d.startsWith("Python"))
+          .sort()
+          .reverse();
         for (const dir of versionDirs) {
           const exePath = path.join(pythonProgramsDir, dir, "python.exe");
           if (fs.existsSync(exePath)) {
@@ -89,7 +101,13 @@ function getPythonCommand() {
     }
 
     // Try Python Launcher
-    const pyLauncher = path.join(localAppData, "Programs", "Python", "Launcher", "py.exe");
+    const pyLauncher = path.join(
+      localAppData,
+      "Programs",
+      "Python",
+      "Launcher",
+      "py.exe",
+    );
     if (fs.existsSync(pyLauncher)) {
       return pyLauncher;
     }
@@ -168,7 +186,7 @@ function startPython() {
     console.error("[python stderr]", msg);
     fs.appendFileSync(
       path.join(logDir, "python_launch_error.log"),
-      `${new Date().toISOString()} | STDERR | ${msg}\n`
+      `${new Date().toISOString()} | STDERR | ${msg}\n`,
     );
   });
 
@@ -176,7 +194,7 @@ function startPython() {
     console.error("[python spawn error]", err);
     fs.appendFileSync(
       path.join(logDir, "python_launch_error.log"),
-      `${new Date().toISOString()} | SPAWN_ERROR | ${err.message}\n`
+      `${new Date().toISOString()} | SPAWN_ERROR | ${err.message}\n`,
     );
   });
 
@@ -184,7 +202,7 @@ function startPython() {
     console.log("[python] exited", code);
     fs.appendFileSync(
       path.join(logDir, "python_launch_error.log"),
-      `${new Date().toISOString()} | EXIT | Python process exited with code ${code}\n`
+      `${new Date().toISOString()} | EXIT | Python process exited with code ${code}\n`,
     );
     pythonProc = null;
     pythonReady = false;
@@ -192,7 +210,8 @@ function startPython() {
 }
 
 function createAvatarWindow() {
-  const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
+  const { width: screenWidth, height: screenHeight } =
+    screen.getPrimaryDisplay().workAreaSize;
   const { width, height } = getAvatarWindowSize();
 
   avatarWin = new BrowserWindow({
@@ -214,14 +233,17 @@ function createAvatarWindow() {
     },
   });
   avatarWin.setBackgroundColor("#00000000");
-  avatarWin.webContents.on("console-message", (event, level, message, line, sourceId) => {
-    const logDir = getLogDirectory();
-    if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
-    fs.appendFileSync(
-      path.join(logDir, "renderer_error.log"),
-      `${new Date().toISOString()} | AVATAR | [Level ${level}] ${message} (at ${sourceId}:${line})\n`
-    );
-  });
+  avatarWin.webContents.on(
+    "console-message",
+    (event, level, message, line, sourceId) => {
+      const logDir = getLogDirectory();
+      if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+      fs.appendFileSync(
+        path.join(logDir, "renderer_error.log"),
+        `${new Date().toISOString()} | AVATAR | [Level ${level}] ${message} (at ${sourceId}:${line})\n`,
+      );
+    },
+  );
   avatarWin.loadFile(path.join(__dirname, "..", "renderer", "avatar.html"));
   avatarWin.on("closed", () => {
     avatarWin = null;
@@ -270,17 +292,40 @@ function setupCrossWindowIpc() {
     const targetX = Math.round(point.x);
     const targetY = Math.round(point.y);
     const display = screen.getDisplayNearestPoint({ x: targetX, y: targetY });
-    
+
     // Use display.bounds to allow dragging over taskbar
     const { x, y, width: sw, height: sh } = display.bounds;
-    
+
     // Allow dragging partially off-screen (keep at least 80px on-screen so it's retrievable)
     const minVisible = 80;
-    const nextX = Math.max(x - width + minVisible, Math.min(x + sw - minVisible, targetX));
-    const nextY = Math.max(y - height + minVisible, Math.min(y + sh - minVisible, targetY));
-    
+    const nextX = Math.max(
+      x - width + minVisible,
+      Math.min(x + sw - minVisible, targetX),
+    );
+    const nextY = Math.max(
+      y - height + minVisible,
+      Math.min(y + sh - minVisible, targetY),
+    );
+
     avatarWin.setPosition(nextX, nextY, false);
     return { x: nextX, y: nextY, width, height, workArea: display.workArea };
+  });
+
+  ipcMain.handle("pet:set-size", (_e, scale) => {
+    if (!avatarWin) return null;
+    const newW = Math.round(AVATAR_WINDOW_WIDTH * scale);
+    const newH = Math.round(AVATAR_WINDOW_HEIGHT * scale);
+    const [curX, curY] = avatarWin.getPosition();
+    const display = screen.getDisplayNearestPoint({ x: curX, y: curY });
+    const { x: sx, y: sy, width: sw, height: sh } = display.workArea;
+    const nextX = Math.max(sx, Math.min(curX, sx + sw - newW));
+    const nextY = Math.max(
+      sy,
+      Math.min(curY + (avatarWin.getSize()[1] - newH), sy + sh - newH),
+    );
+    avatarWin.setSize(newW, newH, true);
+    avatarWin.setPosition(nextX, nextY, true);
+    return { width: newW, height: newH, scale };
   });
 }
 
@@ -301,14 +346,17 @@ function createSettingsWindow() {
       nodeIntegration: false,
     },
   });
-  settingsWin.webContents.on("console-message", (event, level, message, line, sourceId) => {
-    const logDir = getLogDirectory();
-    if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
-    fs.appendFileSync(
-      path.join(logDir, "renderer_error.log"),
-      `${new Date().toISOString()} | SETTINGS | [Level ${level}] ${message} (at ${sourceId}:${line})\n`
-    );
-  });
+  settingsWin.webContents.on(
+    "console-message",
+    (event, level, message, line, sourceId) => {
+      const logDir = getLogDirectory();
+      if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+      fs.appendFileSync(
+        path.join(logDir, "renderer_error.log"),
+        `${new Date().toISOString()} | SETTINGS | [Level ${level}] ${message} (at ${sourceId}:${line})\n`,
+      );
+    },
+  );
   settingsWin.loadFile(path.join(__dirname, "..", "renderer", "settings.html"));
   settingsWin.on("closed", () => {
     settingsWin = null;

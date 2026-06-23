@@ -55,11 +55,15 @@ body {
 }
 
 .avatar-wrap[data-motion="nod"] {
-  animation: nod 0.8s ease-in-out 1, breathe 4.8s ease-in-out infinite 0.8s;
+  animation:
+    nod 0.8s ease-in-out 1,
+    breathe 4.8s ease-in-out infinite 0.8s;
 }
 
 .avatar-wrap[data-motion="shake"] {
-  animation: shake 0.5s ease-in-out 1, breathe 4.8s ease-in-out infinite 0.5s;
+  animation:
+    shake 0.5s ease-in-out 1,
+    breathe 4.8s ease-in-out infinite 0.5s;
 }
 
 .avatar-wrap[data-motion="thinking"],
@@ -124,11 +128,13 @@ body {
   box-shadow: none;
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-app-region: no-drag;
-  
+
   /* Smooth animation */
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .pet-console.hidden {
@@ -142,7 +148,10 @@ body {
   max-height: 70px;
   overflow-y: auto;
   color: #f1f5f9;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   font-size: 12.5px;
   line-height: 1.5;
   font-weight: 400;
@@ -168,7 +177,10 @@ body {
   gap: 6px;
   min-width: 0;
   color: rgba(226, 232, 240, 0.75);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   font-size: 11px;
   font-weight: 500;
   text-transform: uppercase;
@@ -186,25 +198,33 @@ body {
 
 .pet-status-dot[data-status="listening"] {
   background: #10b981;
-  box-shadow: 0 0 12px #10b981, 0 0 0 3px rgba(16, 185, 129, 0.25);
+  box-shadow:
+    0 0 12px #10b981,
+    0 0 0 3px rgba(16, 185, 129, 0.25);
   animation: pulse-dot 1.2s infinite;
 }
 
 .pet-status-dot[data-status="thinking"] {
   background: #f59e0b;
-  box-shadow: 0 0 12px #f59e0b, 0 0 0 3px rgba(245, 158, 11, 0.25);
+  box-shadow:
+    0 0 12px #f59e0b,
+    0 0 0 3px rgba(245, 158, 11, 0.25);
   animation: pulse-dot 1.2s infinite;
 }
 
 .pet-status-dot[data-status="speaking"] {
   background: #3b82f6;
-  box-shadow: 0 0 12px #3b82f6, 0 0 0 3px rgba(59, 130, 246, 0.25);
+  box-shadow:
+    0 0 12px #3b82f6,
+    0 0 0 3px rgba(59, 130, 246, 0.25);
   animation: pulse-dot 1.2s infinite;
 }
 
 .pet-status-dot[data-status="error"] {
   background: #ef4444;
-  box-shadow: 0 0 12px #ef4444, 0 0 0 3px rgba(239, 68, 68, 0.25);
+  box-shadow:
+    0 0 12px #ef4444,
+    0 0 0 3px rgba(239, 68, 68, 0.25);
 }
 
 @keyframes pulse-dot {
@@ -235,7 +255,10 @@ body {
   border-radius: 7px;
   background: rgba(255, 255, 255, 0.06);
   color: rgba(248, 250, 252, 0.9);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
@@ -284,7 +307,10 @@ body {
   outline: none;
   background: rgba(0, 0, 0, 0.45);
   color: rgba(248, 250, 252, 0.95);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   font-size: 12px;
   transition: all 0.2s ease;
 }
@@ -475,4 +501,42 @@ body {
 .feature-checkbox input {
   cursor: pointer;
   margin: 0;
+}
+
+/* ─── Size controls ─────────────────────────────────────────── */
+.size-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 2px;
+}
+.size-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  flex-shrink: 0;
+  user-select: none;
+}
+.size-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  font-family: inherit;
+}
+.size-btn:hover {
+  background: rgba(144, 224, 255, 0.18);
+  border-color: rgba(144, 224, 255, 0.45);
+  color: #90e0ff;
+}
+.size-btn.active {
+  background: rgba(144, 224, 255, 0.22);
+  border-color: rgba(144, 224, 255, 0.7);
+  color: #90e0ff;
+  box-shadow: 0 0 8px rgba(144, 224, 255, 0.25);
 }
