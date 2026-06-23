@@ -1,18 +1,28 @@
+const { BrowserWindow } = require('electron');
 let voiceActive = false;
-let chatWinRef = null;
 
-function registerVoiceIpc(ipcMain, chatWin) {
-  chatWinRef = chatWin;
+function getAvatarWindow() {
+  return BrowserWindow.getAllWindows().find(win => {
+    try {
+      return win.webContents.getURL().includes('avatar.html');
+    } catch {
+      return false;
+    }
+  });
+}
 
+function registerVoiceIpc(ipcMain) {
   ipcMain.handle('voice:start', async () => {
     voiceActive = true;
-    chatWinRef?.webContents.send('voice:start-recording');
+    const win = getAvatarWindow();
+    win?.webContents.send('voice:start-recording');
     return { active: true };
   });
 
   ipcMain.handle('voice:stop', async () => {
     voiceActive = false;
-    chatWinRef?.webContents.send('voice:stop-recording');
+    const win = getAvatarWindow();
+    win?.webContents.send('voice:stop-recording');
     return { active: false };
   });
 

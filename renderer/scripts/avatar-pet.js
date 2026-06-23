@@ -626,8 +626,12 @@ window.companion.on("trigger:screenshot", async () => {
 
 function toggleConsole() {
   const petConsole = document.getElementById("petConsole");
+  const avatarStage = document.querySelector(".avatar-stage");
   if (petConsole) {
-    petConsole.classList.toggle("hidden");
+    const isHidden = petConsole.classList.toggle("hidden");
+    if (avatarStage) {
+      avatarStage.classList.toggle("console-hidden", isHidden);
+    }
   }
 }
 
@@ -663,8 +667,13 @@ window.companion.on('config:updated', ({ key, value }) => {
   } else if (key === 'app.interactionMode') {
     currentInteractionMode = value;
     const petConsole = document.getElementById("petConsole");
+    const avatarStage = document.querySelector(".avatar-stage");
     if (petConsole) {
-      petConsole.classList.toggle("hidden", value === 'streamer');
+      const isStreamer = value === 'streamer';
+      petConsole.classList.toggle("hidden", isStreamer);
+      if (avatarStage) {
+        avatarStage.classList.toggle("console-hidden", isStreamer);
+      }
     }
     setCaption(`Chế độ tương tác: ${value === 'streamer' ? 'Streamer (Neuro-Sama)' : 'Trợ lý (Chat Box)'}`);
     if (value === 'streamer') {
@@ -725,17 +734,29 @@ setInterval(async () => {
   }
 }, 3000);
 
+let initialModeApplied = false;
+
 async function applyInitialMode() {
+  if (initialModeApplied) return;
   try {
     const res = await window.companion.invoke('ai:get-config');
     if (res && !res.error) {
+      initialModeApplied = true;
       currentInteractionMode = res.interaction_mode || 'streamer';
       const petConsole = document.getElementById("petConsole");
+      const avatarStage = document.querySelector(".avatar-stage");
       if (petConsole) {
-        petConsole.classList.toggle("hidden", currentInteractionMode === 'streamer');
+        const isStreamer = currentInteractionMode === 'streamer';
+        petConsole.classList.toggle("hidden", isStreamer);
+        if (avatarStage) {
+          avatarStage.classList.toggle("console-hidden", isStreamer);
+        }
       }
       if (res.avatar_model) {
-        currentModelPath = res.avatar_model;
+        if (currentModelPath !== res.avatar_model) {
+          currentModelPath = res.avatar_model;
+          avatar.changeModel(res.avatar_model);
+        }
       }
       rebuildAccessoryButtons(currentModelPath);
       if (currentInteractionMode === 'streamer') {

@@ -18,12 +18,12 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 
-from core.config import PROJECT_ROOT, config
+from core.config import WRITABLE_ROOT, config
 from core.logger import get_logger
 
 logger = get_logger("ai-companion.tts")
 
-TTS_CACHE = PROJECT_ROOT / "cache" / "tts"
+TTS_CACHE = WRITABLE_ROOT / "cache" / "tts"
 TTS_CACHE.mkdir(parents=True, exist_ok=True)
 
 

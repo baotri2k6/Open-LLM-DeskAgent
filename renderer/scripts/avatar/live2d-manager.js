@@ -113,6 +113,8 @@ class PixiLive2DBackend {
 
     try {
       this._model = await Live2DModel.from(this._modelPath, { autoInteract: false });
+      this._origWidth = this._model.width;
+      this._origHeight = this._model.height;
     } catch (err) {
       console.warn("[Live2D] Model load failed:", err);
       this._app.destroy(true);
@@ -149,6 +151,18 @@ class PixiLive2DBackend {
 
     this._app.stage.addChild(this._model);
     this._fitModel(w, h);
+
+    // Listen to container resizing (e.g. from Electron window resizing)
+    this._onResize = () => {
+      if (this._app && this._app.renderer && this._model) {
+        const cw = this._container.clientWidth || 280;
+        const ch = this._container.clientHeight || 390;
+        this._app.renderer.resize(cw, ch);
+        this._fitModel(cw, ch);
+      }
+    };
+    window.addEventListener("resize", this._onResize);
+
     // Fade in sau khi model đã render xong 1 frame
     requestAnimationFrame(() => {
       if (this._app?.view) this._app.view.style.opacity = "1";
@@ -167,8 +181,17 @@ class PixiLive2DBackend {
       scaleMultiplier = 0.75; // Huohuo needs more space at the top/sides for her floating ghost and tail
     }
     
+    // Safeguard to capture original size when ready (avoid using already-scaled size)
+    if (!this._origWidth && this._model.width > 0) {
+      this._origWidth = this._model.width;
+      this._origHeight = this._model.height;
+    }
+    
+    const origW = this._origWidth || this._model.width || 400;
+    const origH = this._origHeight || this._model.height || 500;
+    
     const scale =
-      Math.min(w / this._model.width, h / this._model.height) * scaleMultiplier;
+      Math.min(w / origW, h / origH) * scaleMultiplier;
     this._model.scale.set(scale);
     this._model.position.set(w / 2, h * 0.98);
     this._model.anchor.set(0.5, 1.0);
@@ -341,7 +364,17 @@ class PixiLive2DBackend {
   }
 
   destroy() {
-    this._app?.destroy(true);
+    if (this._onResize) {
+      window.removeEventListener("resize", this._onResize);
+      this._onResize = null;
+    }
+    if (this._app) {
+      this._app.destroy(true);
+      this._app = null;
+    }
+    this._model = null;
+    this._origWidth = null;
+    this._origHeight = null;
   }
 }
 

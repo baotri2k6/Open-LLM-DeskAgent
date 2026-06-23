@@ -19,6 +19,51 @@ const { registerVoiceIpc } = require("./ipc/voice.ipc");
 const { createTray } = require("./window/tray");
 const { createOverlayWindow } = require("./window/overlay");
 
+function getLogDirectory() {
+  const isPackaged = app.isPackaged;
+  const base = isPackaged ? app.getPath("userData") : app.getAppPath();
+  return path.join(base, "logs");
+}
+
+function getCompanionConfig() {
+  const isPackaged = app.isPackaged;
+  let configPath = "";
+  if (isPackaged) {
+    const os = require("os");
+    configPath = path.join(os.homedir(), ".deskagent", "config", "companion.config.json");
+  } else {
+    configPath = path.join(app.getAppPath(), "config", "companion.config.json");
+  }
+
+  if (fs.existsSync(configPath)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(configPath, "utf8"));
+      return data;
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  const fallbackPath = path.join(app.getAppPath(), "config", "companion.config.json");
+  if (fs.existsSync(fallbackPath)) {
+    try {
+      return JSON.parse(fs.readFileSync(fallbackPath, "utf8"));
+    } catch (e) {
+      // ignore
+    }
+  }
+  return {};
+}
+
+function getAvatarWindowSize() {
+  const conf = getCompanionConfig();
+  const scale = parseFloat(conf.app && conf.app.avatarScale) || 1.0;
+  return {
+    width: Math.round(AVATAR_WINDOW_WIDTH * scale),
+    height: Math.round(AVATAR_WINDOW_HEIGHT * scale)
+  };
+}
+
 function getPythonCommand() {
   if (process.platform !== "win32") {
     return "python";
@@ -75,22 +120,34 @@ const AVATAR_WINDOW_HEIGHT = 640;
 
 function startPython() {
   if (pythonProc) return;
-  const script = path.join(
-    app.getAppPath(),
-    "python-services",
-    "main_server.py",
-  );
-  const pythonCmd = getPythonCommand();
-  console.log("[electron] Spawning python using:", pythonCmd);
+
+  const isPackaged = app.isPackaged;
+  let cmd;
+  let args = [];
+
+  if (isPackaged) {
+    cmd = path.join(process.resourcesPath, "main_server.exe");
+    args = [];
+    console.log("[electron] Spawning packaged python backend:", cmd);
+  } else {
+    cmd = getPythonCommand();
+    const script = path.join(
+      app.getAppPath(),
+      "python-services",
+      "main_server.py",
+    );
+    args = [script];
+    console.log("[electron] Spawning python using:", cmd, args);
+  }
 
   // Ensure logs directory exists
-  const logDir = path.join(app.getAppPath(), "logs");
+  const logDir = getLogDirectory();
   if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir, { recursive: true });
   }
 
-  pythonProc = spawn(pythonCmd, [script], {
-    cwd: app.getAppPath(),
+  pythonProc = spawn(cmd, args, {
+    cwd: isPackaged ? path.join(process.resourcesPath, "..") : app.getAppPath(),
     windowsHide: true,
     stdio: ["ignore", "pipe", "pipe"],
     env: { ...process.env, PYTHONUNBUFFERED: "1" },
@@ -135,13 +192,14 @@ function startPython() {
 }
 
 function createAvatarWindow() {
-  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
+  const { width, height } = getAvatarWindowSize();
 
   avatarWin = new BrowserWindow({
-    width: AVATAR_WINDOW_WIDTH,
-    height: AVATAR_WINDOW_HEIGHT,
-    x: width - AVATAR_WINDOW_WIDTH,
-    y: height - AVATAR_WINDOW_HEIGHT,
+    width,
+    height,
+    x: screenWidth - width,
+    y: screenHeight - height,
     transparent: true, // ← BẮT BUỘC
     frame: false, // ← BẮT BUỘC
     resizable: false,
@@ -157,7 +215,7 @@ function createAvatarWindow() {
   });
   avatarWin.setBackgroundColor("#00000000");
   avatarWin.webContents.on("console-message", (event, level, message, line, sourceId) => {
-    const logDir = path.join(app.getAppPath(), "logs");
+    const logDir = getLogDirectory();
     if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
     fs.appendFileSync(
       path.join(logDir, "renderer_error.log"),
@@ -244,7 +302,7 @@ function createSettingsWindow() {
     },
   });
   settingsWin.webContents.on("console-message", (event, level, message, line, sourceId) => {
-    const logDir = path.join(app.getAppPath(), "logs");
+    const logDir = getLogDirectory();
     if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
     fs.appendFileSync(
       path.join(logDir, "renderer_error.log"),

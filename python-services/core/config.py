@@ -8,7 +8,19 @@ from pathlib import Path
 from typing import Any
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+import sys
+
+IS_FROZEN = getattr(sys, "frozen", False)
+
+if IS_FROZEN:
+    PROJECT_ROOT = Path(sys.executable).resolve().parent.parent
+    RESOURCE_BASE = Path(getattr(sys, "_MEIPASS", sys.executable))
+    WRITABLE_ROOT = Path.home() / ".deskagent"
+else:
+    PROJECT_ROOT = Path(__file__).resolve().parents[2]
+    RESOURCE_BASE = PROJECT_ROOT
+    WRITABLE_ROOT = PROJECT_ROOT
+
 
 
 DEFAULT_CONFIG: dict[str, Any] = {
@@ -60,11 +72,19 @@ class Config:
             self.data.setdefault("server", {})["port"] = int(port)
 
     def _read_json(self, relative_path: str) -> dict[str, Any]:
-        path = PROJECT_ROOT / relative_path
-        if not path.exists() or path.stat().st_size == 0:
-            return {}
-        with path.open("r", encoding="utf-8") as handle:
-            return json.load(handle)
+        # Try writable root first (user configuration)
+        path = WRITABLE_ROOT / relative_path
+        if path.exists() and path.stat().st_size > 0:
+            with path.open("r", encoding="utf-8") as handle:
+                return json.load(handle)
+        
+        # Fallback to resource base (default packaged configuration)
+        fallback_path = RESOURCE_BASE / relative_path
+        if fallback_path.exists() and fallback_path.stat().st_size > 0:
+            with fallback_path.open("r", encoding="utf-8") as handle:
+                return json.load(handle)
+                
+        return {}
 
     def _load_json(self, relative_path: str) -> None:
         data = self._read_json(relative_path)
@@ -88,15 +108,20 @@ class Config:
             current = current[part]
         current[parts[-1]] = value
 
-        # Save to file
-        config_path = PROJECT_ROOT / "config" / "companion.config.json"
+        # Save to file in writable root
+        config_path = WRITABLE_ROOT / "config" / "companion.config.json"
         try:
+            config_path.parent.mkdir(parents=True, exist_ok=True)
+            file_data = {}
             if config_path.exists() and config_path.stat().st_size > 0:
                 with config_path.open("r", encoding="utf-8") as handle:
                     file_data = json.load(handle)
             else:
-                file_data = {}
-            
+                fallback_path = RESOURCE_BASE / "config" / "companion.config.json"
+                if fallback_path.exists() and fallback_path.stat().st_size > 0:
+                    with fallback_path.open("r", encoding="utf-8") as handle:
+                        file_data = json.load(handle)
+
             curr_file = file_data
             for part in parts[:-1]:
                 if part not in curr_file or not isinstance(curr_file[part], dict):

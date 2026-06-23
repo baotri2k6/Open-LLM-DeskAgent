@@ -86,6 +86,12 @@ async function loadConfig() {
       r.checked = r.value === avatarVal;
     });
 
+    // Avatar scale
+    const avatarScaleSelect = document.getElementById("avatarScaleSelect");
+    if (avatarScaleSelect) {
+      avatarScaleSelect.value = res.avatar_scale || "1.0";
+    }
+
     // Mode radio
     if (radModeStreamer && radModeAssistant) {
       if (res.interaction_mode === "streamer") radModeStreamer.checked = true;
@@ -246,6 +252,16 @@ if (!window.companion) {
       });
       if (res && !res.error) showStatus("Đã đổi nhân vật");
     });
+  });
+
+  // Avatar scale change
+  const avatarScaleSelect = document.getElementById("avatarScaleSelect");
+  avatarScaleSelect?.addEventListener("change", async () => {
+    const res = await window.companion.invoke("ai:update-config", {
+      key: "app.avatarScale",
+      value: avatarScaleSelect.value,
+    });
+    if (res && !res.error) showStatus("Đã lưu tỷ lệ nhân vật");
   });
 
   // Mode radio cards

@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from core.config import PROJECT_ROOT, config
+from core.config import PROJECT_ROOT, WRITABLE_ROOT, config
 from core.logger import get_logger
 from core.message_router import MessageRouter
 
@@ -620,7 +620,7 @@ def get_rag():
     return _rag_retriever
 
 
-TTS_CACHE_DIR = PROJECT_ROOT / "cache" / "tts"
+TTS_CACHE_DIR = WRITABLE_ROOT / "cache" / "tts"
 TTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -693,6 +693,7 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                 "twitch_channel":  config.get("twitch.channel",            ""),
                 "interaction_mode": config.get("app.interactionMode",       "streamer"),
                 "avatar_model":     config.get("app.avatarModel",            "assets/live2d/IceGirl/IceGirl.model3.json"),
+                "avatar_scale":     config.get("app.avatarScale",            "1.0"),
                 "memory":           config.get("features.memory",           True),
             })
             return

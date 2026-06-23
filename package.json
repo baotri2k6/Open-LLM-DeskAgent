@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node scripts/start-electron.js",
     "dev": "node scripts/start-electron.js",
-    "python": "python python-services/main_server.py"
+    "python": "python python-services/main_server.py",
+    "build": "electron-builder"
   },
   "dependencies": {
     "pixi-live2d-display": "^0.4.0",
@@ -15,6 +16,19 @@
     "ws": "^8.17.0"
   },
   "devDependencies": {
-    "electron": "^42.4.0"
+    "electron": "^42.4.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.deskagent.app",
+    "win": {
+      "target": "nsis"
+    },
+    "extraResources": [
+      {
+        "from": "dist/main_server.exe",
+        "to": "."
+      }
+    ]
   }
 }

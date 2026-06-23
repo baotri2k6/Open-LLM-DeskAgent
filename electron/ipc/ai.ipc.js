@@ -1,12 +1,11 @@
 const http = require('http');
+const { BrowserWindow } = require('electron');
 
 const API_HOST = '127.0.0.1';
 const API_PORT = 8765;
 
-let targetWindows = [];
-
 function liveTargets() {
-  return targetWindows.filter(win => win && !win.isDestroyed());
+  return BrowserWindow.getAllWindows().filter(win => win && !win.isDestroyed());
 }
 
 function sendToTargets(channel, payload) {
@@ -147,7 +146,7 @@ function audioBase64ToByteArray(audioB64) {
 }
 
 function registerAiIpc(ipcMain, windows) {
-  targetWindows = Array.isArray(windows) ? windows : [windows];
+  // windows parameter kept for compatibility
 
   ipcMain.handle('ai:health', async () => {
     try {
@@ -326,6 +325,30 @@ function registerAiIpc(ipcMain, windows) {
     try {
       const response = await requestJSON('POST', '/config/update', { key, value });
       sendToTargets('config:updated', { key, value });
+
+      if (key === 'app.avatarScale') {
+        const scale = parseFloat(value) || 1.0;
+        const AVATAR_WINDOW_WIDTH = 420;
+        const AVATAR_WINDOW_HEIGHT = 640;
+        const avatarWin = BrowserWindow.getAllWindows().find(win => {
+          try {
+            return win.webContents.getURL().includes('avatar.html');
+          } catch {
+            return false;
+          }
+        });
+        if (avatarWin && !avatarWin.isDestroyed()) {
+          const newW = Math.round(AVATAR_WINDOW_WIDTH * scale);
+          const newH = Math.round(AVATAR_WINDOW_HEIGHT * scale);
+          const [curX, curY] = avatarWin.getPosition();
+          const [curW, curH] = avatarWin.getSize();
+          const newX = curX + curW - newW;
+          const newY = curY + curH - newH;
+          avatarWin.setSize(newW, newH);
+          avatarWin.setPosition(newX, newY);
+        }
+      }
+
       return response;
     } catch (err) {
       return { error: err.message };

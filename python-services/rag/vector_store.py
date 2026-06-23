@@ -20,7 +20,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Iterable, Protocol
 
-from core.config import PROJECT_ROOT
+from core.config import WRITABLE_ROOT
 from core.logger import get_logger
 from rag.chunker import Chunk
 
@@ -55,7 +55,7 @@ class ChromaStore:
         except ImportError:
             raise RuntimeError("chromadb chưa cài. pip install chromadb")
 
-        persist_dir = PROJECT_ROOT / "data" / "vectorstore" / collection
+        persist_dir = WRITABLE_ROOT / "data" / "vectorstore" / collection
         persist_dir.mkdir(parents=True, exist_ok=True)
 
         self._client = chromadb.PersistentClient(path=str(persist_dir))

@@ -5,12 +5,18 @@ from __future__ import annotations
 from pathlib import Path
 import yaml
 
-from core.config import PROJECT_ROOT
+from core.config import PROJECT_ROOT, RESOURCE_BASE, IS_FROZEN
 
 
 class PersonaManager:
     def __init__(self, characters_dir: Path | None = None) -> None:
-        self.characters_dir = characters_dir or PROJECT_ROOT / "python-services" / "persona" / "characters"
+        if characters_dir:
+            self.characters_dir = characters_dir
+        else:
+            if IS_FROZEN:
+                self.characters_dir = RESOURCE_BASE / "python-services" / "persona" / "characters"
+            else:
+                self.characters_dir = PROJECT_ROOT / "python-services" / "persona" / "characters"
 
     def load_persona(self, name: str) -> dict:
         """Loads a character persona configuration by name (YAML)."""
@@ -20,6 +26,8 @@ class PersonaManager:
         # Fallback to main project config/characters if not in python-services
         if not path.exists():
             alt_path = PROJECT_ROOT / "config" / "characters" / filename
+            if not alt_path.exists() and IS_FROZEN:
+                alt_path = RESOURCE_BASE / "config" / "characters" / filename
             if alt_path.exists():
                 path = alt_path
 

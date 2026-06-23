@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from .config import PROJECT_ROOT
+from .config import PROJECT_ROOT, WRITABLE_ROOT
 
 
 def get_logger(name: str = "ai-companion") -> logging.Logger:
@@ -23,7 +23,7 @@ def get_logger(name: str = "ai-companion") -> logging.Logger:
     console.setFormatter(formatter)
     logger.addHandler(console)
 
-    log_dir = PROJECT_ROOT / "logs"
+    log_dir = WRITABLE_ROOT / "logs"
     log_dir.mkdir(exist_ok=True)
     file_handler = logging.FileHandler(log_dir / "app.log", encoding="utf-8")
     file_handler.setFormatter(formatter)

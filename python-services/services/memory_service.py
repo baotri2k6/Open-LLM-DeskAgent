@@ -7,12 +7,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from core.config import PROJECT_ROOT
+from core.config import WRITABLE_ROOT
 
 
 class MemoryService:
     def __init__(self, profile_path: Path | None = None) -> None:
-        self.profile_path = profile_path or PROJECT_ROOT / "data" / "user_profile.json"
+        self.profile_path = profile_path or WRITABLE_ROOT / "data" / "user_profile.json"
         self.profile_path.parent.mkdir(parents=True, exist_ok=True)
         if not self.profile_path.exists() or self.profile_path.stat().st_size == 0:
             self._write({
