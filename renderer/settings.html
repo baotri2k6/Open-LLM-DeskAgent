@@ -31,7 +31,90 @@
             <option value="ollama">🏠 Ollama — Chạy local, miễn phí</option>
             <option value="gemini">✨ Gemini API — Đám mây Google</option>
             <option value="openai">⚡ OpenAI API — Đám mây OpenAI</option>
+            <option value="deepseek">🐳 DeepSeek API — Đám mây DeepSeek</option>
+            <option value="glm">🔮 Zhipu GLM API — Đám mây GLM</option>
+            <option value="qwen">☁️ DashScope Qwen API — Đám mây Ali</option>
+            <option value="openai-compatible">🔌 OpenAI Compatible — Tùy chỉnh</option>
           </select>
+        </div>
+
+        <!-- Dynamic LLM Config Sections -->
+        <div id="llmConfigSections" style="margin-top: 12px; display: flex; flex-direction: column; gap: 12px;">
+          <!-- Gemini Config -->
+          <div id="config-gemini" class="llm-sub-config" style="display: none;">
+            <div class="field">
+              <span class="field-label">Gemini API Key</span>
+              <input type="text" id="geminiKeyInput" placeholder="Nhập API Key của Gemini (AI Studio)..." />
+            </div>
+            <div class="field" style="margin-top: 8px;">
+              <span class="field-label">Gemini Model</span>
+              <input type="text" id="geminiModelInput" placeholder="Ví dụ: gemini-2.5-flash" />
+            </div>
+          </div>
+
+          <!-- OpenAI Config -->
+          <div id="config-openai" class="llm-sub-config" style="display: none;">
+            <div class="field">
+              <span class="field-label">OpenAI API Key</span>
+              <input type="text" id="openaiKeyInput" placeholder="sk-..." />
+            </div>
+            <div class="field" style="margin-top: 8px;">
+              <span class="field-label">OpenAI Model</span>
+              <input type="text" id="openaiModelInput" placeholder="Ví dụ: gpt-4o-mini" />
+            </div>
+          </div>
+
+          <!-- DeepSeek Config -->
+          <div id="config-deepseek" class="llm-sub-config" style="display: none;">
+            <div class="field">
+              <span class="field-label">DeepSeek API Key</span>
+              <input type="text" id="deepseekKeyInput" placeholder="sk-..." />
+            </div>
+            <div class="field" style="margin-top: 8px;">
+              <span class="field-label">DeepSeek Model</span>
+              <input type="text" id="deepseekModelInput" placeholder="Ví dụ: deepseek-chat" />
+            </div>
+          </div>
+
+          <!-- GLM Config -->
+          <div id="config-glm" class="llm-sub-config" style="display: none;">
+            <div class="field">
+              <span class="field-label">Zhipu GLM API Key</span>
+              <input type="text" id="glmKeyInput" placeholder="Nhập Zhipu API Key..." />
+            </div>
+            <div class="field" style="margin-top: 8px;">
+              <span class="field-label">GLM Model</span>
+              <input type="text" id="glmModelInput" placeholder="Ví dụ: glm-4" />
+            </div>
+          </div>
+
+          <!-- Qwen Config -->
+          <div id="config-qwen" class="llm-sub-config" style="display: none;">
+            <div class="field">
+              <span class="field-label">DashScope Qwen API Key</span>
+              <input type="text" id="qwenKeyInput" placeholder="Nhập DashScope API Key..." />
+            </div>
+            <div class="field" style="margin-top: 8px;">
+              <span class="field-label">Qwen Model</span>
+              <input type="text" id="qwenModelInput" placeholder="Ví dụ: qwen-plus" />
+            </div>
+          </div>
+
+          <!-- OpenAI Compatible Config -->
+          <div id="config-openai-compatible" class="llm-sub-config" style="display: none;">
+            <div class="field">
+              <span class="field-label">Custom API Base URL</span>
+              <input type="text" id="openaiCompatibleBaseUrlInput" placeholder="Ví dụ: http://localhost:11434/v1" />
+            </div>
+            <div class="field" style="margin-top: 8px;">
+              <span class="field-label">Custom API Key (nếu có)</span>
+              <input type="text" id="openaiCompatibleKeyInput" placeholder="Nhập API Key..." />
+            </div>
+            <div class="field" style="margin-top: 8px;">
+              <span class="field-label">Custom Model Name</span>
+              <input type="text" id="openaiCompatibleModelInput" placeholder="Ví dụ: llama3" />
+            </div>
+          </div>
         </div>
 
         <div class="field">
@@ -39,7 +122,13 @@
           <select id="sttSelect">
             <option value="tiny">🚀 Tiny — Rất nhanh, nhẹ máy</option>
             <option value="base">🎯 Base — Chính xác hơn, vừa phải</option>
+            <option value="funasr">🔥 Alibaba FunASR — Cực nhanh & Đa ngôn ngữ</option>
           </select>
+        </div>
+
+        <div id="stt-funasr-config" class="field" style="display: none;">
+          <span class="field-label">Tên mô hình FunASR (Model Name)</span>
+          <input type="text" id="sttFunasrModelInput" placeholder="Ví dụ: iic/SenseVoiceSmall" />
         </div>
       </div>
 

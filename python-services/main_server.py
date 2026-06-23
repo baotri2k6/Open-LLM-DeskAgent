@@ -641,8 +641,18 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                 "gemini_model":    config.get("llm.gemini_model",          "gemini-2.5-flash"),
                 "openai_key":      config.get("llm.openai_api_key",        ""),
                 "openai_model":    config.get("llm.openai_model",          "gpt-4o-mini"),
+                "deepseek_key":    config.get("llm.deepseek_api_key",      ""),
+                "deepseek_model":  config.get("llm.deepseek_model",        "deepseek-chat"),
+                "glm_key":         config.get("llm.glm_api_key",           ""),
+                "glm_model":       config.get("llm.glm_model",             "glm-4"),
+                "qwen_key":        config.get("llm.qwen_api_key",          ""),
+                "qwen_model":      config.get("llm.qwen_model",            "qwen-plus"),
+                "openai_compatible_key": config.get("llm.openai_compatible_api_key", ""),
+                "openai_compatible_model": config.get("llm.openai_compatible_model", ""),
+                "openai_compatible_base_url": config.get("llm.openai_compatible_base_url", ""),
                 "stt_model":       config.get("stt.model",                 "base"),
                 "stt_language":    config.get("stt.language",              "vi"),
+                "stt_funasr_model": config.get("stt.funasr_model",         "iic/SenseVoiceSmall"),
                 "tts_backend":     config.get("tts.backend",               "edge"),
                 "tts_voice":       config.get("tts.voice",                 "vi-VN-HoaiMyNeural"),
                 "fish_api_key":    config.get("tts.fish_audio_api_key",    ""),
@@ -650,7 +660,7 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                 "screen_awareness":config.get("features.screenAwareness",  False),
                 "twitch_mode":     config.get("features.twitchMode",       False),
                 "twitch_channel":  config.get("twitch.channel",            ""),
-                "interaction_mode": config.get("app.interactionMode",       "assistant"),
+                "interaction_mode": config.get("app.interactionMode",       "streamer"),
                 "avatar_model":     config.get("app.avatarModel",            "assets/live2d/IceGirl/IceGirl.model3.json"),
             })
             return
@@ -774,6 +784,7 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
         global _generation_interrupted
         _generation_interrupted = False
         text = str(payload.get("text", "")).strip()
+        image = payload.get("image")
         context = payload.get("context", {})
 
         # Handle Pose & Mic Prop Commands
@@ -798,13 +809,17 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
         # Xử lý các lệnh chat đổi mô hình nhanh
         if text.startswith("/model "):
             new_provider = text.removeprefix("/model ").strip().lower()
-            if new_provider in ["ollama", "gemini", "openai"]:
+            if new_provider in ["ollama", "gemini", "openai", "deepseek", "glm", "qwen", "openai-compatible"]:
                 try:
                     config.set("llm.provider", new_provider)
                     provider_names = {
                         "ollama": "Ollama (Chạy local trên máy)",
                         "gemini": "Gemini API (Đám mây siêu nhẹ)",
-                        "openai": "OpenAI API (Đám mây)"
+                        "openai": "OpenAI API (Đám mây)",
+                        "deepseek": "DeepSeek API",
+                        "glm": "Zhipu GLM API",
+                        "qwen": "DashScope Qwen API",
+                        "openai-compatible": "OpenAI-Compatible Custom API"
                     }
                     self._send_chunk({"type": "text", "text": f"Đã chuyển sang dùng bộ não {provider_names[new_provider]} thành công! [wink] Từ giờ mình sẽ dùng mô hình này nhé."})
                     self._send_chunk({"type": "done", "text": "", "emotion": "wink", "motion": "nod", "audio_url": None, "duration_ms": 0})
@@ -814,13 +829,13 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                     self._send_chunk({"type": "done", "text": "", "emotion": "sad", "motion": "shake", "audio_url": None, "duration_ms": 0})
                     return
             else:
-                self._send_chunk({"type": "text", "text": "Mô hình không hợp lệ. Vui lòng gõ: `/model ollama`, `/model gemini`, hoặc `/model openai` nhé!"})
+                self._send_chunk({"type": "text", "text": "Mô hình không hợp lệ. Vui lòng gõ: `/model ollama`, `/model gemini`, `/model openai`, `/model deepseek`, `/model glm`, `/model qwen`, hoặc `/model openai-compatible` nhé!"})
                 self._send_chunk({"type": "done", "text": "", "emotion": "thinking", "motion": "idle", "audio_url": None, "duration_ms": 0})
                 return
 
         if text.startswith("/stt "):
             new_stt = text.removeprefix("/stt ").strip().lower()
-            if new_stt in ["tiny", "base", "small"]:
+            if new_stt in ["tiny", "base", "small", "funasr"]:
                 try:
                     config.set("stt.model", new_stt)
                     
@@ -848,7 +863,7 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                     self._send_chunk({"type": "done", "text": "", "emotion": "sad", "motion": "shake", "audio_url": None, "duration_ms": 0})
                     return
             else:
-                self._send_chunk({"type": "text", "text": "Mô hình STT không hợp lệ. Vui lòng gõ: `/stt tiny`, `/stt base` hoặc `/stt small` nhé!"})
+                self._send_chunk({"type": "text", "text": "Mô hình STT không hợp lệ. Vui lòng gõ: `/stt tiny`, `/stt base`, `/stt small` hoặc `/stt funasr` nhé!"})
                 self._send_chunk({"type": "done", "text": "", "emotion": "thinking", "motion": "idle", "audio_url": None, "duration_ms": 0})
                 return
 
@@ -924,7 +939,7 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
             full_reply_parts = []
             current_emotion = initial_emotion
 
-            async for chunk in cognition.reason_stream(text, context):
+            async for chunk in cognition.reason_stream(text, context, image=image):
                 if _generation_interrupted:
                     logger.info("Generation interrupted by client request.")
                     break

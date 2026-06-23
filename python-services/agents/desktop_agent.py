@@ -49,13 +49,13 @@ class DesktopAgent:
             if result["success"]:
                 return {
                     "success": True,
-                    "message": f"Minh da mo {app_name}.",
+                    "message": f"Mình đã mở {app_name}.",
                     "app": app_name,
                 }
 
         return {
             "success": False,
-            "error": f"Minh chua tim thay ung dung '{app_name}'.",
+            "error": f"Mình chưa tìm thấy ứng dụng '{app_name}'.",
             "tried": candidates,
         }
 

@@ -17,7 +17,7 @@ favorite_topics:
   - Programming
 tts:
   voice: "vi-VN-HoaiMyNeural"
-  pitch: "+15%"
+  pitch: "+15Hz"
   rate: "+12%"
   kokoro_voice: "af_sarah"
   kokoro_speed: 1.05

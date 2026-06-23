@@ -18,7 +18,7 @@ favorite_topics:
   - Snacks
 tts:
   voice: "vi-VN-HoaiMyNeural"
-  pitch: "+20%"
+  pitch: "+20Hz"
   rate: "+18%"
   kokoro_voice: "af_sky"
   kokoro_speed: 1.15

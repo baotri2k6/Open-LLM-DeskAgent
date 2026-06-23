@@ -9,7 +9,7 @@ class CognitionEngine:
     def __init__(self, llm_service: LLMService | None = None) -> None:
         self.llm = llm_service or LLMService()
 
-    async def reason_stream(self, prompt: str, context: dict) -> AsyncGenerator[dict, None]:
+    async def reason_stream(self, prompt: str, context: dict, image: str | None = None) -> AsyncGenerator[dict, None]:
         """
         Nhận vào prompt và context packet (Perception + Memory).
         Thực hiện LLM Reasoning và sinh luồng phản hồi chứa:
@@ -18,7 +18,7 @@ class CognitionEngine:
         """
         parser = EmotionStreamParser()
         
-        async for token in self.llm.chat_stream(prompt, context):
+        async for token in self.llm.chat_stream(prompt, context, image=image):
             # Chuyển tiếp trực tiếp nếu token là dict (sự kiện hệ thống hoặc phê duyệt)
             if isinstance(token, dict):
                 yield token

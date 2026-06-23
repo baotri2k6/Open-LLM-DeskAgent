@@ -18,7 +18,7 @@ favorite_topics:
   - Mr. Tail
 tts:
   voice: "vi-VN-HoaiMyNeural"
-  pitch: "+28%"
+  pitch: "+28Hz"
   rate: "+2%"
   kokoro_voice: "af_bella"
   kokoro_speed: 0.85

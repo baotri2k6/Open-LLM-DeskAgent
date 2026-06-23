@@ -159,7 +159,7 @@ function registerAiIpc(ipcMain, windows) {
     }
   });
 
-  ipcMain.handle('ai:chat', async (_e, { text, context }) => {
+  ipcMain.handle('ai:chat', async (_e, { text, image, context }) => {
     return new Promise((resolve) => {
       let fullText = '';
       let audioUrl = null;
@@ -168,7 +168,7 @@ function registerAiIpc(ipcMain, windows) {
       requestStream(
         'POST',
         '/chat',
-        { text, context },
+        { text, image, context },
         chunk => {
           if (chunk.type === 'start') {
             sendToTargets('set:emotion', chunk.emotion || 'normal');

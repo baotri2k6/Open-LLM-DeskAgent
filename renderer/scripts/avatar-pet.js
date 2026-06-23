@@ -296,7 +296,6 @@ async function startRecording() {
     draftInterval = setInterval(async () => {
       if (!isRecording) return;
       if (sttProcessing) {
-        console.log("[ASR] Skipping draft chunk transcription: previous STT request is still processing.");
         return;
       }
       const b64 = await recorder.getWavBase64();
@@ -326,7 +325,7 @@ async function startRecording() {
       } finally {
         sttProcessing = false;
       }
-    }, 1500);
+    }, 2500);
 
   } catch (err) {
     console.error("[startRecording] error:", err);
@@ -724,7 +723,7 @@ async function applyInitialMode() {
   try {
     const res = await window.companion.invoke('ai:get-config');
     if (res && !res.error) {
-      currentInteractionMode = res.interaction_mode || 'assistant';
+      currentInteractionMode = res.interaction_mode || 'streamer';
       const petConsole = document.getElementById("petConsole");
       if (petConsole) {
         petConsole.classList.toggle("hidden", currentInteractionMode === 'streamer');

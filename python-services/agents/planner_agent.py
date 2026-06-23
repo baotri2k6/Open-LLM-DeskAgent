@@ -36,7 +36,7 @@ class PlannerAgent:
         t = text.lower().strip()
 
         # Thời gian
-        if re.search(r"(mấy giờ|bây giờ|thời gian|ngày mấy|hôm nay|may gio|bay gio)", t):
+        if re.search(r"(mấy giờ|bây giờ|thời gian|ngày mấy|hôm nay|mấy giờ|bây giờ)", t):
             return {"name": "time"}
 
         # Nhớ thông tin

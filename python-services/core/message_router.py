@@ -17,7 +17,7 @@ class MessageRouter:
             return {
                 "type": "error",
                 "code": "empty_message",
-                "message": "Tin nhan dang trong.",
+                "message": "Tin nhắn đang trống.",
             }
 
         response = await self.planner.handle_message(text, payload.get("context", {}))

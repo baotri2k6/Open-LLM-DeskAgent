@@ -1,7 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('companion', {
-  chat:        (text, ctx = {}) => ipcRenderer.invoke('ai:chat', { text, context: ctx }),
+  chat:        (text, image = null, ctx = {}) => ipcRenderer.invoke('ai:chat', { text, image, context: ctx }),
   health:      ()               => ipcRenderer.invoke('ai:health'),
   avatarClick: ()               => ipcRenderer.send('avatar:click'),
   hideAvatar:  ()               => ipcRenderer.send('avatar:hide'),

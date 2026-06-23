@@ -47,11 +47,18 @@
             <select id="sttSelect">
               <option value="tiny">Whisper Tiny (Cpu Nhanh)</option>
               <option value="base">Whisper Base (Chuẩn)</option>
+              <option value="funasr">Alibaba FunASR (SenseVoice)</option>
             </select>
           </div>
         </div>
+        <!-- Image Preview Area -->
+        <div id="imagePreviewArea" class="image-preview-area" style="display: none;">
+          <img id="imagePreviewThumbnail" src="" alt="preview" />
+          <button type="button" id="clearImageButton" class="clear-img-btn">×</button>
+        </div>
 
         <form id="chatForm" class="chat-form">
+          <button type="button" id="attachButton" class="attach-btn" title="Đính kèm ảnh">📎</button>
           <input
             id="chatInput"
             type="text"
@@ -60,6 +67,7 @@
           />
           <button type="submit">Send</button>
         </form>
+        <input type="file" id="fileInput" accept="image/*" style="display: none;" />
       </section>
     </main>
 

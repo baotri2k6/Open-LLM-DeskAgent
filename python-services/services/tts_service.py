@@ -156,16 +156,31 @@ class _EdgeTTS:
         import edge_tts
         tts_cfg = _get_active_persona_tts_config()
         voice = tts_cfg.get("voice") or config.get("tts.voice", self.DEFAULT_VOICE)
-        pitch = tts_cfg.get("pitch") or config.get("tts.pitch", "+20%")
         
+        # Sanitize pitch (must match r"^[+-]\d+Hz$")
+        pitch_val = tts_cfg.get("pitch") or config.get("tts.pitch") or "+20Hz"
+        if isinstance(pitch_val, str):
+            pitch = pitch_val.replace("%", "Hz")
+            if not pitch.endswith("Hz"):
+                pitch = pitch + "Hz"
+            if not (pitch.startswith("+") or pitch.startswith("-")):
+                pitch = "+" + pitch
+        else:
+            pitch = "+20Hz"
+            
         # Nếu là tiếng Anh mà cấu hình giọng nói lại là tiếng Việt, tự động chuyển sang giọng tiếng Anh dễ thương
         if not is_vietnamese(text) and voice.startswith("vi-"):
             voice = "en-US-EmmaNeural"
-            pitch = "+10%"
+            pitch = "+10Hz"
         
+        # Sanitize rate (must match r"^[+-]\d+%$")
         rate_cfg = tts_cfg.get("rate") or config.get("tts.rate")
-        if isinstance(rate_cfg, str) and rate_cfg.endswith("%"):
+        if isinstance(rate_cfg, str):
             rate = rate_cfg
+            if not rate.endswith("%"):
+                rate = rate + "%"
+            if not (rate.startswith("+") or rate.startswith("-")):
+                rate = "+" + rate
         else:
             rate = "+10%"
 

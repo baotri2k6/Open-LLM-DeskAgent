@@ -27,6 +27,17 @@ function syncTwitchWrap(checked) {
   }
 }
 
+// ─── Toggle LLM config containers ─────────────────────────────
+function toggleLLMSubConfigs(provider) {
+  document.querySelectorAll(".llm-sub-config").forEach((block) => {
+    block.style.display = "none";
+  });
+  const activeBlock = document.getElementById(`config-${provider}`);
+  if (activeBlock) {
+    activeBlock.style.display = "block";
+  }
+}
+
 // ─── Load config ─────────────────────────────────────────────
 async function loadConfig() {
   if (!window.companion) return;
@@ -34,8 +45,34 @@ async function loadConfig() {
     const res = await window.companion.invoke("ai:get-config");
     if (!res || res.error) return;
 
-    if (llmSelect) llmSelect.value = res.llm_provider || "ollama";
-    if (sttSelect) sttSelect.value = res.stt_model || "base";
+    if (llmSelect) {
+      llmSelect.value = res.llm_provider || "ollama";
+      toggleLLMSubConfigs(res.llm_provider || "ollama");
+    }
+    
+    // Populate subconfig inputs
+    if (document.getElementById("geminiKeyInput")) document.getElementById("geminiKeyInput").value = res.gemini_key || "";
+    if (document.getElementById("geminiModelInput")) document.getElementById("geminiModelInput").value = res.gemini_model || "";
+    if (document.getElementById("openaiKeyInput")) document.getElementById("openaiKeyInput").value = res.openai_key || "";
+    if (document.getElementById("openaiModelInput")) document.getElementById("openaiModelInput").value = res.openai_model || "";
+    if (document.getElementById("deepseekKeyInput")) document.getElementById("deepseekKeyInput").value = res.deepseek_key || "";
+    if (document.getElementById("deepseekModelInput")) document.getElementById("deepseekModelInput").value = res.deepseek_model || "";
+    if (document.getElementById("glmKeyInput")) document.getElementById("glmKeyInput").value = res.glm_key || "";
+    if (document.getElementById("glmModelInput")) document.getElementById("glmModelInput").value = res.glm_model || "";
+    if (document.getElementById("qwenKeyInput")) document.getElementById("qwenKeyInput").value = res.qwen_key || "";
+    if (document.getElementById("qwenModelInput")) document.getElementById("qwenModelInput").value = res.qwen_model || "";
+    if (document.getElementById("openaiCompatibleKeyInput")) document.getElementById("openaiCompatibleKeyInput").value = res.openai_compatible_key || "";
+    if (document.getElementById("openaiCompatibleModelInput")) document.getElementById("openaiCompatibleModelInput").value = res.openai_compatible_model || "";
+    if (document.getElementById("openaiCompatibleBaseUrlInput")) document.getElementById("openaiCompatibleBaseUrlInput").value = res.openai_compatible_base_url || "";
+
+    if (sttSelect) {
+      sttSelect.value = res.stt_model || "base";
+      const block = document.getElementById("stt-funasr-config");
+      if (block) block.style.display = (sttSelect.value === "funasr") ? "block" : "none";
+    }
+    if (document.getElementById("sttFunasrModelInput")) {
+      document.getElementById("sttFunasrModelInput").value = res.stt_funasr_model || "";
+    }
     if (chkTwitchMode) chkTwitchMode.checked = Boolean(res.twitch_mode);
     if (txtTwitchChannel) txtTwitchChannel.value = res.twitch_channel || "";
 
@@ -64,6 +101,7 @@ if (!window.companion) {
   console.error("[settings] window.companion undefined!");
 } else {
   llmSelect?.addEventListener("change", async () => {
+    toggleLLMSubConfigs(llmSelect.value);
     const res = await window.companion.invoke("ai:update-config", {
       key: "llm.provider",
       value: llmSelect.value,
@@ -71,7 +109,36 @@ if (!window.companion) {
     if (res && !res.error) showStatus();
   });
 
+  const bindConfigInput = (elemId, configKey, label) => {
+    const elem = document.getElementById(elemId);
+    elem?.addEventListener("change", async () => {
+      const res = await window.companion.invoke("ai:update-config", {
+        key: configKey,
+        value: elem.value,
+      });
+      if (res && !res.error) showStatus(`Đã lưu ${label}`);
+    });
+  };
+
+  bindConfigInput("geminiKeyInput", "llm.gemini_api_key", "Gemini Key");
+  bindConfigInput("geminiModelInput", "llm.gemini_model", "Gemini Model");
+  bindConfigInput("openaiKeyInput", "llm.openai_api_key", "OpenAI Key");
+  bindConfigInput("openaiModelInput", "llm.openai_model", "OpenAI Model");
+  bindConfigInput("deepseekKeyInput", "llm.deepseek_api_key", "DeepSeek Key");
+  bindConfigInput("deepseekModelInput", "llm.deepseek_model", "DeepSeek Model");
+  bindConfigInput("glmKeyInput", "llm.glm_api_key", "GLM Key");
+  bindConfigInput("glmModelInput", "llm.glm_model", "GLM Model");
+  bindConfigInput("qwenKeyInput", "llm.qwen_api_key", "Qwen Key");
+  bindConfigInput("qwenModelInput", "llm.qwen_model", "Qwen Model");
+  bindConfigInput("openaiCompatibleKeyInput", "llm.openai_compatible_api_key", "Custom Key");
+  bindConfigInput("openaiCompatibleModelInput", "llm.openai_compatible_model", "Custom Model");
+  bindConfigInput("openaiCompatibleBaseUrlInput", "llm.openai_compatible_base_url", "Custom Base URL");
+  bindConfigInput("sttFunasrModelInput", "stt.funasr_model", "FunASR Model");
+ 
   sttSelect?.addEventListener("change", async () => {
+    const block = document.getElementById("stt-funasr-config");
+    if (block) block.style.display = (sttSelect.value === "funasr") ? "block" : "none";
+
     const res = await window.companion.invoke("ai:update-config", {
       key: "stt.model",
       value: sttSelect.value,

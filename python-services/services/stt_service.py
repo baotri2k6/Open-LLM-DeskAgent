@@ -56,6 +56,32 @@ class _OpenAIWhisperSTT:
         return result["text"].strip()
 
 
+class _FunASRSTT:
+    def __init__(self, model_name: str = "iic/SenseVoiceSmall") -> None:
+        from funasr import AutoModel
+        import torch
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        logger.info("Loading FunASR model '%s' on %s", model_name, device)
+        self._model = AutoModel(
+            model=model_name,
+            vad_model="fsmn-vad",
+            punc_model="ct-punc",
+            device=device,
+            disable_update=True
+        )
+        logger.info("FunASR ready")
+
+    def transcribe(self, audio_path: str, language: str = "vi") -> str:
+        try:
+            res = self._model.generate(input=audio_path, cache={}, language=language)
+        except Exception:
+            res = self._model.generate(input=audio_path)
+            
+        if res and isinstance(res, list) and len(res) > 0:
+            return res[0].get("text", "").strip()
+        return ""
+
+
 # ─── STTService facade ───────────────────────────────────────────────────────
 
 class STTService:
@@ -67,6 +93,18 @@ class STTService:
         self._lock = threading.Lock()
 
     def _load_backend(self, model_size: str):
+        if model_size == "funasr":
+            funasr_model = config.get("stt.funasr_model", "iic/SenseVoiceSmall")
+            try:
+                return _FunASRSTT(funasr_model)
+            except Exception as e:
+                logger.error(
+                    "Không nạp được FunASR backend: %s. "
+                    "Hãy chắc chắn đã chạy: pip install funasr modelscope torchaudio. "
+                    "Fallback về Whisper base...", e
+                )
+                model_size = "base"
+
         try:
             return _FasterWhisperSTT(model_size)
         except ImportError:

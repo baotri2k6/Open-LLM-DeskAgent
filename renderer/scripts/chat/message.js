@@ -8,7 +8,39 @@ export function renderMessage({ role, text }) {
 
   const body = document.createElement('div');
   body.className = 'msg-body';
-  body.textContent = text;
+
+  // Parse simple markdown image: ![image](data:image/...)
+  const imgRegex = /!\[.*?\]\((data:image\/.*?;base64,.*?)\)/g;
+  let match;
+  let lastIndex = 0;
+  let hasImage = false;
+
+  while ((match = imgRegex.exec(text)) !== null) {
+    hasImage = true;
+    const textBefore = text.slice(lastIndex, match.index);
+    if (textBefore) {
+      body.appendChild(document.createTextNode(textBefore));
+    }
+    
+    const img = document.createElement('img');
+    img.src = match[1];
+    img.style.maxWidth = '100%';
+    img.style.maxHeight = '140px';
+    img.style.borderRadius = '6px';
+    img.style.marginTop = '6px';
+    img.style.display = 'block';
+    body.appendChild(img);
+    
+    lastIndex = imgRegex.lastIndex;
+  }
+  
+  if (lastIndex < text.length) {
+    body.appendChild(document.createTextNode(text.slice(lastIndex)));
+  }
+  
+  if (!hasImage) {
+    body.textContent = text;
+  }
 
   wrap.append(label, body);
   return wrap;

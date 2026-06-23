@@ -11,6 +11,14 @@ const voiceButton = document.getElementById('voiceButton');
 const statusPill = document.getElementById('serviceStatus');
 const llmSelect = document.getElementById('llmSelect');
 const sttSelect = document.getElementById('sttSelect');
+
+const attachButton = document.getElementById('attachButton');
+const fileInput = document.getElementById('fileInput');
+const imagePreviewArea = document.getElementById('imagePreviewArea');
+const imagePreviewThumbnail = document.getElementById('imagePreviewThumbnail');
+const clearImageButton = document.getElementById('clearImageButton');
+
+let attachedImageBase64 = null;
 const avatar = new AvatarController({
   wrap: document.getElementById('avatarWrap'),
   light: document.getElementById('expressionLight'),
@@ -131,11 +139,21 @@ window.companion.on('tts:audio', async ({ url, duration_ms: durationMs } = {}) =
 form.addEventListener('submit', async event => {
   event.preventDefault();
   const text = input.value.trim();
-  if (!text) return;
+  if (!text && !attachedImageBase64) return;
+
+  const imageToSend = attachedImageBase64;
 
   input.value = '';
+  attachedImageBase64 = null;
+  if (fileInput) fileInput.value = '';
+  if (imagePreviewArea) imagePreviewArea.style.display = 'none';
+  if (imagePreviewThumbnail) imagePreviewThumbnail.src = '';
+
   streamEl = null;
-  addMessage('user', text);
+  
+  // Hiển thị ảnh xem trước trực tiếp trong bong bóng chat của người dùng
+  const displayMsg = imageToSend ? `${text ? text + ' ' : ''}![image](${imageToSend})` : text;
+  addMessage('user', displayMsg);
   setBusy(true);
 
   // Reset audio queue state
@@ -143,12 +161,37 @@ form.addEventListener('submit', async event => {
   ttsPlaying = false;
   chatDone = false;
 
-  const res = await window.companion.chat(text, { locale: 'vi-VN' });
+  const res = await window.companion.chat(text, imageToSend, { locale: 'vi-VN' });
   if (!res?.ok) {
     addMessage('assistant', 'Backend dang offline. Ban khoi dong lai Python service giup minh nhe.');
     setBusy(false);
     setServiceStatus(false);
   }
+});
+
+// Đính kèm ảnh từ máy tính
+attachButton?.addEventListener('click', () => {
+  fileInput?.click();
+});
+
+fileInput?.addEventListener('change', event => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    attachedImageBase64 = e.target.result;
+    if (imagePreviewThumbnail) imagePreviewThumbnail.src = attachedImageBase64;
+    if (imagePreviewArea) imagePreviewArea.style.display = 'flex';
+  };
+  reader.readAsDataURL(file);
+});
+
+clearImageButton?.addEventListener('click', () => {
+  attachedImageBase64 = null;
+  if (fileInput) fileInput.value = '';
+  if (imagePreviewArea) imagePreviewArea.style.display = 'none';
+  if (imagePreviewThumbnail) imagePreviewThumbnail.src = '';
 });
 
 voiceButton.addEventListener('click', async () => {

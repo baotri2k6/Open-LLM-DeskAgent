@@ -23,11 +23,11 @@ class BrowserAgent:
     async def open_url(self, url: str) -> dict:
         result = open_url(url)
         if result["success"]:
-            return {"success": True, "message": f"Da mo {result['url']}."}
-        return {"success": False, "message": result.get("error", "Khong mo duoc URL.")}
+            return {"success": True, "message": f"Đã mở {result['url']}."}
+        return {"success": False, "message": result.get("error", "Không mở được URL.")}
 
     async def open_google(self, query: str) -> dict:
         result = search_google(query)
         if result["success"]:
-            return {"success": True, "message": f"Da mo Google tim '{query}'."}
+            return {"success": True, "message": f"Đã mở Google tìm '{query}'."}
         return {"success": False, "message": result.get("error")}

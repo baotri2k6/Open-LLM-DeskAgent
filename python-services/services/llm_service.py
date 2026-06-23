@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import urllib.request
 import urllib.error
 import asyncio
@@ -20,7 +21,7 @@ from tools.computer_control import mouse_click, mouse_move, keyboard_type, keybo
 from tools.file_writer import write_to_file
 from tools.file_reader import read_file
 from tools.browser_control import search_google, open_url
-from agents.desktop_agent import DesktopAgent
+from tools.mxh_tools import search_twitter, read_reddit_post, get_youtube_transcript, search_bilibili, read_webpage_jina
 from utils.approval_registry import wait_for_approval
 
 logger = get_logger("ai-companion.llm")
@@ -28,12 +29,57 @@ logger = get_logger("ai-companion.llm")
 OLLAMA_URL = "http://127.0.0.1:11434"
 
 
-def _get_model() -> str:
-    return config.get("llm.model", "qwen2.5:1.5b")
+def _get_llm_credentials() -> tuple[str, str, str, str]:
+    """Returns (provider, api_key, model, base_url)."""
+    provider = config.get("llm.provider", "ollama")
+    
+    if provider == "gemini":
+        api_key = config.get("llm.gemini_api_key") or os.getenv("GEMINI_API_KEY", "")
+        model = config.get("llm.gemini_model", "gemini-2.5-flash")
+        base_url = "https://generativelanguage.googleapis.com"
+        
+    elif provider == "openai":
+        api_key = config.get("llm.openai_api_key") or os.getenv("OPENAI_API_KEY", "")
+        model = config.get("llm.openai_model", "gpt-4o-mini")
+        base_url = "https://api.openai.com/v1"
+        
+    elif provider == "deepseek":
+        api_key = config.get("llm.deepseek_api_key") or os.getenv("DEEPSEEK_API_KEY", "")
+        model = config.get("llm.deepseek_model", "deepseek-chat")
+        base_url = config.get("llm.deepseek_base_url") or "https://api.deepseek.com/v1"
+        
+    elif provider == "glm":
+        api_key = config.get("llm.glm_api_key") or os.getenv("GLM_API_KEY", "")
+        model = config.get("llm.glm_model", "glm-4")
+        base_url = config.get("llm.glm_base_url") or "https://open.bigmodel.cn/api/paas/v4"
+        
+    elif provider == "qwen":
+        api_key = config.get("llm.qwen_api_key") or os.getenv("QWEN_API_KEY", "")
+        model = config.get("llm.qwen_model", "qwen-plus")
+        base_url = config.get("llm.qwen_base_url") or "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        
+    elif provider == "openai-compatible":
+        api_key = config.get("llm.openai_compatible_api_key") or os.getenv("OPENAI_COMPATIBLE_API_KEY", "")
+        model = config.get("llm.openai_compatible_model", "")
+        base_url = config.get("llm.openai_compatible_base_url", "")
+        
+    else: # ollama
+        api_key = ""
+        model = config.get("llm.model", "qwen2.5:1.5b")
+        base_url = config.get("llm.host") or OLLAMA_URL
+        
+    return provider, api_key, model, base_url
 
 
-def _get_provider() -> str:
-    return config.get("llm.provider", "ollama")
+def _is_multimodal_model(provider: str, model: str) -> bool:
+    if provider == "gemini":
+        return True
+    if provider == "openai" and ("gpt-4o" in model or "gpt-4-vision" in model):
+        return True
+    model_lower = model.lower()
+    if any(k in model_lower for k in ["vl", "vision", "multimodal", "-v", "glm-4v", "llava", "minicpm", "mllama"]):
+        return True
+    return False
 
 
 def _to_gemini_format(messages: list[dict]) -> tuple[list[dict], dict | None]:
@@ -52,8 +98,24 @@ def _to_gemini_format(messages: list[dict]) -> tuple[list[dict], dict | None]:
         else:
             mapped_role = "user" if role == "user" else "model"
             parts = []
-            if content:
-                parts.append({"text": content})
+            if isinstance(content, list):
+                for item in content:
+                    if item.get("type") == "text":
+                        parts.append({"text": item["text"]})
+                    elif item.get("type") == "image_url":
+                        img_url = item["image_url"]["url"]
+                        if img_url.startswith("data:"):
+                            header, b64_data = img_url.split(",", 1)
+                            mime_type = header.split(";")[0].split(":")[1]
+                            parts.append({
+                                "inlineData": {
+                                    "mimeType": mime_type,
+                                    "data": b64_data
+                                }
+                            })
+            else:
+                if content:
+                    parts.append({"text": content})
             if "functionCall" in msg:
                 parts.append({"functionCall": msg["functionCall"]})
             if "functionResponse" in msg:
@@ -117,8 +179,11 @@ def _gemini_chat_with_tools(contents: list, system_instruction: dict | None, api
         return json.loads(resp.read().decode("utf-8"))
 
 
-def _openai_chat_with_tools(messages: list, api_key: str, model: str, tools: list | None = None) -> dict:
-    url = "https://api.openai.com/v1/chat/completions"
+def _openai_chat_with_tools(messages: list, api_key: str, model: str, base_url: str, tools: list | None = None) -> dict:
+    url = base_url.rstrip("/")
+    if not url.endswith("/chat/completions") and not url.endswith("/completions"):
+        url = f"{url}/chat/completions"
+        
     payload = {
         "model": model,
         "messages": messages,
@@ -127,30 +192,66 @@ def _openai_chat_with_tools(messages: list, api_key: str, model: str, tools: lis
     if tools:
         payload["tools"] = tools
         
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+        
     req = urllib.request.Request(
         url,
         data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}"
-        },
+        headers=headers,
         method="POST"
     )
     with urllib.request.urlopen(req, timeout=45) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
 
-def _ollama_chat_with_tools(messages: list[dict], model: str, tools: list | None = None) -> dict:
+def _to_ollama_format(messages: list[dict]) -> list[dict]:
+    ollama_messages = []
+    for msg in messages:
+        role = msg.get("role")
+        content = msg.get("content")
+        new_msg = {"role": role}
+        
+        if isinstance(content, list):
+            text_parts = []
+            images = []
+            for item in content:
+                if item.get("type") == "text":
+                    text_parts.append(item["text"])
+                elif item.get("type") == "image_url":
+                    img_url = item["image_url"]["url"]
+                    if img_url.startswith("data:"):
+                        try:
+                            _, b64_data = img_url.split(",", 1)
+                            images.append(b64_data)
+                        except Exception:
+                            pass
+            new_msg["content"] = "\n".join(text_parts)
+            if images:
+                new_msg["images"] = images
+        else:
+            new_msg["content"] = content
+            
+        for k in ["tool_calls", "functionCall", "functionResponse"]:
+            if k in msg:
+                new_msg[k] = msg[k]
+        ollama_messages.append(new_msg)
+    return ollama_messages
+
+
+def _ollama_chat_with_tools(messages: list[dict], model: str, base_url: str, tools: list | None = None) -> dict:
+    formatted_messages = _to_ollama_format(messages)
     payload = {
         "model": model,
-        "messages": messages,
+        "messages": formatted_messages,
         "stream": False,
     }
     if tools:
         payload["tools"] = tools
         
     req = urllib.request.Request(
-        f"{OLLAMA_URL}/api/chat",
+        f"{base_url.rstrip('/')}/api/chat",
         data=json.dumps(payload).encode("utf-8"),
         headers={"Content-Type": "application/json"},
         method="POST",
@@ -185,10 +286,21 @@ async def execute_tool(name: str, args: dict) -> dict:
         elif name == "keyboard_press":
             return keyboard_press(args.get("keys", ""))
         elif name == "open_application":
+            from agents.desktop_agent import DesktopAgent
             agent = DesktopAgent()
             return await agent.open_application(args.get("app_name", ""))
         elif name == "search_google":
             return search_google(args.get("query", ""))
+        elif name == "search_twitter":
+            return search_twitter(args.get("query", ""), int(args.get("limit", 5)))
+        elif name == "read_reddit_post":
+            return read_reddit_post(args.get("subreddit", ""), int(args.get("limit", 5)))
+        elif name == "get_youtube_transcript":
+            return get_youtube_transcript(args.get("video_url", ""))
+        elif name == "search_bilibili":
+            return search_bilibili(args.get("query", ""), int(args.get("limit", 5)))
+        elif name == "read_webpage_jina":
+            return read_webpage_jina(args.get("url", ""))
         else:
             return {"success": False, "error": f"Không tìm thấy tool: {name}"}
     except Exception as exc:
@@ -238,6 +350,11 @@ Các công cụ khả dụng bao gồm:
 7. `keyboard_press` (args: `keys`): Nhấn phím nóng.
 8. `open_application` (args: `app_name`): Mở ứng dụng.
 9. `search_google` (args: `query`): Tìm kiếm Google.
+10. `search_twitter` (args: `query`, `limit`): Tìm kiếm bài đăng trên Twitter/X.
+11. `read_reddit_post` (args: `subreddit`, `limit`): Đọc bài viết hot trên Reddit.
+12. `get_youtube_transcript` (args: `video_url`): Tải phụ đề video YouTube.
+13. `search_bilibili` (args: `query`, `limit`): Tìm video trên Bilibili.
+14. `read_webpage_jina` (args: `url`): Đọc toàn bộ nội dung của trang web.
 
 Sau khi hệ thống trả về kết quả chạy của công cụ, bạn có thể phân tích kết quả đó để tiếp tục gọi công cụ khác hoặc đưa ra câu trả lời cuối cùng bằng ngôn ngữ tự nhiên thông thường.
 """
@@ -347,6 +464,64 @@ TOOLS_SCHEMA = [
             },
             "required": ["query"]
         }
+    },
+    {
+        "name": "search_twitter",
+        "description": "Tìm kiếm các thảo luận, tin tức gần đây trên Twitter/X.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Từ khóa tìm kiếm."},
+                "limit": {"type": "integer", "description": "Số lượng bài đăng muốn lấy (mặc định 5)."}
+            },
+            "required": ["query"]
+        }
+    },
+    {
+        "name": "read_reddit_post",
+        "description": "Đọc các bài đăng hot nhất trên một Subreddit của Reddit.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "subreddit": {"type": "string", "description": "Tên Subreddit (ví dụ: 'python', 'funny')."},
+                "limit": {"type": "integer", "description": "Số lượng bài đăng muốn lấy (mặc định 5)."}
+            },
+            "required": ["subreddit"]
+        }
+    },
+    {
+        "name": "get_youtube_transcript",
+        "description": "Tải transcript/phụ đề của một video YouTube.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "video_url": {"type": "string", "description": "Đường dẫn URL của video YouTube."}
+            },
+            "required": ["video_url"]
+        }
+    },
+    {
+        "name": "search_bilibili",
+        "description": "Tìm kiếm video và nội dung trên Bilibili.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Từ khóa tìm kiếm."},
+                "limit": {"type": "integer", "description": "Số lượng kết quả (mặc định 5)."}
+            },
+            "required": ["query"]
+        }
+    },
+    {
+        "name": "read_webpage_jina",
+        "description": "Đọc nội dung đầy đủ của một trang web hoặc bài báo cụ thể bằng Jina Reader.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "url": {"type": "string", "description": "Đường dẫn URL của trang web cần đọc."}
+            },
+            "required": ["url"]
+        }
     }
 ]
 
@@ -388,17 +563,17 @@ class LLMService:
             
         return False
 
-    async def chat(self, message: str, context: dict | None = None) -> str:
+    async def chat(self, message: str | list, context: dict | None = None, image: str | None = None) -> str:
         """Đồng bộ chat: Gọi qua agent_loop và ghép các token văn bản lại."""
         text_parts = []
-        async for chunk in self.chat_stream(message, context):
+        async for chunk in self.chat_stream(message, context, image=image):
             if isinstance(chunk, str):
                 text_parts.append(chunk)
             elif isinstance(chunk, dict) and chunk.get("type") == "text":
                 text_parts.append(chunk["text"])
         return "".join(text_parts).strip()
 
-    async def chat_stream(self, message: str, context: dict | None = None):
+    async def chat_stream(self, message: str | list, context: dict | None = None, image: str | None = None):
         """Streaming chat: Khởi tạo luồng agent_loop để trả về tokens và sự kiện duyệt."""
         context = context or {}
 
@@ -406,7 +581,18 @@ class LLMService:
         rel_level = companion_ctx.get("rel_level", "Người quen")
         mood = companion_ctx.get("mood", "vui vẻ")
         time_note = companion_ctx.get("time_note", "")
-        force_eng = not self._is_vietnamese(message)
+
+        # Trích xuất plain text nếu message là danh sách multimodal
+        plain_text = ""
+        if isinstance(message, list):
+            for part in message:
+                if part.get("type") == "text":
+                    plain_text += part["text"] + " "
+            plain_text = plain_text.strip()
+        else:
+            plain_text = message
+
+        force_eng = not self._is_vietnamese(plain_text)
         system_prompt = self._build_system_prompt(rel_level, mood, time_note, force_english=force_eng)
 
         messages = [{"role": "system", "content": system_prompt}]
@@ -448,15 +634,31 @@ class LLMService:
                 "content": f"Ngữ cảnh từ tài liệu người dùng (dùng để trả lời nếu liên quan):\n\n{rag_context}"
             })
 
-        messages.append({"role": "user", "content": message})
+        # Đính kèm ảnh nếu có
+        if image:
+            image_url = image if image.startswith("data:") else f"data:image/png;base64,{image}"
+            if isinstance(message, list):
+                messages.append({
+                    "role": "user",
+                    "content": message + [{"type": "image_url", "image_url": {"url": image_url}}]
+                })
+            else:
+                messages.append({
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": message},
+                        {"type": "image_url", "image_url": {"url": image_url}}
+                    ]
+                })
+        else:
+            messages.append({"role": "user", "content": message})
 
         # Bắt đầu vòng lặp Agent Loop
         async for chunk in self._run_agent_loop(messages, force_eng):
             yield chunk
 
     async def _run_agent_loop(self, messages: list[dict], force_eng: bool):
-        provider = _get_provider()
-        model = _get_model()
+        provider, api_key, model, base_url = _get_llm_credentials()
         tools = TOOLS_SCHEMA
         
         # Nếu đang chạy bằng Ollama, chêm thêm chỉ dẫn JSON Tool Calling vào Prompt Hệ thống
@@ -475,13 +677,11 @@ class LLMService:
             
             # 1. Gọi LLM API
             if provider == "gemini":
-                api_key = config.get("llm.gemini_api_key", "")
-                gemini_model = config.get("llm.gemini_model", "gemini-1.5-flash")
                 if api_key:
                     try:
                         contents, sys_instr_dict = _to_gemini_format(messages)
                         gemini_tools = _to_gemini_tools(tools) if config.get("features.desktopControl", True) else None
-                        res = _gemini_chat_with_tools(contents, sys_instr_dict, api_key, gemini_model, gemini_tools)
+                        res = _gemini_chat_with_tools(contents, sys_instr_dict, api_key, model, gemini_tools)
                         
                         candidate = res["candidates"][0]
                         content = candidate.get("content", {})
@@ -507,13 +707,11 @@ class LLMService:
                     yield " Gemini API Key đang để trống."
                     return
                     
-            elif provider == "openai":
-                api_key = config.get("llm.openai_api_key", "")
-                openai_model = config.get("llm.openai_model", "gpt-4o-mini")
-                if api_key:
+            elif provider in ["openai", "deepseek", "glm", "qwen", "openai-compatible"]:
+                if api_key or provider == "openai-compatible":
                     try:
                         openai_tools = _to_openai_tools(tools) if config.get("features.desktopControl", True) else None
-                        res = _openai_chat_with_tools(messages, api_key, openai_model, openai_tools)
+                        res = _openai_chat_with_tools(messages, api_key, model, base_url, openai_tools)
                         
                         msg = res["choices"][0]["message"]
                         response_text = msg.get("content") or ""
@@ -526,17 +724,17 @@ class LLMService:
                                     "args": json.loads(tc["function"].get("arguments", "{}"))
                                 })
                     except Exception as exc:
-                        logger.error("OpenAI API tools error: %s", exc)
-                        yield f" Có lỗi khi gọi OpenAI: {exc}"
+                        logger.error("%s API tools error: %s", provider.upper(), exc)
+                        yield f" Có lỗi khi gọi {provider.upper()}: {exc}"
                         return
                 else:
-                    yield " OpenAI API Key đang để trống."
+                    yield f" {provider.upper()} API Key đang để trống."
                     return
                     
             else: # ollama
                 try:
                     ollama_tools = _to_openai_tools(tools) if config.get("features.desktopControl", True) else None
-                    res = _ollama_chat_with_tools(messages, model, ollama_tools)
+                    res = _ollama_chat_with_tools(messages, model, base_url, ollama_tools)
                     
                     msg = res.get("message", {})
                     response_text = msg.get("content") or ""
@@ -578,7 +776,7 @@ class LLMService:
                     for tc in tool_calls_to_run:
                         parts.append({"functionCall": {"name": tc["name"], "args": tc["args"]}})
                     messages.append({"role": "model", "parts": parts})
-                elif provider == "openai":
+                elif provider in ["openai", "deepseek", "glm", "qwen", "openai-compatible"]:
                     openai_tcs = []
                     for tc in tool_calls_to_run:
                         openai_tcs.append({
@@ -635,7 +833,7 @@ class LLMService:
                             "role": "user",
                             "parts": [{"functionResponse": {"name": t_name, "response": {"output": t_output}}}]
                         })
-                    elif provider == "openai":
+                    elif provider in ["openai", "deepseek", "glm", "qwen", "openai-compatible"]:
                         messages.append({
                             "role": "tool",
                             "tool_call_id": t_id,
