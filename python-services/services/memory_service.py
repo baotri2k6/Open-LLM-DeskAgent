@@ -376,3 +376,71 @@ class MemoryService:
                 logger.info("Memory Reflection: Tự động ghi nhớ %d ký ức mới vào database.", count)
         except Exception as exc:
             logger.warning("Memory Reflection failed: %s", exc)
+
+    def get_all_memories(self) -> list[dict[str, Any]]:
+        profile = self._read()
+        facts = profile.get("facts", [])
+        # Ensure every fact has an ID
+        dirty = False
+        import uuid
+        for fact in facts:
+            if "id" not in fact:
+                fact["id"] = str(uuid.uuid4())
+                dirty = True
+        if dirty:
+            self._write(profile)
+        return facts
+
+    def delete_memory(self, fact_id: str) -> bool:
+        profile = self._read()
+        facts = profile.get("facts", [])
+        new_facts = [f for f in facts if f.get("id") != fact_id]
+        if len(new_facts) == len(facts):
+            return False  # not found
+            
+        profile["facts"] = new_facts
+        self._write(profile)
+        
+        # Sync with ChromaDB
+        self._sync_all_memories_to_vector_store(new_facts)
+        return True
+
+    def update_memory(self, fact_id: str, new_text: str) -> bool:
+        profile = self._read()
+        facts = profile.get("facts", [])
+        found = False
+        for fact in facts:
+            if fact.get("id") == fact_id:
+                fact["text"] = new_text.strip()
+                fact["updatedAt"] = datetime.now().isoformat(timespec="seconds")
+                found = True
+                break
+        if not found:
+            return False
+            
+        self._write(profile)
+        # Sync with ChromaDB
+        self._sync_all_memories_to_vector_store(facts)
+        return True
+
+    def _sync_all_memories_to_vector_store(self, facts: list[dict[str, Any]]):
+        if not self._has_vector:
+            return
+        try:
+            # Delete old facts doc from ChromaDB
+            self._vector_store.delete_doc("facts")
+            
+            # Re-add all facts as chunks
+            from rag.chunker import Chunk
+            chunks = []
+            for i, fact in enumerate(facts):
+                chunks.append(Chunk(
+                    text=fact["text"].strip(),
+                    doc_id="facts",
+                    chunk_index=i,
+                    metadata={"category": fact.get("category", "note"), "createdAt": fact.get("createdAt", ""), "fact_id": fact.get("id", "")}
+                ))
+            self._vector_store.add_chunks(chunks)
+        except Exception as e:
+            import logging
+            logging.warning("Failed to sync memories to ChromaDB: %s", e)

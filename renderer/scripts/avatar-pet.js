@@ -273,10 +273,16 @@ async function startRecording() {
 
     voiceSequence = 0;
 
-    // Bind VAD callbacks
-    recorder.onSpeechStartCallback = () => {
+    // Bind VAD callbacks with intelligent energy threshold for barge-in
+    recorder.onSpeechStartCallback = (rms) => {
       if (currentVoiceState === VoiceState.SPEAKING) {
-        handleBargeIn();
+        const BARGE_IN_ENERGY_THRESHOLD = 0.05; // ignore background noise / speaker echo
+        if (rms >= BARGE_IN_ENERGY_THRESHOLD) {
+          handleBargeIn();
+        } else {
+          console.log(`[Barge-in] Ignored voice activity below threshold: ${rms.toFixed(4)} < ${BARGE_IN_ENERGY_THRESHOLD}`);
+          recorder.resetSpeakingState();
+        }
       } else {
         setVoiceState(VoiceState.USER_SPEAKING);
       }

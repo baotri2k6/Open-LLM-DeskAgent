@@ -95,7 +95,7 @@ export class VoiceRecorder {
           if (!this._hasSpoken) {
             this._hasSpoken = true;
             if (this.onSpeechStartCallback) {
-              this.onSpeechStartCallback();
+              this.onSpeechStartCallback(rms);
             }
           }
         }
@@ -185,6 +185,11 @@ export class VoiceRecorder {
     this._samples = [];
     this._silenceStart = null;
     this._recordingStart = Date.now();
+  }
+
+  resetSpeakingState() {
+    this._isSpeaking = false;
+    this._hasSpoken = false;
   }
 
   async getWavBase64() {

@@ -280,6 +280,36 @@
           </div>
         </div>
       </div>
+
+      <!-- Card: Memory Manager -->
+      <div class="settings-card">
+        <div class="card-header">
+          <div class="card-icon">💾</div>
+          <span class="card-title">Quản lý ký ức (Memory)</span>
+        </div>
+        <div class="card-divider"></div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-name">Ghi nhớ dài hạn</div>
+            <div class="toggle-desc">Cho phép tự động đúc kết & lưu ký ức về người dùng</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="chkMemoryMode" />
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="card-divider"></div>
+        <div class="memory-manager-area" style="display: flex; flex-direction: column; gap: 8px;">
+          <span class="field-label">Danh sách ký ức đã lưu</span>
+          <div id="memoryList" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 4px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-input);">
+            <div style="text-align: center; color: var(--text-3); padding: 20px;">Đang tải danh sách ký ức...</div>
+          </div>
+          <div class="memory-add-wrap" style="display: flex; gap: 6px; margin-top: 6px;">
+            <input type="text" id="txtNewMemory" placeholder="Thêm ký ức thủ công..." style="flex: 1;" />
+            <button id="btnAddMemory" style="padding: 0 16px; height: 38px; background: var(--accent); color: var(--bg-base); font-weight: bold; border: none; border-radius: var(--radius-sm); cursor: pointer; transition: opacity 0.2s;">Thêm</button>
+          </div>
+        </div>
+      </div>
     </main>
 
     <div class="save-status" id="saveStatus">Đã lưu cài đặt</div>

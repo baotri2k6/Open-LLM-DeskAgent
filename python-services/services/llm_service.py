@@ -527,12 +527,14 @@ TOOLS_SCHEMA = [
 
 
 class LLMService:
+    _conversation_history: list[dict[str, str]] = []
+
     def __init__(self) -> None:
         self.persona_mgr = PersonaManager()
         self._persona = self.persona_mgr.load_persona("icegirl")
         self._system_prompt = self._build_system_prompt()
 
-    def _build_system_prompt(self, rel_level: str = "Người quen", mood: str = "vui vẻ", time_note: str = "", force_english: bool = False) -> str:
+    def _build_system_prompt(self, rel_level: str = "Người quen", mood: str = "vui vẻ", time_note: str = "", force_english: bool = False, activity: str = "unknown") -> str:
         avatar_model = config.get("app.avatarModel", "IceGirl")
         persona_name = "icegirl"
         if "hiyori" in avatar_model.lower():
@@ -543,7 +545,17 @@ class LLMService:
             persona_name = "huohuo"
         
         self._persona = self.persona_mgr.load_persona(persona_name)
-        return build_system_prompt(self._persona, rel_level, mood, time_note, force_english=force_english)
+        return build_system_prompt(self._persona, rel_level, mood, time_note, force_english=force_english, activity=activity)
+
+    @classmethod
+    def _get_session_history(cls) -> list[dict[str, str]]:
+        return cls._conversation_history
+
+    @classmethod
+    def _append_to_history(cls, role: str, content: str):
+        cls._conversation_history.append({"role": role, "content": content})
+        if len(cls._conversation_history) > 40:
+            cls._conversation_history = cls._conversation_history[-40:]
 
     def _is_vietnamese(self, text: str) -> bool:
         vi_chars = set("áàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ"
@@ -592,13 +604,16 @@ class LLMService:
         else:
             plain_text = message
 
+        # Lấy activity từ perception
+        perception = context.get("perception", {})
+        activity = perception.get("activity", "unknown")
+
         force_eng = not self._is_vietnamese(plain_text)
-        system_prompt = self._build_system_prompt(rel_level, mood, time_note, force_english=force_eng)
+        system_prompt = self._build_system_prompt(rel_level, mood, time_note, force_english=force_eng, activity=activity)
 
         messages = [{"role": "system", "content": system_prompt}]
 
         # Tầng 1: PerceptionFusion - Nhúng thông tin nhận thức môi trường (Perception Packet)
-        perception = context.get("perception", {})
         if perception:
             perception_lines = []
             ts = perception.get("timestamp")
@@ -638,24 +653,36 @@ class LLMService:
         if image:
             image_url = image if image.startswith("data:") else f"data:image/png;base64,{image}"
             if isinstance(message, list):
-                messages.append({
+                user_msg = {
                     "role": "user",
                     "content": message + [{"type": "image_url", "image_url": {"url": image_url}}]
-                })
+                }
             else:
-                messages.append({
+                user_msg = {
                     "role": "user",
                     "content": [
                         {"type": "text", "text": message},
                         {"type": "image_url", "image_url": {"url": image_url}}
                     ]
-                })
+                }
         else:
-            messages.append({"role": "user", "content": message})
+            user_msg = {"role": "user", "content": message}
+
+        # Inject session history
+        history = self._get_session_history()
+        messages_with_history = messages + history[-20:] + [user_msg]
 
         # Bắt đầu vòng lặp Agent Loop
-        async for chunk in self._run_agent_loop(messages, force_eng):
+        full_reply_parts = []
+        async for chunk in self._run_agent_loop(messages_with_history, force_eng):
+            if isinstance(chunk, str):
+                full_reply_parts.append(chunk)
             yield chunk
+
+        full_reply = "".join(full_reply_parts).strip()
+        if full_reply:
+            self._append_to_history("user", plain_text)
+            self._append_to_history("assistant", full_reply)
 
     async def _run_agent_loop(self, messages: list[dict], force_eng: bool):
         provider, api_key, model, base_url = _get_llm_credentials()

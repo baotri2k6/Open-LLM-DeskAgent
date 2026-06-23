@@ -51,6 +51,8 @@ export class LipSyncController {
     if (this._rafId) return;
     this._active = true;
     const data = new Uint8Array(this._analyser?.frequencyBinCount ?? 0);
+    let smoothedAmp = 0;
+    const SMOOTH = 0.6; // 0 = giật, 1 = không cử động
 
     const tick = () => {
       if (!this._active) return;
@@ -61,7 +63,8 @@ export class LipSyncController {
         let sum = 0;
         for (const v of slice) sum += v * v;
         const rms = Math.sqrt(sum / slice.length) / 255;
-        this._onAmplitude(Math.min(1, rms * 2.5));
+        smoothedAmp = smoothedAmp * SMOOTH + rms * (1 - SMOOTH);
+        this._onAmplitude(Math.min(1, smoothedAmp * 2.5));
       }
       this._rafId = requestAnimationFrame(tick);
     };

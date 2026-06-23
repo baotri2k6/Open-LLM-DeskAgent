@@ -209,16 +209,17 @@ function setupCrossWindowIpc() {
   ipcMain.handle("pet:move-to", (_e, point) => {
     if (!avatarWin || !point) return null;
     const [width, height] = avatarWin.getSize();
-    const current = avatarWin.getBounds();
-    const display = screen.getDisplayMatching(current);
+    const targetX = Math.round(point.x);
+    const targetY = Math.round(point.y);
+    const display = screen.getDisplayNearestPoint({ x: targetX, y: targetY });
     
     // Use display.bounds to allow dragging over taskbar
     const { x, y, width: sw, height: sh } = display.bounds;
     
     // Allow dragging partially off-screen (keep at least 80px on-screen so it's retrievable)
     const minVisible = 80;
-    const nextX = Math.max(x - width + minVisible, Math.min(x + sw - minVisible, Math.round(point.x)));
-    const nextY = Math.max(y - height + minVisible, Math.min(y + sh - minVisible, Math.round(point.y)));
+    const nextX = Math.max(x - width + minVisible, Math.min(x + sw - minVisible, targetX));
+    const nextY = Math.max(y - height + minVisible, Math.min(y + sh - minVisible, targetY));
     
     avatarWin.setPosition(nextX, nextY, false);
     return { x: nextX, y: nextY, width, height, workArea: display.workArea };

@@ -91,8 +91,98 @@ async function loadConfig() {
       if (res.interaction_mode === "streamer") radModeStreamer.checked = true;
       else radModeAssistant.checked = true;
     }
+
+    // Memory toggle checkbox status
+    const chkMemoryMode = document.getElementById("chkMemoryMode");
+    if (chkMemoryMode) {
+      chkMemoryMode.checked = res.memory !== false;
+    }
+    
+    // Load memories list
+    loadMemories();
   } catch (err) {
     console.error("[settings] loadConfig error:", err);
+  }
+}
+
+async function loadMemories() {
+  const memoryList = document.getElementById("memoryList");
+  if (!memoryList) return;
+  try {
+    const res = await window.companion.invoke("ai:get-memories");
+    if (!res || res.error) {
+      memoryList.innerHTML = `<div style="text-align: center; color: var(--text-3); padding: 20px;">Lỗi tải ký ức: ${res ? res.error : "Không có phản hồi"}</div>`;
+      return;
+    }
+    const memories = res.memories || [];
+    if (memories.length === 0) {
+      memoryList.innerHTML = `<div style="text-align: center; color: var(--text-3); padding: 20px;">Chưa lưu ký ức nào.</div>`;
+      return;
+    }
+    
+    memoryList.innerHTML = "";
+    memories.forEach((mem) => {
+      const item = document.createElement("div");
+      item.className = "memory-item";
+      
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "memory-text";
+      input.value = mem.text;
+      
+      // Save on blur or Enter
+      const saveEdit = async () => {
+        const val = input.value.trim();
+        if (val && val !== mem.text) {
+          const updateRes = await window.companion.invoke("ai:update-memory", { id: mem.id, text: val });
+          if (updateRes && !updateRes.error && updateRes.success) {
+            mem.text = val;
+            showStatus("Đã cập nhật ký ức");
+          } else {
+            input.value = mem.text;
+            showStatus("Lỗi cập nhật ký ức");
+          }
+        }
+      };
+      
+      input.addEventListener("blur", saveEdit);
+      input.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          saveEdit();
+          input.blur();
+        }
+      });
+      
+      const actions = document.createElement("div");
+      actions.className = "memory-actions";
+      
+      const delBtn = document.createElement("button");
+      delBtn.className = "memory-btn delete";
+      delBtn.innerHTML = "🗑️";
+      delBtn.title = "Xóa ký ức";
+      delBtn.addEventListener("click", async () => {
+        if (confirm("Bạn có chắc chắn muốn xóa ký ức này không?")) {
+          const delRes = await window.companion.invoke("ai:delete-memory", { id: mem.id });
+          if (delRes && !delRes.error && delRes.success) {
+            item.remove();
+            showStatus("Đã xóa ký ức");
+            if (memoryList.children.length === 0) {
+              memoryList.innerHTML = `<div style="text-align: center; color: var(--text-3); padding: 20px;">Chưa lưu ký ức nào.</div>`;
+            }
+          } else {
+            showStatus("Lỗi khi xóa ký ức");
+          }
+        }
+      });
+      
+      actions.appendChild(delBtn);
+      item.appendChild(input);
+      item.appendChild(actions);
+      memoryList.appendChild(item);
+    });
+  } catch (err) {
+    console.error("[settings] loadMemories error:", err);
   }
 }
 
@@ -197,6 +287,40 @@ if (!window.companion) {
       e.preventDefault();
       saveChannel();
       txtTwitchChannel.blur();
+    }
+  });
+
+  // Memory manager bindings
+  const chkMemoryMode = document.getElementById("chkMemoryMode");
+  chkMemoryMode?.addEventListener("change", async () => {
+    const res = await window.companion.invoke("ai:update-config", {
+      key: "features.memory",
+      value: chkMemoryMode.checked,
+    });
+    if (res && !res.error) {
+      showStatus(chkMemoryMode.checked ? "Đã bật ghi nhớ dài hạn" : "Đã tắt ghi nhớ dài hạn");
+    }
+  });
+
+  const txtNewMemory = document.getElementById("txtNewMemory");
+  const btnAddMemory = document.getElementById("btnAddMemory");
+  const handleAddMemory = async () => {
+    const text = txtNewMemory?.value.trim() || "";
+    if (!text) return;
+    const res = await window.companion.invoke("ai:add-memory", { text });
+    if (res && !res.error && res.success) {
+      txtNewMemory.value = "";
+      showStatus("Đã thêm ký ức mới");
+      loadMemories();
+    } else {
+      showStatus("Lỗi thêm ký ức");
+    }
+  };
+  btnAddMemory?.addEventListener("click", handleAddMemory);
+  txtNewMemory?.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAddMemory();
     }
   });
 

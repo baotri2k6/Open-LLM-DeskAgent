@@ -57,6 +57,7 @@ _background_loop = None
 _background_thread = None
 _last_screen_text = ""
 _last_interaction_time = time.time()
+screen_watcher = None
 
 
 def trigger_notification(data: dict):
@@ -230,23 +231,23 @@ async def _speak_and_notify_proactive(full_reply, type_name):
 
 async def _autonomous_agent_loop():
     logger.info("Autonomous Agent Loop started.")
-    global _ai_busy, _last_interaction_time, _last_screen_text
+    global _ai_busy, _last_interaction_time, _last_screen_text, screen_watcher
     import time
     import random
     
-    # Cooldown for proactive statements: e.g. at least 45 seconds between proactive comments
+    # Cooldown for proactive statements: e.g. at least 20 seconds between proactive comments
     last_proactive_time = time.time()
     
     while True:
-        await asyncio.sleep(10)
+        await asyncio.sleep(5)
         
         now = time.time()
         
-        # If user has interacted recently (less than 30 seconds ago), do not trigger proactive chat
-        if now - _last_interaction_time < 30.0:
+        # If user has interacted recently (less than 15 seconds ago), do not trigger proactive chat
+        if now - _last_interaction_time < 15.0:
             continue
             
-        if now - last_proactive_time < 45.0:
+        if now - last_proactive_time < 20.0:
             continue
             
         if _ai_busy:
@@ -258,55 +259,54 @@ async def _autonomous_agent_loop():
             # 30% chance to comment on screen (if screen has changed)
             if rand < 0.30:
                 screen_enabled = config.get("features.screenAwareness", False)
-                if screen_enabled:
-                    from tools.screen_reader import ocr_screenshot
-                    ocr_res = await asyncio.get_event_loop().run_in_executor(None, ocr_screenshot)
-                    if ocr_res.get("success"):
-                        text = ocr_res.get("text", "").strip()
-                        if text and len(text) >= 10 and text != _last_screen_text and text not in _last_screen_text:
-                            _last_screen_text = text
-                            _ai_busy = True
-                            logger.info(f"Autonomous Loop: Commenting on screen text ({len(text)} chars)")
-                            
-                            from services.llm_service import LLMService
-                            llm = LLMService()
-                            
-                            planner = router.planner
-                            memory = planner.memory.service
-                            rel_info = memory.get_relationship()
-                            mood = memory.get_mood()
-                            time_note = memory.record_interaction()
-                            
-                            # Tầng 1: PerceptionFusion
-                            from core.perception_fusion import PerceptionFusion
-                            context = {
-                                "companion": {
-                                    "rel_level": rel_info["level"],
-                                    "rel_score": rel_info["score"],
-                                    "mood": mood,
-                                    "time_note": time_note
-                                },
-                                "memory": memory.recall(text),
-                                "perception": PerceptionFusion.fuse(
-                                    screen_text=text,
-                                    last_interaction_time=_last_interaction_time
-                                )
-                            }
-                            
-                            prompt = (
-                                "[BỘT PHÁT: Bạn tự quan sát thấy một số nội dung mới xuất hiện trên màn hình của người dùng. "
-                                "Hãy đưa ra một câu bình luận tự nhiên, vui nhộn hoặc hỏi han quan tâm ngắn gọn (1-2 câu). "
-                                "Hãy bình luận như thể bạn tự nhìn thấy màn hình của họ mà không bị gượng gạo.]"
+                if screen_enabled and screen_watcher:
+                    text = screen_watcher.get_current_context().strip()
+                    activity = screen_watcher.get_current_activity()
+                    if text and len(text) >= 10 and text != _last_screen_text and text not in _last_screen_text:
+                        _last_screen_text = text
+                        _ai_busy = True
+                        logger.info(f"Autonomous Loop: Commenting on screen text ({len(text)} chars)")
+                        
+                        from services.llm_service import LLMService
+                        llm = LLMService()
+                        
+                        planner = router.planner
+                        memory = planner.memory.service
+                        rel_info = memory.get_relationship()
+                        mood = memory.get_mood()
+                        time_note = memory.record_interaction()
+                        
+                        # Tầng 1: PerceptionFusion
+                        from core.perception_fusion import PerceptionFusion
+                        context = {
+                            "companion": {
+                                "rel_level": rel_info["level"],
+                                "rel_score": rel_info["score"],
+                                "mood": mood,
+                                "time_note": time_note
+                            },
+                            "memory": memory.recall(text),
+                            "perception": PerceptionFusion.fuse(
+                                screen_text=text,
+                                last_interaction_time=_last_interaction_time,
+                                activity=activity
                             )
+                        }
+                        
+                        prompt = (
+                            "[BỘT PHÁT: Bạn tự quan sát thấy một số nội dung mới xuất hiện trên màn hình của người dùng. "
+                            "Hãy đưa ra một câu bình luận tự nhiên, vui nhộn hoặc hỏi han quan tâm ngắn gọn (1-2 câu). "
+                            "Hãy bình luận như thể bạn tự nhìn thấy màn hình của họ mà không bị gượng gạo.]"
+                        )
+                        
+                        full_reply_parts = []
+                        async for token in llm.chat_stream(prompt, context):
+                            full_reply_parts.append(token)
                             
-                            full_reply_parts = []
-                            async for token in llm.chat_stream(prompt, context):
-                                full_reply_parts.append(token)
-                                
-                            full_reply = "".join(full_reply_parts).strip()
-                            await _speak_and_notify_proactive(full_reply, "screen_comment")
-                            last_proactive_time = time.time()
-                            _last_interaction_time = time.time()
+                        full_reply = "".join(full_reply_parts).strip()
+                        await _speak_and_notify_proactive(full_reply, "screen_comment")
+                        last_proactive_time = time.time()
+                        _last_interaction_time = time.time()
             
             # 20% chance to generate a random proactive thought (e.g. idle greeting/complaining)
             elif rand < 0.50:
@@ -322,8 +322,30 @@ async def _autonomous_agent_loop():
                 mood = memory.get_mood()
                 time_note = memory.record_interaction()
                 
+                # Phân loại prompt autonomous theo mood
+                AUTONOMOUS_PROMPTS = {
+                    "vui vẻ": [
+                        "[BỘT PHÁT] Mày đang làm gì vậy? Nói chuyện với tớ đi nào! [wink]",
+                        "[BỘT PHÁT] Hôm nay tớ thấy vui ghê, không biết tại sao. [happy]",
+                    ],
+                    "hơi dỗi": [
+                        "[BỘT PHÁT] Mày im lặng lâu quá, tớ ngồi một mình buồn lắm đó. [angry]",
+                        "[BỘT PHÁT] Thôi được rồi, không cần nói chuyện với tớ cũng được. [tongue]",
+                    ],
+                    "suy nghĩ": [
+                        "[BỘT PHÁT] Tớ đang nghĩ... không biết mày có biết rằng... thôi quên đi. [thinking]",
+                    ]
+                }
+                
+                # Fallback to "vui vẻ"
+                prompts_list = AUTONOMOUS_PROMPTS.get(mood, AUTONOMOUS_PROMPTS["vui vẻ"])
+                selected_base = random.choice(prompts_list)
+                
                 # Tầng 1: PerceptionFusion
                 from core.perception_fusion import PerceptionFusion
+                current_screen = screen_watcher.get_current_context() if screen_watcher else ""
+                current_act = screen_watcher.get_current_activity() if screen_watcher else "unknown"
+                
                 context = {
                     "companion": {
                         "rel_level": rel_info["level"],
@@ -332,14 +354,17 @@ async def _autonomous_agent_loop():
                         "time_note": time_note
                     },
                     "perception": PerceptionFusion.fuse(
-                        last_interaction_time=_last_interaction_time
+                        screen_text=current_screen,
+                        last_interaction_time=_last_interaction_time,
+                        activity=current_act
                     )
                 }
                 
                 prompt = (
-                    "[BỘT PHÁT: Người dùng đã im lặng một lúc lâu. Hãy tự suy nghĩ và nói 1 câu ngắn gọn "
-                    "để phá vỡ sự im lặng (hỏi thăm, rủ nói chuyện, pha trò, kể chuyện đùa...). "
-                    "Đúng tính cách của bạn, nói chuyện thân mật.]"
+                    f"[BỘT PHÁT: Người dùng đã im lặng một lúc lâu. Tâm trạng của bạn hiện tại là '{mood}'. "
+                    f"Hãy tự suy nghĩ và nói 1 câu ngắn gọn để phá vỡ sự im lặng. "
+                    f"Gợi ý chủ đề/cảm hứng: '{selected_base}'. "
+                    f"Hãy nói 1 câu độc lập, tự nhiên, đúng tính cách của bạn.]"
                 )
                 
                 full_reply_parts = []
@@ -627,6 +652,12 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
             self._send_json(router.planner.memory.profile())
             return
 
+        if path == "/memories":
+            planner = router.planner
+            memory = planner.memory.service
+            self._send_json({"success": True, "memories": memory.get_all_memories()})
+            return
+
         if path == "/documents":
             rag = get_rag()
             docs = rag.list_documents() if rag else []
@@ -662,6 +693,7 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                 "twitch_channel":  config.get("twitch.channel",            ""),
                 "interaction_mode": config.get("app.interactionMode",       "streamer"),
                 "avatar_model":     config.get("app.avatarModel",            "assets/live2d/IceGirl/IceGirl.model3.json"),
+                "memory":           config.get("features.memory",           True),
             })
             return
 
@@ -738,6 +770,34 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
         if path == "/documents/delete":
             result = self._handle_rag_delete(payload)
             self._send_json(result)
+            return
+
+        if path == "/memories/update":
+            planner = router.planner
+            memory = planner.memory.service
+            fact_id = payload.get("id")
+            new_text = payload.get("text", "")
+            success = memory.update_memory(fact_id, new_text)
+            self._send_json({"success": success})
+            return
+
+        if path == "/memories/delete":
+            planner = router.planner
+            memory = planner.memory.service
+            fact_id = payload.get("id")
+            success = memory.delete_memory(fact_id)
+            self._send_json({"success": success})
+            return
+
+        if path == "/memories/add":
+            planner = router.planner
+            memory = planner.memory.service
+            text = payload.get("text", "")
+            if text:
+                fact = memory.remember(text, category="manual")
+                self._send_json({"success": True, "memory": fact})
+            else:
+                self._send_json({"success": False, "error": "Text is empty"})
             return
 
         if path == "/config/update":
@@ -896,7 +956,9 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
         from core.perception_fusion import PerceptionFusion
         context["perception"] = PerceptionFusion.fuse(
             user_message=text,
-            last_interaction_time=_last_interaction_time
+            screen_text=screen_watcher.get_current_context() if screen_watcher else "",
+            last_interaction_time=_last_interaction_time,
+            activity=screen_watcher.get_current_activity() if screen_watcher else "unknown"
         )
 
         # Intent detection
@@ -1178,7 +1240,13 @@ def _patch_llm_service_for_rag():
 # ─── Entry ───────────────────────────────────────────────────────────────────
 
 def main() -> None:
+    global screen_watcher
     _patch_llm_service_for_rag()
+
+    # Khởi động ScreenWatcher
+    from core.screen_watcher import ScreenWatcher
+    screen_watcher = ScreenWatcher()
+    screen_watcher.start()
 
     # Khởi động event loop chạy ngầm
     start_background_loop()
@@ -1231,6 +1299,8 @@ def main() -> None:
         httpd.serve_forever()
     except KeyboardInterrupt:
         logger.info("Shutting down.")
+        if screen_watcher:
+            screen_watcher.stop()
         httpd.server_close()
 
 

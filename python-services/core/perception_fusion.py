@@ -8,7 +8,8 @@ class PerceptionFusion:
     def fuse(
         user_message: str | None = None,
         screen_text: str | None = None,
-        last_interaction_time: float | None = None
+        last_interaction_time: float | None = None,
+        activity: str | None = None
     ) -> dict:
         """Gom tất cả các tín hiệu (Văn bản, OCR màn hình, thời gian idle) thành ContextPacket."""
         now = time.time()
@@ -21,5 +22,6 @@ class PerceptionFusion:
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "idle_time_seconds": idle_time_seconds,
             "user_message": user_message or "",
-            "screen_text": screen_text or ""
+            "screen_text": screen_text or "",
+            "activity": activity or "unknown"
         }

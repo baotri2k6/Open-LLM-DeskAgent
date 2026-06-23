@@ -10,11 +10,11 @@
     "interactionMode": "streamer"
   },
   "llm": {
-    "provider": "gemini",
+    "provider": "ollama",
     "model": "qwen2.5:1.5b",
     "host": "http://127.0.0.1:11434",
     "gemini_api_key": "",
-    "gemini_model": "gemini-2.5-flash",
+    "gemini_model": "gemini-2.0-flash-lite",
     "openai_api_key": "",
     "openai_model": "gpt-5.5-pro",
     "deepseek_api_key": "test-deepseek-key",
@@ -55,7 +55,7 @@
     "voice": true,
     "memory": true,
     "desktopControl": true,
-    "screenAwareness": false,
+    "screenAwareness": true,
     "documentRag": true,
     "twitchMode": false
   },

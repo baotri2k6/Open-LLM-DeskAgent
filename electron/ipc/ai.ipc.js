@@ -268,6 +268,42 @@ function registerAiIpc(ipcMain, windows) {
     }
   });
 
+  ipcMain.handle('ai:get-memories', async () => {
+    try {
+      const response = await requestJSON('GET', '/memories');
+      return response;
+    } catch (err) {
+      return { error: err.message };
+    }
+  });
+
+  ipcMain.handle('ai:update-memory', async (_e, { id, text }) => {
+    try {
+      const response = await requestJSON('POST', '/memories/update', { id, text });
+      return response;
+    } catch (err) {
+      return { error: err.message };
+    }
+  });
+
+  ipcMain.handle('ai:delete-memory', async (_e, { id }) => {
+    try {
+      const response = await requestJSON('POST', '/memories/delete', { id });
+      return response;
+    } catch (err) {
+      return { error: err.message };
+    }
+  });
+
+  ipcMain.handle('ai:add-memory', async (_e, { text }) => {
+    try {
+      const response = await requestJSON('POST', '/memories/add', { text });
+      return response;
+    } catch (err) {
+      return { error: err.message };
+    }
+  });
+
   ipcMain.handle('ai:get-config', async () => {
     try {
       const response = await requestJSON('GET', '/config');
