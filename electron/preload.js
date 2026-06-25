@@ -1,8 +1,12 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("companion", {
-  chat: (text, image = null, ctx = {}) =>
-    ipcRenderer.invoke("ai:chat", { text, image, context: ctx }),
+  chat: (text, imageOrCtx = null, ctx = {}) => {
+    if (imageOrCtx && typeof imageOrCtx === "object" && (!imageOrCtx.startsWith || !imageOrCtx.startsWith("data:"))) {
+      return ipcRenderer.invoke("ai:chat", { text, image: null, context: imageOrCtx });
+    }
+    return ipcRenderer.invoke("ai:chat", { text, image: imageOrCtx, context: ctx });
+  },
   health: () => ipcRenderer.invoke("ai:health"),
   avatarClick: () => ipcRenderer.send("avatar:click"),
   hideAvatar: () => ipcRenderer.send("avatar:hide"),
@@ -16,6 +20,7 @@ contextBridge.exposeInMainWorld("companion", {
   petBounds: () => ipcRenderer.invoke("pet:get-bounds"),
   petMoveTo: (point) => ipcRenderer.invoke("pet:move-to", point),
   petSetSize: (scale) => ipcRenderer.invoke("pet:set-size", scale),
+  broadcast: (event, data) => ipcRenderer.send("ai:broadcast", { event, data }),
   invoke: (ch, data) => ipcRenderer.invoke(ch, data),
   setIgnoreMouseEvents: (ignore, options) =>
     ipcRenderer.send("window:set-ignore-mouse-events", ignore, options),
@@ -26,6 +31,7 @@ contextBridge.exposeInMainWorld("companion", {
       "set:lipsync",
       "python:ready",
       "chat:chunk",
+      "chat:thought-chunk",
       "chat:done",
       "trigger:screenshot",
       "stt:result",

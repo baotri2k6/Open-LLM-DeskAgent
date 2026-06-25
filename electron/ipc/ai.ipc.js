@@ -1,5 +1,6 @@
 const http = require('http');
 const { BrowserWindow } = require('electron');
+const { broadcast } = require('../websocket-server');
 
 const API_HOST = '127.0.0.1';
 const API_PORT = 8765;
@@ -118,27 +119,45 @@ function requestStream(method, path, payload, onChunk, onDone, onError) {
   req.end();
 }
 
+function setLipsync(active) {
+  sendToTargets('set:lipsync', active);
+  broadcast('lipsync', active);
+}
+
+function setEmotion(emotion) {
+  sendToTargets('set:emotion', emotion);
+  broadcast('emotion', emotion);
+}
+
 function sendAvatarState(response) {
   const avatar = response?.avatar || {};
   const expression = avatar.expression || response?.emotion;
-  if (expression) sendToTargets('set:emotion', expression);
+  if (expression) setEmotion(expression);
   if (typeof avatar.lipsync === 'boolean') {
-    sendToTargets('set:lipsync', avatar.lipsync);
+    setLipsync(avatar.lipsync);
   }
 }
 
 function emitAssistantResponse(response) {
   sendAvatarState(response);
   const text = response?.text || response?.message || '';
-  if (text) sendToTargets('chat:chunk', text);
+  if (text) {
+    sendToTargets('chat:chunk', text);
+    broadcast('chat_chunk', text);
+  }
   if (response?.audio_url) {
     sendToTargets('tts:audio', {
       url: response.audio_url,
       duration_ms: response.duration_ms || 0,
     });
+    broadcast('tts_audio', {
+      url: response.audio_url,
+      duration_ms: response.duration_ms || 0,
+    });
   }
   sendToTargets('chat:done', text);
-  if (!response?.audio_url) sendToTargets('set:lipsync', false);
+  broadcast('chat_done', text);
+  if (!response?.audio_url) setLipsync(false);
 }
 
 function audioBase64ToByteArray(audioB64) {
@@ -170,8 +189,9 @@ function registerAiIpc(ipcMain, windows) {
         { text, image, context },
         chunk => {
           if (chunk.type === 'start') {
-            sendToTargets('set:emotion', chunk.emotion || 'normal');
-            if (chunk.motion) sendToTargets('set:lipsync', chunk.motion === 'thinking');
+            setEmotion(chunk.emotion || 'normal');
+            if (chunk.motion) setLipsync(chunk.motion === 'thinking');
+            broadcast('start', { emotion: chunk.emotion || 'normal', motion: chunk.motion });
           } else if (chunk.type === 'request_approval') {
             sendToTargets('chat:request-approval', {
               req_id: chunk.req_id,
@@ -179,10 +199,16 @@ function registerAiIpc(ipcMain, windows) {
               details: chunk.details
             });
           } else if (chunk.type === 'text') {
-            sendToTargets('chat:chunk', chunk.text);
-            fullText += chunk.text;
+            if (chunk.thought) {
+              sendToTargets('chat:thought-chunk', chunk.text);
+              broadcast('thought_chunk', chunk.text);
+            } else {
+              sendToTargets('chat:chunk', chunk.text);
+              fullText += chunk.text;
+              broadcast('chat_chunk', chunk.text);
+            }
           } else if (chunk.type === 'emotion') {
-            if (chunk.emotion) sendToTargets('set:emotion', chunk.emotion);
+            if (chunk.emotion) setEmotion(chunk.emotion);
           } else if (chunk.type === 'command') {
             sendToTargets('chat:command', chunk.command);
           } else if (chunk.type === 'audio') {
@@ -190,10 +216,14 @@ function registerAiIpc(ipcMain, windows) {
               url: chunk.audio_url,
               duration_ms: chunk.duration_ms || 0,
             });
+            broadcast('tts_audio', {
+              url: chunk.audio_url,
+              duration_ms: chunk.duration_ms || 0,
+            });
           } else if (chunk.type === 'done') {
             audioUrl = chunk.audio_url;
             durationMs = chunk.duration_ms;
-            if (chunk.emotion) sendToTargets('set:emotion', chunk.emotion);
+            if (chunk.emotion) setEmotion(chunk.emotion);
           }
         },
         () => {
@@ -202,15 +232,21 @@ function registerAiIpc(ipcMain, windows) {
               url: audioUrl,
               duration_ms: durationMs || 0,
             });
+            broadcast('tts_audio', {
+              url: audioUrl,
+              duration_ms: durationMs || 0,
+            });
           } else {
-            sendToTargets('set:lipsync', false);
+            setLipsync(false);
           }
           sendToTargets('chat:done', fullText);
+          broadcast('chat_done', fullText);
           resolve({ ok: true, response: { text: fullText, audio_url: audioUrl } });
         },
         err => {
           console.error('[electron] stream error:', err);
           sendToTargets('chat:done', `Có lỗi xảy ra: ${err.message}`);
+          broadcast('chat_done', `Có lỗi xảy ra: ${err.message}`);
           resolve({ ok: false, error: err.message });
         }
       );
@@ -303,6 +339,15 @@ function registerAiIpc(ipcMain, windows) {
     }
   });
 
+  ipcMain.handle('ai:tts', async (_e, { text }) => {
+    try {
+      const response = await requestJSON('POST', '/voice/tts', { text });
+      return { ok: response.success !== false, response };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+
   ipcMain.handle('ai:get-config', async () => {
     try {
       const response = await requestJSON('GET', '/config');
@@ -375,6 +420,10 @@ function registerAiIpc(ipcMain, windows) {
     } catch (err) {
       return { error: err.message };
     }
+  });
+
+  ipcMain.on('ai:broadcast', (_e, { event, data }) => {
+    broadcast(event, data);
   });
 }
 

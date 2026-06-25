@@ -246,6 +246,15 @@ async def _autonomous_agent_loop():
         # If user has interacted recently (less than 15 seconds ago), do not trigger proactive chat
         if now - _last_interaction_time < 15.0:
             continue
+
+        # NÂNG CẤP: Kiểm tra và ghi nhật ký trong nền nếu người dùng đã nghỉ lâu (> 2 phút)
+        if now - _last_interaction_time > 120.0:
+            try:
+                planner = router.planner
+                memory = planner.memory.service
+                memory.write_diary_if_needed()
+            except Exception as e:
+                logger.warning("Failed to check/write diary in autonomous loop: %s", e)
             
         if now - last_proactive_time < 20.0:
             continue
@@ -565,6 +574,8 @@ class SentenceAudioStreamer:
     async def _speak_sentence(self, sentence: str):
         # Lọc sạch các thẻ cảm xúc còn sót lại nếu có
         clean_s = re.sub(r"\[.*?\]", "", sentence).strip()
+        # Lọc bỏ dấu ngoặc đơn
+        clean_s = clean_s.replace("(", "").replace(")", "").strip()
         if not clean_s:
             return
             
@@ -756,6 +767,16 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
             
             result = asyncio.run(self._handle_stt(payload))
             self._send_json(result)
+            return
+
+        if path == "/voice/tts":
+            text = payload.get("text", "")
+            tts_service = get_tts()
+            if tts_service:
+                result = asyncio.run(tts_service.speak(text))
+                self._send_json(result)
+            else:
+                self._send_json({"success": False, "error": "TTS Service chưa được khởi tạo."})
             return
 
         if path == "/interact":
@@ -1015,7 +1036,7 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                     safe_text = chunk["text"]
                     full_reply_parts.append(safe_text)
                     self._send_chunk(chunk)
-                    if audio_streamer:
+                    if audio_streamer and not chunk.get("thought"):
                         await audio_streamer.feed_text(safe_text)
 
             # Flush remaining buffer của audio streamer
@@ -1029,8 +1050,12 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                 memory.add_to_conversation_history("user", text)
                 memory.add_to_conversation_history("assistant", full_reply)
                 memory.write_back_memory(text, full_reply)
-            except Exception:
-                pass
+                
+                # NÂNG CẤP: Chạy nền phân tích cảm xúc & đúc kết nhật ký nếu đủ câu thoại
+                memory.analyze_sentiment_async(text, full_reply)
+                memory.write_diary_if_needed()
+            except Exception as e:
+                logger.warning("Error in background memory/sentiment/diary processing: %s", e)
 
             # Không cần tạo TTS tổng ở cuối nữa vì đã phát gối đầu theo từng câu trong luồng stream rồi
             self._send_chunk({
@@ -1302,6 +1327,16 @@ def main() -> None:
         logger.info("Shutting down.")
         if screen_watcher:
             screen_watcher.stop()
+        
+        # Đóng các session MCP
+        try:
+            from services.llm_service import LLMService
+            if LLMService._mcp_manager:
+                logger.info("MCP: Đang đóng các mcp server...")
+                asyncio.run(LLMService._mcp_manager.aclose())
+        except Exception as e:
+            logger.error(f"MCP: Lỗi khi đóng mcp server: {e}")
+
         httpd.server_close()
 
 

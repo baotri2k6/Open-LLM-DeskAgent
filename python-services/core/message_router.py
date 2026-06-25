@@ -9,7 +9,14 @@ from agents.planner_agent import PlannerAgent
 
 class MessageRouter:
     def __init__(self, planner: PlannerAgent | None = None) -> None:
-        self.planner = planner or PlannerAgent()
+        self._planner = planner
+
+    @property
+    def planner(self) -> PlannerAgent:
+        if self._planner is None:
+            from agents.planner_agent import PlannerAgent
+            self._planner = PlannerAgent()
+        return self._planner
 
     async def route(self, payload: dict[str, Any]) -> dict[str, Any]:
         text = str(payload.get("text", "")).strip()
@@ -23,3 +30,4 @@ class MessageRouter:
         response = await self.planner.handle_message(text, payload.get("context", {}))
         response.setdefault("id", payload.get("id", "assistant_response"))
         return response
+

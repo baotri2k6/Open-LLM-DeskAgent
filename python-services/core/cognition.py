@@ -32,10 +32,10 @@ class CognitionEngine:
             # 2. Lấy ra văn bản sạch sau khi lọc thẻ cảm xúc
             safe_text = parser.flush_text()
             if safe_text:
-                yield {"type": "text", "text": safe_text}
+                yield {"type": "text", "text": safe_text, "thought": parser.in_thought}
                 
         # 3. Đưa nốt phần còn thừa trong parser buffer ra ngoài
         leftover = parser.flush_all()
         if leftover:
-            yield {"type": "text", "text": leftover}
+            yield {"type": "text", "text": leftover, "thought": parser.in_thought}
 

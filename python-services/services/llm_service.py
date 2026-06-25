@@ -23,6 +23,7 @@ from tools.file_reader import read_file
 from tools.browser_control import search_google, open_url
 from tools.mxh_tools import search_twitter, read_reddit_post, get_youtube_transcript, search_bilibili, read_webpage_jina
 from utils.approval_registry import wait_for_approval
+from core.plugin_manager import PluginManager
 
 logger = get_logger("ai-companion.llm")
 
@@ -260,9 +261,23 @@ def _ollama_chat_with_tools(messages: list[dict], model: str, base_url: str, too
         return json.loads(resp.read().decode("utf-8"))
 
 
-async def execute_tool(name: str, args: dict) -> dict:
+async def execute_tool(name: str, args: dict, mcp_manager = None) -> dict:
     """Gọi thực thi tool tương ứng dựa trên tên và các đối số."""
     try:
+        if name.startswith("mcp__"):
+            if mcp_manager:
+                return await mcp_manager.call_tool(name, args)
+            else:
+                return {"success": False, "error": "MCP Manager chưa được khởi tạo."}
+
+        # Kiểm tra và thực thi Plugin tool
+        plugin_mgr = PluginManager()
+        if name in plugin_mgr.tools_registry:
+            res = await plugin_mgr.execute_tool(name, args)
+            if isinstance(res, dict):
+                return res
+            return {"success": True, "output": res}
+
         if name == "execute_command":
             return execute_command(args.get("command", ""))
         elif name == "write_to_file":
@@ -528,11 +543,40 @@ TOOLS_SCHEMA = [
 
 class LLMService:
     _conversation_history: list[dict[str, str]] = []
+    _mcp_manager = None
+    _plugin_manager = None
 
     def __init__(self) -> None:
         self.persona_mgr = PersonaManager()
         self._persona = self.persona_mgr.load_persona("icegirl")
         self._system_prompt = self._build_system_prompt()
+        
+        # Tích hợp MCP dạng Singleton
+        if LLMService._mcp_manager is None:
+            try:
+                from core.mcp.server_registry import ServerRegistry
+                from core.mcp.mcp_client import MCPClientManager
+                registry = ServerRegistry()
+                LLMService._mcp_manager = MCPClientManager(registry)
+            except Exception as e:
+                logger.warning(f"MCP: Không thể khởi tạo hệ thống MCP: {e}")
+                LLMService._mcp_manager = None
+
+        # Tích hợp Plugin SDK dạng Singleton
+        if LLMService._plugin_manager is None:
+            try:
+                LLMService._plugin_manager = PluginManager()
+            except Exception as e:
+                logger.warning(f"PluginManager: Không thể khởi tạo PluginManager: {e}")
+                LLMService._plugin_manager = None
+
+    @property
+    def mcp_manager(self):
+        return LLMService._mcp_manager
+
+    @property
+    def plugin_manager(self):
+        return LLMService._plugin_manager
 
     def _build_system_prompt(self, rel_level: str = "Người quen", mood: str = "vui vẻ", time_note: str = "", force_english: bool = False, activity: str = "unknown") -> str:
         avatar_model = config.get("app.avatarModel", "IceGirl")
@@ -686,13 +730,45 @@ class LLMService:
 
     async def _run_agent_loop(self, messages: list[dict], force_eng: bool):
         provider, api_key, model, base_url = _get_llm_credentials()
-        tools = TOOLS_SCHEMA
         
+        # Nạp động các MCP tools
+        mcp_tools = []
+        if self.mcp_manager:
+            try:
+                mcp_tools = await self.mcp_manager.get_all_tools()
+            except Exception as e:
+                logger.error(f"MCP: Lỗi khi lấy danh sách MCP tools: {e}")
+
+        # Nạp động các Plugin tools
+        plugin_tools = []
+        if self.plugin_manager:
+            try:
+                plugin_tools = self.plugin_manager.get_tool_schemas()
+            except Exception as e:
+                logger.error(f"PluginManager: Lỗi khi lấy danh sách plugin tools: {e}")
+
+        tools = []
+        if config.get("features.desktopControl", True):
+            tools.extend(TOOLS_SCHEMA)
+        if mcp_tools:
+            tools.extend(mcp_tools)
+        if plugin_tools:
+            tools.extend(plugin_tools)
+            
         # Nếu đang chạy bằng Ollama, chêm thêm chỉ dẫn JSON Tool Calling vào Prompt Hệ thống
         if provider == "ollama":
+            ollama_inst = OLLAMA_SYSTEM_INSTRUCTION
+            if mcp_tools:
+                ollama_inst += "\n\n=== MCP TOOLS (CÔNG CỤ MCP BỔ SUNG) ===\n"
+                for i, tool in enumerate(mcp_tools, start=15):
+                    t_name = tool["name"]
+                    t_desc = tool.get("description", "Không có mô tả")
+                    t_params = tool.get("parameters", {})
+                    ollama_inst += f"{i}. `{t_name}`: {t_desc}. Tham số: {json.dumps(t_params, ensure_ascii=False)}\n"
+            
             for msg in messages:
                 if msg["role"] == "system":
-                    msg["content"] += "\n" + OLLAMA_SYSTEM_INSTRUCTION
+                    msg["content"] += "\n" + ollama_inst
                     
         max_turns = 10
         turn = 0
@@ -707,7 +783,7 @@ class LLMService:
                 if api_key:
                     try:
                         contents, sys_instr_dict = _to_gemini_format(messages)
-                        gemini_tools = _to_gemini_tools(tools) if config.get("features.desktopControl", True) else None
+                        gemini_tools = _to_gemini_tools(tools) if tools else None
                         res = _gemini_chat_with_tools(contents, sys_instr_dict, api_key, model, gemini_tools)
                         
                         candidate = res["candidates"][0]
@@ -737,7 +813,7 @@ class LLMService:
             elif provider in ["openai", "deepseek", "glm", "qwen", "openai-compatible"]:
                 if api_key or provider == "openai-compatible":
                     try:
-                        openai_tools = _to_openai_tools(tools) if config.get("features.desktopControl", True) else None
+                        openai_tools = _to_openai_tools(tools) if tools else None
                         res = _openai_chat_with_tools(messages, api_key, model, base_url, openai_tools)
                         
                         msg = res["choices"][0]["message"]
@@ -760,7 +836,7 @@ class LLMService:
                     
             else: # ollama
                 try:
-                    ollama_tools = _to_openai_tools(tools) if config.get("features.desktopControl", True) else None
+                    ollama_tools = _to_openai_tools(tools) if tools else None
                     res = _ollama_chat_with_tools(messages, model, base_url, ollama_tools)
                     
                     msg = res.get("message", {})
@@ -771,9 +847,9 @@ class LLMService:
                     if tool_calls:
                         for tc in tool_calls:
                             tool_calls_to_run.append({
-                                "id": tc.get("id") or f"call_{uuid.uuid4().hex[:8]}",
-                                "name": tc["function"].get("name"),
-                                "args": tc["function"].get("arguments", {})
+                                    "id": tc.get("id") or f"call_{uuid.uuid4().hex[:8]}",
+                                    "name": tc["function"].get("name"),
+                                    "args": tc["function"].get("arguments", {})
                             })
                             
                     # Fallback JSON parser nếu không tìm thấy native tool calls
@@ -792,7 +868,7 @@ class LLMService:
                     logger.error("Ollama tools error: %s", exc)
                     yield f" Có lỗi khi kết nối tới Ollama local: {exc}"
                     return
-
+ 
             # 2. Xử lý các tool calls được kích hoạt
             if tool_calls_to_run:
                 # Lưu intent gọi tool vào hội thoại
@@ -818,7 +894,7 @@ class LLMService:
                     })
                 else: # ollama
                     messages.append({"role": "assistant", "content": response_text})
-
+ 
                 # Chạy các tools
                 for tc in tool_calls_to_run:
                     t_name = tc["name"]
@@ -846,7 +922,7 @@ class LLMService:
                         yield f"\n[Hệ thống: Từ chối chạy {t_name}]\n"
                     else:
                         yield f"\n[Hệ thống: Đang thực thi {t_name}...]\n"
-                        t_output = await execute_tool(t_name, t_args)
+                        t_output = await execute_tool(t_name, t_args, mcp_manager=self.mcp_manager)
                         
                         # Self-correction log if command failed
                         if t_name == "execute_command" and not t_output.get("success"):

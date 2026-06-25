@@ -18,6 +18,7 @@ const { registerSystemIpc } = require("./ipc/system.ipc");
 const { registerVoiceIpc } = require("./ipc/voice.ipc");
 const { createTray } = require("./window/tray");
 const { createOverlayWindow } = require("./window/overlay");
+const { startWebSocketServer } = require("./websocket-server");
 
 function getLogDirectory() {
   const isPackaged = app.isPackaged;
@@ -323,8 +324,11 @@ function setupCrossWindowIpc() {
       sy,
       Math.min(curY + (avatarWin.getSize()[1] - newH), sy + sh - newH),
     );
+    const wasResizable = avatarWin.isResizable();
+    avatarWin.setResizable(true);
     avatarWin.setSize(newW, newH, true);
     avatarWin.setPosition(nextX, nextY, true);
+    avatarWin.setResizable(wasResizable);
     return { width: newW, height: newH, scale };
   });
 }
@@ -375,6 +379,7 @@ app.whenReady().then(() => {
     },
   );
 
+  startWebSocketServer(9001);
   startPython();
   createAvatarWindow();
   setupCrossWindowIpc();
@@ -394,6 +399,10 @@ app.whenReady().then(() => {
   });
   globalShortcut.register("CommandOrControl+Shift+H", () => {
     avatarWin?.webContents.send("toggle:console");
+  });
+  globalShortcut.register("CommandOrControl+Shift+I", () => {
+    avatarWin?.webContents.openDevTools({ mode: "detach" });
+    settingsWin?.webContents.openDevTools({ mode: "detach" });
   });
 });
 

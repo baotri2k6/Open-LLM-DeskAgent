@@ -84,14 +84,12 @@
       .avatar-image {
         position: relative;
         z-index: 2;
-        display: block;
+        display: none; /* Ẩn mặc định, chỉ hiển thị nếu fallback */
         max-width: 100%;
         max-height: 100%;
         object-fit: contain;
         filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.42));
         pointer-events: none;
-        /* Ẩn ngay lúc load — JS sẽ show lại nếu Live2D fail → dùng CSS fallback */
-        visibility: hidden;
       }
 
       .expression-light {
@@ -168,10 +166,11 @@
         <img
           id="avatarImage"
           class="avatar-image"
-          src="../assets/live2d/IceGirl/textures/texture_05.jpg"
+          src="../assets/live2d/IceGirl/textures/texture_03.png"
           alt="IceGirl"
         />
         <div class="expression-light" id="expressionLight"></div>
+        <canvas id="spineCanvas" style="display: none;"></canvas>
       </div>
       <section class="pet-console hidden" id="petConsole" aria-label="Mini chat">
         <div class="pet-caption" id="petCaption">
@@ -223,6 +222,13 @@
       </section>
     </main>
 
+    <script type="importmap">
+      {
+        "imports": {
+          "@esotericsoftware/spine-webgl": "../node_modules/@esotericsoftware/spine-webgl/dist/esm/spine-webgl.mjs"
+        }
+      }
+    </script>
     <script type="module" src="./scripts/avatar-pet.js"></script>
   </body>
 </html>

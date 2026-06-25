@@ -1,0 +1,40 @@
+{
+  "light.living_room": {
+    "name": "Đèn phòng khách",
+    "state": "off",
+    "attributes": {
+      "brightness": 100
+    }
+  },
+  "light.bedroom": {
+    "name": "Đèn phòng ngủ",
+    "state": "on",
+    "attributes": {
+      "brightness": 70
+    }
+  },
+  "climate.air_conditioner": {
+    "name": "Điều hòa",
+    "state": "off",
+    "attributes": {
+      "temperature": 24
+    }
+  },
+  "switch.smart_plug": {
+    "name": "Ổ cắm thông minh",
+    "state": "off",
+    "attributes": {}
+  },
+  "lock.main_door": {
+    "name": "Khóa cửa chính",
+    "state": "locked",
+    "attributes": {}
+  },
+  "media_player.smart_speaker": {
+    "name": "Loa thông minh",
+    "state": "idle",
+    "attributes": {
+      "volume": 50
+    }
+  }
+}

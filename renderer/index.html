@@ -40,6 +40,7 @@
               <option value="ollama">Ollama (Local)</option>
               <option value="gemini">Gemini API (Cloud)</option>
               <option value="openai">OpenAI (Cloud)</option>
+              <option value="webgpu">WebGPU Cục bộ (Offline)</option>
             </select>
           </div>
           <div class="model-select-group">
@@ -49,6 +50,16 @@
               <option value="base">Whisper Base (Chuẩn)</option>
               <option value="funasr">Alibaba FunASR (SenseVoice)</option>
             </select>
+          </div>
+        </div>
+        <!-- WebGPU Progress Loading Bar -->
+        <div id="webgpuProgressContainer" class="webgpu-progress-container" style="display: none;">
+          <div class="progress-info">
+            <span id="webgpuProgressText">Đang khởi tạo WebGPU...</span>
+            <span id="webgpuProgressPercent">0%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div id="webgpuProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
           </div>
         </div>
         <!-- Image Preview Area -->

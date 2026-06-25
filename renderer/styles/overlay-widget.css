@@ -1,0 +1,156 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700&display=swap');
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: transparent; /* BẮT BUỘC để trong suốt trên OBS */
+  font-family: 'Inter', sans-serif;
+  color: #f1f1f1;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+
+.overlay-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  width: 100%;
+  height: 100%;
+  padding: 24px;
+  gap: 16px;
+}
+
+/* Status Badge */
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(18, 16, 26, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #a855f7;
+  box-shadow: 0 0 8px #a855f7;
+}
+
+/* Status modes */
+.status-badge.listening .status-dot {
+  background-color: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+  animation: pulse-dot 1.5s infinite;
+}
+
+.status-badge.thinking .status-dot {
+  background-color: #eab308;
+  box-shadow: 0 0 8px #eab308;
+  animation: pulse-dot 1s infinite;
+}
+
+.status-badge.speaking .status-dot {
+  background-color: #3b82f6;
+  box-shadow: 0 0 8px #3b82f6;
+  animation: pulse-dot 1.2s infinite;
+}
+
+@keyframes pulse-dot {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0.6;
+  }
+}
+
+/* Base Bubble Styles */
+.thought-bubble, .speech-bubble {
+  width: 100%;
+  max-width: 480px;
+  background: rgba(18, 16, 26, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.15);
+}
+
+.bubble-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 6px;
+}
+
+.bubble-icon {
+  font-size: 1.1rem;
+}
+
+.bubble-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bubble-content {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #e2e2eb;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+/* Thought Bubble */
+.thought-bubble {
+  border-left: 3px solid #eab308;
+  box-shadow: 0 8px 32px rgba(234, 179, 8, 0.05), inset 0 0 12px rgba(255, 255, 255, 0.02);
+}
+
+.thought-bubble .bubble-title {
+  color: #eab308;
+}
+
+/* Speech Bubble */
+.speech-bubble {
+  border-left: 3px solid #a855f7;
+  box-shadow: 0 8px 32px rgba(168, 85, 247, 0.1), inset 0 0 12px rgba(255, 255, 255, 0.02);
+}
+
+.speech-bubble .bubble-title {
+  color: #a855f7;
+  text-shadow: 0 0 8px rgba(168, 85, 247, 0.3);
+}
+
+/* Hide animations */
+.hidden {
+  opacity: 0;
+  transform: translateY(10px) scale(0.98);
+  pointer-events: none;
+}

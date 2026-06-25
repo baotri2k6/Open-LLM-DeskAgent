@@ -2,6 +2,37 @@ import { AvatarController } from "./avatar/live2d-manager.js";
 import { AudioPlayer } from "./voice/audio-player.js";
 import { VoiceRecorder } from "./voice/recoder.js";
 
+// ─── Lazy-loaded modules (CDN-dependent, must not block avatar rendering) ───
+let LocalDB = {
+  init: () => Promise.resolve(false),
+  addMemory: () => Promise.resolve(null),
+  searchMemories: () => Promise.resolve([]),
+  syncFromBackend: () => Promise.resolve(),
+};
+let WebGPUEngine = {
+  isInitialized: () => false,
+  init: () => Promise.reject(new Error("WebGPU not loaded")),
+  chat: () => Promise.reject(new Error("WebGPU not loaded")),
+};
+
+// Load CDN-dependent modules asynchronously
+(async () => {
+  try {
+    const mod = await import("./memory/local-db.js");
+    LocalDB = mod.LocalDB;
+    console.log("[avatar-pet] LocalDB module loaded");
+  } catch (err) {
+    console.warn("[avatar-pet] LocalDB module failed to load (offline?):", err.message);
+  }
+  try {
+    const mod = await import("./webgpu-engine.js");
+    WebGPUEngine = mod.WebGPUEngine;
+    console.log("[avatar-pet] WebGPUEngine module loaded");
+  } catch (err) {
+    console.warn("[avatar-pet] WebGPUEngine module failed to load:", err.message);
+  }
+})();
+
 const avatarWrap = document.getElementById("avatarWrap");
 const petCaption = document.getElementById("petCaption");
 const petStatusDot = document.getElementById("petStatusDot");
@@ -278,6 +309,7 @@ let draftInterval = null;
 let voiceSequence = 0;
 let sttProcessing = false;
 
+
 function setVoiceState(state) {
   currentVoiceState = state;
   setStatus(state);
@@ -340,16 +372,142 @@ async function ask(text) {
   ttsPlaying = false;
   chatDone = false;
 
-  const res = await window.companion.chat(clean, {
-    locale: "vi-VN",
-    mode: "voice",
-  });
-  if (!res?.ok) {
-    setCaption("Backend dang offline. Khoi dong lai Python service nhe.");
-    setStatus("error");
-    avatar.setState({ expression: "sad", motion: "shake", lipsync: false });
-    busy = false;
-    setControlsDisabled(false);
+  // Search memories in PGlite WASM
+  let memoryContext = [];
+  try {
+    const memories = await LocalDB.searchMemories(clean);
+    memoryContext = memories.map(m => ({ text: m.text }));
+  } catch (err) {
+    console.warn("Failed to query LocalDB:", err);
+  }
+
+  // Get current LLM provider config
+  let provider = "ollama";
+  try {
+    const config = await window.companion.invoke('ai:get-config');
+    if (config && !config.error) {
+      provider = config.llm_provider || "ollama";
+    }
+  } catch (err) {
+    console.warn("Failed to get config:", err);
+  }
+
+  if (provider === 'webgpu') {
+    // ----------------------------------------------------
+    // Run Local WebGPU Inference in Pet Window
+    // ----------------------------------------------------
+    if (!WebGPUEngine.isInitialized()) {
+      setCaption("Mô hình WebGPU chưa được tải. Vui lòng mở bảng Chat và chọn bộ não WebGPU để tải mô hình.");
+      setStatus("error");
+      avatar.setState({ expression: "sad", motion: "shake", lipsync: false });
+      busy = false;
+      setControlsDisabled(false);
+      return;
+    }
+
+    const systemPrompt = "Bạn là IceGirl, trợ lý ảo cá nhân 2.5D cực kỳ đáng yêu, thân thiện và thông minh. Hãy trả lời người dùng một cách tự nhiên, ngắn gọn và thêm các thẻ cảm xúc như [smile], [happy], [excited], [thinking], [sad] phù hợp.\n" +
+      (memoryContext.length > 0 ? "Thông tin đã ghi nhớ về người dùng: " + memoryContext.map(m => m.text).join("; ") : "");
+
+    const messages = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: clean }
+    ];
+
+    let parserBuffer = "";
+    const EMOTION_REGEX = /\[(normal|neutral|smile|friendly|happy|excited|focused|thinking|sad|angry|surprised|wink|tongue|money)\]/i;
+
+    try {
+      setStatus("speaking");
+      window.companion.broadcast('start', { emotion: 'normal', motion: 'thinking' });
+      window.companion.setLipsync(true);
+
+      const onChunk = (token) => {
+        parserBuffer += token;
+        
+        const match = parserBuffer.match(EMOTION_REGEX);
+        if (match) {
+          const tag = match[0];
+          const emotion = match[1].toLowerCase();
+          parserBuffer = parserBuffer.replace(tag, "");
+          avatar.setState({ expression: emotion });
+          window.companion.setEmotion(emotion);
+        }
+        
+        const idx = parserBuffer.indexOf('[');
+        const idxAngle = parserBuffer.indexOf('<');
+        
+        let textToYield = "";
+        if (idx === -1 && idxAngle === -1) {
+          textToYield = parserBuffer;
+          parserBuffer = "";
+        } else {
+          const indices = [idx, idxAngle].filter(i => i !== -1);
+          const firstIdx = Math.min(...indices);
+          if (firstIdx > 0) {
+            textToYield = parserBuffer.substring(0, firstIdx);
+            parserBuffer = parserBuffer.substring(firstIdx);
+          }
+        }
+        
+        if (textToYield) {
+          currentReply += textToYield;
+          setCaption(currentReply);
+          window.companion.broadcast('chat_chunk', textToYield);
+        }
+      };
+
+      await WebGPUEngine.chat(messages, onChunk);
+      
+      if (parserBuffer) {
+        currentReply += parserBuffer;
+        setCaption(currentReply);
+        window.companion.broadcast('chat_chunk', parserBuffer);
+      }
+
+      window.companion.broadcast('chat_done', currentReply);
+      await LocalDB.addMemory(clean);
+
+      // Synthesize TTS
+      const ttsRes = await window.companion.invoke("ai:tts", { text: currentReply });
+      if (ttsRes && ttsRes.ok && ttsRes.response.audio_url) {
+        ttsQueue.push({ url: ttsRes.response.audio_url, durationMs: ttsRes.response.duration_ms });
+        processTtsQueue();
+      } else {
+        avatar.setState({ expression: "smile", motion: "idle", lipsync: false });
+        window.companion.setLipsync(false);
+        busy = false;
+        setControlsDisabled(false);
+      }
+      chatDone = true;
+
+    } catch (err) {
+      console.error("WebGPU Chat Generation Error (Pet):", err);
+      setCaption("Lỗi suy luận WebGPU: " + err.message);
+      setStatus("error");
+      busy = false;
+      setControlsDisabled(false);
+    }
+
+  } else {
+    // ----------------------------------------------------
+    // Run normal HTTP Chat over Python Server
+    // ----------------------------------------------------
+    const context = {
+      locale: "vi-VN",
+      mode: "voice",
+      memory: memoryContext
+    };
+
+    const res = await window.companion.chat(clean, context);
+    if (!res?.ok) {
+      setCaption("Backend đang offline. Khởi động lại Python service nhé.");
+      setStatus("error");
+      avatar.setState({ expression: "sad", motion: "shake", lipsync: false });
+      busy = false;
+      setControlsDisabled(false);
+    } else {
+      await LocalDB.addMemory(clean);
+    }
   }
 }
 
@@ -411,42 +569,6 @@ async function startRecording() {
     isRecording = true;
     setRecording(true);
     avatar.setState({ expression: "focused", motion: "look_side" });
-
-    // Start ASR streaming draft interval
-    if (draftInterval) clearInterval(draftInterval);
-    draftInterval = setInterval(async () => {
-      if (!isRecording) return;
-      if (sttProcessing) {
-        return;
-      }
-      const b64 = await recorder.getWavBase64();
-      if (!b64) return;
-
-      const seq = ++voiceSequence;
-      const ts = Date.now();
-
-      sttProcessing = true;
-      try {
-        const res = await window.companion.invoke("ai:voice-input", {
-          audio_b64: b64,
-          is_draft: true,
-          sequence: seq,
-          timestamp: ts,
-        });
-
-        if (res?.ok && res.response?.success) {
-          const draftText = res.response.text;
-          if (draftText && isRecording) {
-            setCaption(`Đang nghe: "${draftText}"`);
-            recorder.lastDraftText = draftText;
-          }
-        }
-      } catch (err) {
-        console.error("[ASR] Draft error:", err);
-      } finally {
-        sttProcessing = false;
-      }
-    }, 2500);
   } catch (err) {
     console.error("[startRecording] error:", err);
     busy = false;
@@ -585,6 +707,9 @@ avatarWrap.addEventListener("pointerup", (event) => {
       const y = event.clientY - rect.top;
 
       avatar.handleTap(x, y);
+
+      // NÂNG CẤP: Theo dõi click chuột liên tục để kích hoạt tương tác vật lý
+      trackClickForMicroInteraction();
 
       if (clickResetTimeout) clearTimeout(clickResetTimeout);
       clickResetTimeout = setTimeout(() => {
@@ -809,6 +934,7 @@ window.companion.on("config:updated", ({ key, value }) => {
     currentModelPath = value;
     rebuildAccessoryButtons(value);
     setCaption(`Đã đổi nhân vật thành công!`);
+
   }
 });
 
@@ -879,6 +1005,7 @@ async function applyInitialMode() {
           avatar.changeModel(res.avatar_model);
         }
       }
+
       rebuildAccessoryButtons(currentModelPath);
       if (currentInteractionMode === "streamer") {
         streamerLoopActive = true;
@@ -975,3 +1102,197 @@ window.addEventListener("mousemove", (e) => {
     }, 1800);
   }
 })();
+
+// ─── Tương tác Vật lý: Kéo thả file & Click liên tục ──────────────────
+let clickCount = 0;
+let clickTimer = null;
+let isDragging = false;
+
+function trackClickForMicroInteraction() {
+  clickCount++;
+  if (clickTimer) clearTimeout(clickTimer);
+  
+  clickTimer = setTimeout(() => {
+    clickCount = 0;
+  }, 2000);
+
+  if (clickCount >= 3) {
+    clickCount = 0;
+    if (clickTimer) clearTimeout(clickTimer);
+    triggerMultiClickReaction();
+  }
+}
+
+async function triggerMultiClickReaction() {
+  try {
+    const res = await fetch("http://127.0.0.1:8765/memory/profile");
+    const profile = await res.json();
+    const name = (profile.name || "IceGirl").toLowerCase();
+    const rel = profile.relationship || { score: 15, level: "Người quen" };
+    const level = rel.level || "Người quen";
+    
+    let reactionText = "";
+    let emotion = "angry";
+    
+    if (name.includes("hiyori")) {
+      if (level === "Bạn thân") {
+        const quotes = [
+          "Hì hì, nhột tớ quá nè! Cậu nghịch ghê á! [smile]",
+          "Ơ kìa cậu! Trêu tớ là tớ nhột đó nha! [excited]",
+          "Hí hí! Đừng chọc tớ mà, buồn cười quá! [happy]"
+        ];
+        reactionText = quotes[Math.floor(Math.random() * quotes.length)];
+        emotion = "happy";
+      } else if (level === "Người lạ") {
+        reactionText = "Ủa... cậu đừng nhấp liên tục vào người tớ như vậy chứ, tớ hơi ngại á... [sad]";
+        emotion = "sad";
+      } else {
+        const quotes = [
+          "A! Cậu làm gì thế? Tớ nhột đó nha! [surprised]",
+          "Nè nha, chọc tớ là tớ chọc lại đó hihi! [wink]",
+          "Đừng bấm lung tung vào tớ mà, tập trung học đi nào! [focused]"
+        ];
+        reactionText = quotes[Math.floor(Math.random() * quotes.length)];
+        emotion = "surprised";
+      }
+    } else if (name.includes("mao")) {
+      if (level === "Bạn thân") {
+        const quotes = [
+          "Nè, chọc tôi vui lắm hả? Đồ ngốc này! [tongue]",
+          "Tay cậu ngứa ngáy à? Muốn tôi phạt không? [angry]",
+          "Hừm, nghịch tóc tôi là tôi bắt đền cafe đó nhé! [wink]"
+        ];
+        reactionText = quotes[Math.floor(Math.random() * quotes.length)];
+        emotion = "wink";
+      } else if (level === "Người lạ") {
+        reactionText = "Hạn chế đụng vào tôi đi nhé, chúng ta chưa thân thiết đâu. [angry]";
+        emotion = "angry";
+      } else {
+        const quotes = [
+          "Cậu rảnh quá hả? Không có việc gì làm à? [focused]",
+          "Đừng có nhấp chuột bừa bãi vào tôi nữa coi! [angry]",
+          "Nhột đó! Tránh xa tôi ra một chút xem nào. [sad]"
+        ];
+        reactionText = quotes[Math.floor(Math.random() * quotes.length)];
+        emotion = "angry";
+      }
+    } else if (name.includes("huohuo")) {
+      if (level === "Bạn thân") {
+        const quotes = [
+          "Oa... cậu đừng làm thế, Anh Đuôi sẽ giận mắng cậu đó! [sad]",
+          "Dạ... nhột quá à... cậu đừng chọc em nữa mà... [happy]",
+          "Ơ... cậu cứ nghịch thế này làm em sợ ghê... [surprised]"
+        ];
+        reactionText = quotes[Math.floor(Math.random() * quotes.length)];
+        emotion = "sad";
+      } else if (level === "Người lạ") {
+        reactionText = "Á! Ma cứu... ơ, hoá ra là cậu... Đừng hù em sợ mà... [surprised]";
+        emotion = "surprised";
+      } else {
+        const quotes = [
+          "Dạ... cậu đừng bấm liên tục vào em thế, em xin lỗi mà... [sad]",
+          "Ơ kìa... có chuyện gì gấp hả cậu? Em đang nghe đây... [focused]",
+          "Hu hu, đừng bắt nạt phán quan tập sự mà cậu... [sad]"
+        ];
+        reactionText = quotes[Math.floor(Math.random() * quotes.length)];
+        emotion = "sad";
+      }
+    } else {
+      if (level === "Bạn thân") {
+        const quotes = [
+          "Nè! Chọc tớ nhột lắm đó nha! Đồ nghịch ngợm! [tongue]",
+          "Tay cậu nhanh hơn não rồi đấy à? [wink]",
+          "Hihi! Nhột quá đi mất, dừng lại mau! [happy]"
+        ];
+        reactionText = quotes[Math.floor(Math.random() * quotes.length)];
+        emotion = "happy";
+      } else if (level === "Người lạ") {
+        reactionText = "Cậu làm gì vậy? Đừng có gõ liên tục vào tớ chứ! [angry]";
+        emotion = "angry";
+      } else {
+        const quotes = [
+          "Nè nha! Đừng có nghịch chuột lung tung vào tớ chứ! [angry]",
+          "Ui da! Cậu nhấn mạnh tay thế, đau tớ đấy! [sad]",
+          "Bấm nữa là tớ cắn cho một miếng bây giờ! [tongue]"
+        ];
+        reactionText = quotes[Math.floor(Math.random() * quotes.length)];
+        emotion = "angry";
+      }
+    }
+
+    speakQuickReaction(reactionText, emotion);
+  } catch (e) {
+    console.error("Failed to trigger multi-click reaction:", e);
+  }
+}
+
+async function speakQuickReaction(text, emotion) {
+  window.companion.invoke("ai:cancel-chat").catch(() => null);
+  audioPlayer.stop();
+  avatar.stopLipSync();
+  ttsQueue = [];
+  ttsPlaying = false;
+  chatDone = true;
+
+  if (emotion) {
+    avatar.setState({ expression: emotion });
+    window.companion.setEmotion(emotion);
+  }
+  setCaption(text);
+
+  try {
+    busy = true;
+    setVoiceState(VoiceState.SPEAKING);
+    const ttsRes = await window.companion.invoke("ai:tts", { text: text });
+    if (ttsRes && ttsRes.ok && ttsRes.response.audio_url) {
+      ttsQueue.push({ url: ttsRes.response.audio_url, durationMs: ttsRes.response.duration_ms });
+      processTtsQueue();
+    } else {
+      busy = false;
+      setVoiceState(VoiceState.IDLE);
+    }
+  } catch (e) {
+    console.error("Failed to play quick reaction TTS:", e);
+    busy = false;
+    setVoiceState(VoiceState.IDLE);
+  }
+}
+
+// Drag and drop events
+document.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (isDragging || busy || isRecording) return;
+  isDragging = true;
+  avatar.setState({ expression: "surprised", motion: "nod" });
+  setCaption("Ủa, cậu đang định đưa file gì cho tớ thế? [excited]");
+});
+
+document.addEventListener("dragleave", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  // Drag leaves the window
+  if (!e.relatedTarget) {
+    isDragging = false;
+    avatar.setState({ expression: "normal", motion: "idle" });
+    setCaption("");
+  }
+});
+
+document.addEventListener("drop", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  isDragging = false;
+  if (busy || isRecording) return;
+
+  const files = e.dataTransfer.files;
+  if (files && files.length > 0) {
+    const file = files[0];
+    const fileName = file.name;
+    const msg = `Oa! Cậu vừa thả tệp "${fileName}" vào tớ! Cậu muốn tớ đọc nó hả? [happy]`;
+    speakQuickReaction(msg, "happy");
+  } else {
+    avatar.setState({ expression: "normal", motion: "idle" });
+    setCaption("");
+  }
+});

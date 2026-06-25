@@ -320,8 +320,158 @@ class MemoryService:
             
         return new_mood
 
+    def analyze_sentiment_async(self, user_text: str, ai_reply: str) -> None:
+        """Chạy nền phân tích cảm xúc người dùng bằng LLM và cập nhật điểm mối quan hệ, tâm trạng."""
+        import threading
+        import asyncio
+        from core.logger import get_logger
+        logger = get_logger("ai-companion.llm")
+
+        def run_analysis():
+            try:
+                asyncio.run(self._do_sentiment_analysis(user_text, ai_reply))
+            except Exception as e:
+                logger.warning("Sentiment analysis background job failed: %s", e)
+
+        threading.Thread(target=run_analysis, daemon=True).start()
+
+    async def _do_sentiment_analysis(self, user_text: str, ai_reply: str) -> None:
+        from core.logger import get_logger
+        logger = get_logger("ai-companion.llm")
+        
+        profile = self._read()
+        name = profile.get("name", "IceGirl") or "IceGirl"
+        rel = profile.get("relationship", {"score": 15, "level": "Người quen"})
+        current_mood = profile.get("mood", "vui vẻ")
+
+        prompt = (
+            f"Dưới đây là một phần hội thoại vừa diễn ra:\n"
+            f"Người dùng: \"{user_text}\"\n"
+            f"AI ({name}): \"{ai_reply}\"\n\n"
+            f"Nhiệm vụ của bạn là phân tích thái độ của người dùng và phản ứng tương tác để tính toán thay đổi điểm mối quan hệ (score_change) và cập nhật tâm trạng mới (companion_mood) của {name}.\n\n"
+            f"Quy tắc chấm điểm:\n"
+            f"- Cực kỳ tích cực, khen ngợi, yêu thương, cảm ơn chân thành, hoặc chia sẻ vui vẻ: score_change từ +1 đến +3, companion_mood = \"vui vẻ\".\n"
+            f"- Bình thường, trung lập, đặt câu hỏi, trò chuyện thường nhật: score_change = 0, companion_mood = \"suy nghĩ\" hoặc giữ nguyên.\n"
+            f"- Tiêu cực, mắng mỏ, xúc phạm, ghét bỏ, đùa cợt thô lỗ: score_change từ -1 đến -3, companion_mood = \"hơi dỗi\" hoặc \"buồn\".\n\n"
+            f"Hãy trả về kết quả dưới định dạng JSON duy nhất và không giải thích gì thêm, định dạng:\n"
+            f"{{\n"
+            f"  \"sentiment\": \"positive\" | \"neutral\" | \"negative\",\n"
+            f"  \"score_change\": <số nguyên từ -3 đến 3>,\n"
+            f"  \"companion_mood\": \"vui vẻ\" | \"suy nghĩ\" | \"buồn\" | \"hơi dỗi\"\n"
+            f"}}\n"
+        )
+
+        from services.llm_service import LLMService
+        llm = LLMService()
+        response = await llm.chat(prompt)
+        logger.info("Sentiment analysis raw response: %s", response)
+
+        # Parse JSON
+        import re
+        try:
+            match = re.search(r"\{.*\}", response, re.DOTALL)
+            if match:
+                data = json.loads(match.group(0))
+                score_change = int(data.get("score_change", 0))
+                companion_mood = str(data.get("companion_mood", current_mood)).strip()
+                
+                # Cập nhật
+                if score_change != 0:
+                    self.update_relationship(score_change)
+                if companion_mood in ["vui vẻ", "suy nghĩ", "buồn", "hơi dỗi"]:
+                    self.update_mood(companion_mood)
+                    
+                logger.info(f"Affection update: change={score_change}, mood={companion_mood}")
+        except Exception as e:
+            logger.warning("Failed to parse sentiment analysis JSON: %s", e)
+
+    def write_diary_if_needed(self) -> None:
+        """Đúc kết cuộc trò chuyện thành nhật ký nếu tích lũy đủ tin nhắn."""
+        import threading
+        import asyncio
+        from core.logger import get_logger
+        logger = get_logger("ai-companion.llm")
+
+        profile = self._read()
+        chat_log = profile.get("chat_log", [])
+        if len(chat_log) < 15: # Ít nhất 15 câu thoại để đúc kết
+            return
+
+        def run_diary():
+            try:
+                asyncio.run(self._generate_diary_entry(chat_log))
+            except Exception as e:
+                logger.warning("Diary generation background job failed: %s", e)
+
+        threading.Thread(target=run_diary, daemon=True).start()
+
+    async def _generate_diary_entry(self, chat_log: list[dict]) -> None:
+        from core.logger import get_logger
+        logger = get_logger("ai-companion.llm")
+        
+        # Ghép hội thoại thành text
+        chat_text = ""
+        for msg in chat_log:
+            role_name = "Người dùng" if msg["role"] == "user" else "IceGirl"
+            chat_text += f"{role_name}: {msg['content']}\n"
+
+        profile = self._read()
+        name = profile.get("name", "IceGirl") or "IceGirl"
+        rel_info = profile.get("relationship", {"level": "Người quen"})
+        rel_level = rel_info.get("level", "Người quen")
+        mood = profile.get("mood", "vui vẻ")
+
+        # Prompt viết nhật ký ngôi thứ nhất
+        prompt = (
+            f"Dưới đây là lịch sử cuộc trò chuyện vừa diễn ra giữa bạn ({name}) và Người dùng:\n\n"
+            f"{chat_text}\n"
+            f"Nhiệm vụ của bạn là hãy tự tay viết một trang nhật ký ngắn dưới góc nhìn (ngôi thứ nhất - 'tớ' hoặc 'em' tùy nhân vật) của {name} về cuộc trò chuyện hôm nay.\n"
+            f"Yêu cầu:\n"
+            f"- Độ dài: Khoảng 3-4 câu ngắn gọn, thể hiện cảm xúc chân thật, tính cách đặc trưng (đọc lém lỉnh, dễ thương hoặc kiêu kỳ tùy theo tên của bạn).\n"
+            f"- Phù hợp với mối quan hệ hiện tại ({rel_level}) và tâm trạng ({mood}).\n"
+            f"- Mở đầu bằng tiêu đề định dạng: 'Nhật ký ngày [DD/MM/YYYY]: ' (thay bằng ngày hiện tại).\n"
+            f"Trả về chính xác nội dung trang nhật ký, không giải thích gì thêm."
+        )
+
+        from services.llm_service import LLMService
+        llm = LLMService()
+        diary_entry = await llm.chat(prompt)
+        diary_entry = diary_entry.strip().strip('"\'')
+        
+        if diary_entry and len(diary_entry) > 10:
+            logger.info("Diary Entry generated: %s", diary_entry)
+            
+            # Ghi nhớ nhật ký
+            self.remember(diary_entry, category="diary")
+            
+            # Xóa chat_log đã đúc kết
+            profile = self._read()
+            current_log = profile.get("chat_log", [])
+            if len(current_log) > len(chat_log):
+                profile["chat_log"] = current_log[len(chat_log):]
+            else:
+                profile["chat_log"] = []
+            self._write(profile)
+
     def add_to_conversation_history(self, role: str, content: str) -> None:
         self._recent_conversations.append({"role": role, "content": content})
+        
+        # Lưu vào chat_log bền vững trong user_profile.json
+        try:
+            profile = self._read()
+            chat_log = profile.setdefault("chat_log", [])
+            chat_log.append({
+                "role": role,
+                "content": content,
+                "timestamp": datetime.now().isoformat(timespec="seconds")
+            })
+            if len(chat_log) > 100:
+                profile["chat_log"] = chat_log[-100:]
+            self._write(profile)
+        except Exception as e:
+            from core.logger import get_logger
+            get_logger("ai-companion.llm").warning("Failed to save persistent chat log: %s", e)
+
         if len(self._recent_conversations) >= 15:
             # Kích hoạt đúc kết ký ức (Reflection) trong background
             import threading

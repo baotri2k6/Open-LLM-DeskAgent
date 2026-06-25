@@ -1,0 +1,21 @@
+{
+  "name": "web_reader",
+  "description": "Plugin trích xuất nội dung bài viết và thông tin hữu ích từ các trang web (sử dụng Jina Reader hoặc phân tích HTML).",
+  "version": "1.0.0",
+  "tools": [
+    {
+      "name": "web_reader_parse",
+      "description": "Đọc và tóm tắt nội dung văn bản chính từ một địa chỉ URL.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Đường dẫn URL của trang web cần đọc."
+          }
+        },
+        "required": ["url"]
+      }
+    }
+  ]
+}

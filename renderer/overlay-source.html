@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OBS Widget Overlay</title>
+  <link rel="stylesheet" href="./styles/overlay-widget.css">
+</head>
+<body>
+  <div id="overlayApp" class="overlay-container">
+    <!-- Status Badge -->
+    <div id="statusBadge" class="status-badge hidden">
+      <span class="status-dot"></span>
+      <span id="statusText">Đang ngủ...</span>
+    </div>
+
+    <!-- Thought Bubble (For deep reasoning tags <think>) -->
+    <div id="thoughtBubble" class="thought-bubble hidden">
+      <div class="bubble-header">
+        <span class="bubble-icon">💭</span>
+        <span class="bubble-title">Đang suy nghĩ...</span>
+      </div>
+      <div id="thoughtContent" class="bubble-content"></div>
+    </div>
+
+    <!-- Speech Bubble (For spoken responses) -->
+    <div id="speechBubble" class="speech-bubble hidden">
+      <div class="bubble-header">
+        <span class="bubble-icon">💬</span>
+        <span id="speakerName" class="bubble-title">IceGirl</span>
+      </div>
+      <div id="speechContent" class="bubble-content"></div>
+    </div>
+  </div>
+
+  <script src="./scripts/overlay-widget.js"></script>
+</body>
+</html>

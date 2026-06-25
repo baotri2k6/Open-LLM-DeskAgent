@@ -103,6 +103,8 @@ async function loadConfig() {
     if (chkMemoryMode) {
       chkMemoryMode.checked = res.memory !== false;
     }
+
+
     
     // Load memories list
     loadMemories();
@@ -317,6 +319,8 @@ if (!window.companion) {
       showStatus(chkMemoryMode.checked ? "Đã bật ghi nhớ dài hạn" : "Đã tắt ghi nhớ dài hạn");
     }
   });
+
+
 
   const txtNewMemory = document.getElementById("txtNewMemory");
   const btnAddMemory = document.getElementById("btnAddMemory");

@@ -11,6 +11,7 @@
 
 import { normalizeExpression, EXPRESSION_MAPPINGS } from "./expression.js";
 import { normalizeMotion, MOTION_MAPPINGS } from "./motion.js";
+import { SpineBackend } from "./spine-manager.js";
 
 // Helper to identify character model from path
 function getModelKey(modelPath) {
@@ -30,9 +31,8 @@ const MODEL_PATH = "../assets/live2d/IceGirl/IceGirl.model3.json";
 const CUBISM_SDK_URL =
   "https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js";
 const LOCAL_CUBISM_SDK_URL = "./vendor/live2dcubismcore.min.js";
-const LOCAL_PIXI_URL = "../node_modules/pixi.js/dist/pixi.min.js";
-const LOCAL_PIXI_LIVE2D_URL =
-  "../node_modules/pixi-live2d-display/dist/cubism4.min.js";
+const LOCAL_PIXI_URL = "./vendor/pixi.min.js";
+const LOCAL_PIXI_LIVE2D_URL = "./vendor/cubism4.min.js";
 const PIXI_URL =
   "https://cdnjs.cloudflare.com/ajax/libs/pixi.js/6.5.10/browser/pixi.min.js";
 const PIXI_LIVE2D_URL =
@@ -386,8 +386,11 @@ class CSSFallbackBackend {
 
   async init() {
     console.info("[Live2D] Using CSS fallback backend");
-    // Show lại img vì mặc định đã bị ẩn bởi CSS visibility:hidden
-    if (this._img) this._img.style.visibility = "visible";
+    // Show lại img vì mặc định đã bị ẩn
+    if (this._img) {
+      this._img.style.display = "block";
+      this._img.style.visibility = "visible";
+    }
     return true;
   }
 
@@ -452,6 +455,10 @@ export class AvatarController {
     this._wrap = wrap;
     this._light = light;
     this._img = img ?? wrap?.querySelector("#avatarImage");
+    if (this._img) {
+      this._img.style.display = "none"; // Hide fallback image immediately on constructor
+    }
+    this._spineCanvas = wrap?.querySelector("#spineCanvas");
     this._backend = null;
     this._state = { expression: "normal", motion: "idle" };
     this._modelPath = "../assets/live2d/IceGirl/IceGirl.model3.json"; // default fallback
@@ -464,13 +471,46 @@ export class AvatarController {
       if (window.companion) {
         const res = await window.companion.invoke('ai:get-config');
         if (res && res.avatar_model && !res.error) {
-          this._modelPath = "../" + res.avatar_model;
+          let path = res.avatar_model;
+          if (path.endsWith(".vrm")) {
+            path = "assets/live2d/IceGirl/IceGirl.model3.json";
+            window.companion.invoke("ai:update-config", { key: "app.avatarModel", value: path }).catch(() => null);
+          }
+          this._modelPath = "../" + path;
         }
       }
     } catch (err) {
       console.warn("[AvatarController] Failed to load initial config:", err);
     }
 
+    await this._loadBackend();
+
+    // idle blinking loop
+    this._startIdleLoop();
+  }
+
+  async _loadBackend() {
+    const pathLower = this._modelPath.toLowerCase();
+    const isSpine = pathLower.endsWith('.json') && !pathLower.endsWith('.model3.json');
+
+    if (isSpine) {
+      if (this._spineCanvas) {
+        this._spineCanvas.style.display = "block";
+      }
+      const spineBackend = new SpineBackend(this._wrap, this._spineCanvas, this._modelPath);
+      const spineOk = await spineBackend.init().catch(() => false);
+      if (spineOk) {
+        this._backend = spineBackend;
+        if (this._img) this._img.style.display = "none";
+        return;
+      }
+    }
+
+    // Hide Spine canvas if Live2D or Fallback is used
+    if (this._spineCanvas) {
+      this._spineCanvas.style.display = "none";
+    }
+
     const pixiBackend = new PixiLive2DBackend(this._wrap, this._modelPath);
     const pixiOk = await pixiBackend.init().catch(() => false);
 
@@ -485,36 +525,21 @@ export class AvatarController {
       );
       await this._backend.init();
     }
-
-    // idle blinking loop
-    this._startIdleLoop();
   }
 
   async changeModel(newModelPath) {
     console.log("[AvatarController] Changing model to:", newModelPath);
     this.destroy();
 
-    // Clear any residual canvas elements from wrapper
+    // Clear any residual canvas elements from wrapper EXCEPT spineCanvas
     const canvases = this._wrap.querySelectorAll("canvas");
-    canvases.forEach(c => c.remove());
-    if (this._img) this._img.style.display = ""; // restore image display fallback if needed
+    canvases.forEach(c => {
+      if (c !== this._spineCanvas) c.remove();
+    });
+    if (this._img) this._img.style.display = "none"; // Hide image during model loading
 
     this._modelPath = "../" + newModelPath;
-
-    const pixiBackend = new PixiLive2DBackend(this._wrap, this._modelPath);
-    const pixiOk = await pixiBackend.init().catch(() => false);
-
-    if (pixiOk) {
-      this._backend = pixiBackend;
-      if (this._img) this._img.style.display = "none";
-    } else {
-      this._backend = new CSSFallbackBackend(
-        this._wrap,
-        this._img,
-        this._light,
-      );
-      await this._backend.init();
-    }
+    await this._loadBackend();
   }
 
   setAccessory(paramId, value) {
@@ -609,6 +634,7 @@ export class AvatarController {
     };
     scheduleNext();
   }
+
 
   destroy() {
     this.stopLipSync();
