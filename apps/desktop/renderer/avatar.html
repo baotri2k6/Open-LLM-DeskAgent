@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=420, height=640, initial-scale=1.0" />
+    <title>IceGirl Avatar</title>
+    <link rel="stylesheet" href="./styles/avatar-pet.css" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: transparent !important;
+        user-select: none;
+        -webkit-app-region: drag;
+      }
+
+      .avatar-stage {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: grid;
+        place-items: start center;
+        padding: 0 10px 142px;
+        overflow: hidden;
+      }
+
+      .avatar-stage.console-hidden {
+        padding-bottom: 10px;
+      }
+
+      .avatar-wrap {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: grid;
+        place-items: end center;
+        transform-origin: bottom center;
+        cursor: pointer;
+        -webkit-app-region: no-drag;
+        animation: breathe 4.8s ease-in-out infinite;
+      }
+
+      .avatar-wrap canvas {
+        position: absolute !important;
+        inset: 0;
+        z-index: 3;
+        width: 100% !important;
+        height: 100% !important;
+        pointer-events: none;
+      }
+
+      .avatar-wrap[data-motion="nod"] {
+        animation:
+          nod 0.8s ease-in-out 1,
+          breathe 4.8s ease-in-out infinite 0.8s;
+      }
+
+      .avatar-wrap[data-motion="shake"] {
+        animation:
+          shake 0.5s ease-in-out 1,
+          breathe 4.8s ease-in-out infinite 0.5s;
+      }
+
+      .avatar-wrap[data-motion="thinking"],
+      .avatar-wrap[data-motion="look_side"] {
+        transform: rotate(-2deg) translateX(-4px);
+      }
+
+      .avatar-wrap.facing-left {
+        scale: -1 1;
+      }
+
+      .avatar-wrap.recording .expression-light {
+        background: rgba(255, 207, 117, 0.32);
+      }
+
+      .avatar-image {
+        position: relative;
+        z-index: 2;
+        display: none; /* Ẩn mặc định, chỉ hiển thị nếu fallback */
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.42));
+        pointer-events: none;
+      }
+
+      .expression-light {
+        position: absolute;
+        inset: auto 18% 6% 18%;
+        z-index: 1;
+        height: 24%;
+        border-radius: 50%;
+        background: rgba(90, 180, 255, 0.24);
+        filter: blur(28px);
+        pointer-events: none;
+        transition: background 0.25s ease;
+      }
+
+      .expression-light[data-expression="smile"],
+      .expression-light[data-expression="happy"] {
+        background: rgba(117, 231, 172, 0.26);
+      }
+
+      .expression-light[data-expression="focused"] {
+        background: rgba(255, 207, 117, 0.24);
+      }
+
+      .expression-light[data-expression="sad"] {
+        background: rgba(118, 146, 255, 0.22);
+      }
+
+      .expression-light[data-expression="surprised"] {
+        background: rgba(255, 143, 143, 0.24);
+      }
+
+      @keyframes breathe {
+        0%,
+        100% {
+          transform: translateY(0) scale(1);
+        }
+        50% {
+          transform: translateY(-5px) scale(1.015);
+        }
+      }
+
+      @keyframes nod {
+        0%,
+        100% {
+          transform: rotate(0deg);
+        }
+        45% {
+          transform: rotate(3deg) translateY(4px);
+        }
+      }
+
+      @keyframes shake {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        25% {
+          transform: translateX(-8px);
+        }
+        75% {
+          transform: translateX(8px);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="avatar-stage">
+      <div
+        class="avatar-wrap"
+        id="avatarWrap"
+        data-expression="normal"
+        data-motion="idle"
+      >
+        <img
+          id="avatarImage"
+          class="avatar-image"
+          src="../../../assets/live2d/IceGirl/textures/texture_03.png"
+          alt="IceGirl"
+        />
+        <div class="expression-light" id="expressionLight"></div>
+        <canvas id="spineCanvas" style="display: none;"></canvas>
+      </div>
+      <section class="pet-console hidden" id="petConsole" aria-label="Mini chat">
+        <div class="pet-caption" id="petCaption">
+          Chào bạn! Mình đang sẵn sàng.
+        </div>
+        <div class="pet-console-bar">
+          <div class="pet-status">
+            <span class="pet-status-dot" id="petStatusDot"></span>
+            <span id="petStatusText">idle</span>
+          </div>
+          <div class="pet-actions">
+            <button
+              class="pet-icon-button"
+              id="petMicButton"
+              type="button"
+              title="Record voice"
+              aria-label="Record voice"
+            >
+              <span aria-hidden="true">Mic</span>
+            </button>
+            <button
+              class="pet-icon-button"
+              id="petPowerButton"
+              type="button"
+              title="Hide avatar"
+              aria-label="Hide avatar"
+            >
+              <span aria-hidden="true">Off</span>
+            </button>
+          </div>
+        </div>
+        <div class="pose-controls-row" id="characterPropsRow"></div>
+        <form class="pet-chat-form" id="petChatForm">
+          <input
+            id="petChatInput"
+            type="text"
+            autocomplete="off"
+            placeholder="Type your message..."
+          />
+          <button
+            class="pet-send-button"
+            type="submit"
+            title="Send"
+            aria-label="Send"
+          >
+            Send
+          </button>
+        </form>
+      </section>
+    </main>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "@esotericsoftware/spine-webgl": "../../../node_modules/@esotericsoftware/spine-webgl/dist/esm/spine-webgl.mjs"
+        }
+      }
+    </script>
+    <script type="module" src="./scripts/avatar-pet.js"></script>
+  </body>
+</html>

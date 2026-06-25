@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Companion Desktop 2.5D</title>
+    <link rel="stylesheet" href="./styles/overlay.css" />
+    <link rel="stylesheet" href="./styles/chat.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="avatar-stage" aria-label="IceGirl avatar">
+        <div class="status-pill" id="serviceStatus">Checking service</div>
+        <div class="avatar-wrap" id="avatarWrap" data-expression="normal" data-motion="idle">
+          <img
+            id="avatarImage"
+            class="avatar-image"
+            src="../../../assets/live2d/IceGirl/textures/texture_03.png"
+            alt="IceGirl"
+          />
+          <div class="expression-light" id="expressionLight"></div>
+        </div>
+      </section>
+
+      <section class="chat-panel" aria-label="Chat">
+        <div class="chat-header">
+          <div>
+            <h1>IceGirl</h1>
+            <p>AI Companion Desktop 2.5D</p>
+          </div>
+          <button id="voiceButton" class="icon-button" title="Voice placeholder" type="button">Mic</button>
+        </div>
+
+        <div id="chatLog" class="chat-log"></div>
+
+        <div class="model-switcher-row">
+          <div class="model-select-group">
+            <label for="llmSelect">Bộ não (LLM):</label>
+            <select id="llmSelect">
+              <option value="ollama">Ollama (Local)</option>
+              <option value="gemini">Gemini API (Cloud)</option>
+              <option value="openai">OpenAI (Cloud)</option>
+              <option value="webgpu">WebGPU Cục bộ (Offline)</option>
+            </select>
+          </div>
+          <div class="model-select-group">
+            <label for="sttSelect">Giọng nói (STT):</label>
+            <select id="sttSelect">
+              <option value="tiny">Whisper Tiny (Cpu Nhanh)</option>
+              <option value="base">Whisper Base (Chuẩn)</option>
+              <option value="funasr">Alibaba FunASR (SenseVoice)</option>
+            </select>
+          </div>
+        </div>
+        <!-- WebGPU Progress Loading Bar -->
+        <div id="webgpuProgressContainer" class="webgpu-progress-container" style="display: none;">
+          <div class="progress-info">
+            <span id="webgpuProgressText">Đang khởi tạo WebGPU...</span>
+            <span id="webgpuProgressPercent">0%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div id="webgpuProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+        <!-- Image Preview Area -->
+        <div id="imagePreviewArea" class="image-preview-area" style="display: none;">
+          <img id="imagePreviewThumbnail" src="" alt="preview" />
+          <button type="button" id="clearImageButton" class="clear-img-btn">×</button>
+        </div>
+
+        <form id="chatForm" class="chat-form">
+          <button type="button" id="attachButton" class="attach-btn" title="Đính kèm ảnh">📎</button>
+          <input
+            id="chatInput"
+            type="text"
+            autocomplete="off"
+            placeholder="Hỏi giờ, bao mình mở Chrome, hoặc ghi nhớ điều gì đó..."
+          />
+          <button type="submit">Send</button>
+        </form>
+        <input type="file" id="fileInput" accept="image/*" style="display: none;" />
+      </section>
+    </main>
+
+    <script type="module" src="./scripts/app.js"></script>
+  </body>
+</html>

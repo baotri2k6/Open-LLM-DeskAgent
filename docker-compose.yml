@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: deskagent-backend
+    volumes:
+      - .:/workspace
+      # Prevent shadowing node_modules and virtualenv in container
+      - /workspace/node_modules
+    ports:
+      - "8765:8765"
+      - "9001:9001"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PROJECT_ROOT=/workspace
+    restart: unless-stopped
+
+  # Optional local databases or services can be added here, e.g., ChromaDB vector database
+  chromadb:
+    image: chromadb/chroma:0.4.15
+    container_name: deskagent-chromadb
+    volumes:
+      - ./data/chromadb:/chroma/data
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
