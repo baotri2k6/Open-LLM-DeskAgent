@@ -7,11 +7,11 @@ from pathlib import Path
 from typing import Any
 
 from runtime.logger import get_logger
-from knowledge.knowledge.knowledge.knowledge.rag.chunker import chunk_text
-from knowledge.knowledge.knowledge.knowledge.rag.document_loader import load_document
-from knowledge.knowledge.knowledge.knowledge.rag.vector_store import get_vector_store
+from .chunker import chunk_text
+from .document_loader import load_document
+from .vector_store import get_vector_store
 
-logger = get_logger("ai-companion.knowledge.knowledge.knowledge.knowledge.rag.retriever")
+logger = get_logger("ai-companion.knowledge.rag.retriever")
 
 
 def _doc_id(path: str) -> str:

@@ -50,7 +50,7 @@ class MemoryService:
         # Khởi tạo ChromaDB
         self._recent_conversations = []
         try:
-            from knowledge.knowledge.knowledge.knowledge.rag.vector_store import get_vector_store
+            from knowledge.rag.vector_store import get_vector_store
             self._vector_store = get_vector_store("companion_memories")
             self._has_vector = True
         except Exception as exc:
@@ -81,7 +81,7 @@ class MemoryService:
 
         if self._has_vector:
             try:
-                from knowledge.knowledge.knowledge.knowledge.rag.chunker import Chunk
+                from knowledge.rag.chunker import Chunk
                 chunk = Chunk(
                     text=text.strip(),
                     doc_id="facts",
@@ -589,7 +589,7 @@ class MemoryService:
             self._vector_store.delete_doc("facts")
             
             # Re-add all facts as chunks
-            from knowledge.knowledge.knowledge.knowledge.rag.chunker import Chunk
+            from knowledge.rag.chunker import Chunk
             chunks = []
             for i, fact in enumerate(facts):
                 chunks.append(Chunk(

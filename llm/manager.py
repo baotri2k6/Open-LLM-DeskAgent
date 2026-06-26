@@ -724,8 +724,8 @@ class LLMService:
         # Tích hợp MCP dạng Singleton
         if LLMService._mcp_manager is None:
             try:
-                from mcp.server_registry import ServerRegistry
-                from mcp.mcp_client import MCPClientManager
+                from mcp_agent.server_registry import ServerRegistry
+                from mcp_agent.mcp_client import MCPClientManager
                 registry = ServerRegistry()
                 LLMService._mcp_manager = MCPClientManager(registry)
             except Exception as e:

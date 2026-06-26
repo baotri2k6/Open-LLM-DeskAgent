@@ -624,7 +624,7 @@ def get_rag():
         with _init_lock:
             if _rag_retriever is None:
                 try:
-                    from knowledge.knowledge.knowledge.knowledge.rag.retriever import get_retriever
+                    from knowledge.rag.retriever import get_retriever
                     _rag_retriever = get_retriever()
                 except Exception as exc:
                     logger.warning("RAGRetriever init failed: %s", exc)

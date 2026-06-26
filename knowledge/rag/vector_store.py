@@ -22,9 +22,9 @@ from typing import Iterable, Protocol
 
 from config.config import WRITABLE_ROOT
 from runtime.logger import get_logger
-from knowledge.knowledge.knowledge.knowledge.rag.chunker import Chunk
+from .chunker import Chunk
 
-logger = get_logger("ai-companion.knowledge.knowledge.knowledge.knowledge.rag.vector_store")
+logger = get_logger("ai-companion.knowledge.rag.vector_store")
 
 
 # ─── VectorStore protocol ──────────────────────────────────────────────────

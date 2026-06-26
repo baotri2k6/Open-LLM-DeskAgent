@@ -6,9 +6,9 @@ from pathlib import Path
 from typing import Any, Callable
 
 from runtime.logger import get_logger
-from rag import docx_loader, pdf_loader, txt_loader
+from . import docx_loader, pdf_loader, txt_loader
 
-logger = get_logger("ai-companion.knowledge.knowledge.knowledge.knowledge.rag.document_loader")
+logger = get_logger("ai-companion.knowledge.rag.document_loader")
 
 _FORMAT_BY_EXT: dict[str, tuple[str, Callable[[Path], str]]] = {
     ".txt": ("txt", txt_loader.load),
