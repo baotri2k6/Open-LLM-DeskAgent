@@ -656,6 +656,11 @@ function toggleMic() {
   }
 }
 
+const petCodeButton = document.getElementById("petCodeButton");
+petCodeButton?.addEventListener("click", () => {
+  window.companion.openCoding();
+});
+
 petMicButton?.addEventListener("click", () => {
   toggleMic();
 });
@@ -1289,8 +1294,10 @@ document.addEventListener("drop", (e) => {
   if (files && files.length > 0) {
     const file = files[0];
     const fileName = file.name;
-    const msg = `Oa! Cậu vừa thả tệp "${fileName}" vào tớ! Cậu muốn tớ đọc nó hả? [happy]`;
+    const filePath = file.path; // Electron exposes absolute path
+    const msg = `Oa! Cậu vừa thả thư mục hoặc tệp "${fileName}" vào tớ! Để tớ mở giao diện Coding Agent lên làm việc nhé! [happy]`;
     speakQuickReaction(msg, "happy");
+    window.companion.openCoding(filePath);
   } else {
     avatar.setState({ expression: "normal", motion: "idle" });
     setCaption("");

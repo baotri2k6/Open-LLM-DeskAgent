@@ -132,6 +132,7 @@ function getPythonCommand() {
 let avatarWin = null;
 let chatWin = null;
 let settingsWin = null;
+let codingWin = null;
 let pythonProc = null;
 let pythonReady = false;
 const AVATAR_WINDOW_WIDTH = 420;
@@ -331,6 +332,21 @@ function setupCrossWindowIpc() {
     avatarWin.setResizable(wasResizable);
     return { width: newW, height: newH, scale };
   });
+
+  ipcMain.on("window:open-coding", (_e, folderPath) => {
+    createCodingWindow(folderPath);
+  });
+
+  ipcMain.handle("dialog:select-folder", async () => {
+    const { dialog } = require("electron");
+    const result = await dialog.showOpenDialog({
+      properties: ["openDirectory"]
+    });
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+    return result.filePaths[0];
+  });
 }
 
 function createSettingsWindow() {
@@ -367,6 +383,53 @@ function createSettingsWindow() {
   });
 }
 
+function createCodingWindow(folderPath = null) {
+  if (codingWin) {
+    codingWin.focus();
+    if (folderPath) {
+      codingWin.webContents.send("workspace:set-folder", folderPath);
+    }
+    return;
+  }
+
+  codingWin = new BrowserWindow({
+    width: 1100,
+    height: 750,
+    title: "DeskAgent Coding Console",
+    resizable: true,
+    icon: path.join(app.getAppPath(), "assets", "icons", "icon.png"),
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  codingWin.webContents.on(
+    "console-message",
+    (event, level, message, line, sourceId) => {
+      const logDir = getLogDirectory();
+      if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+      fs.appendFileSync(
+        path.join(logDir, "renderer_error.log"),
+        `${new Date().toISOString()} | CODING | [Level ${level}] ${message} (at ${sourceId}:${line})\n`,
+      );
+    },
+  );
+
+  codingWin.loadFile(path.join(__dirname, "..", "renderer", "coding.html"));
+  
+  codingWin.webContents.on("did-finish-load", () => {
+    if (folderPath) {
+      codingWin.webContents.send("workspace:set-folder", folderPath);
+    }
+  });
+
+  codingWin.on("closed", () => {
+    codingWin = null;
+  });
+}
+
 app.whenReady().then(() => {
   nativeTheme.themeSource = "dark";
 
@@ -391,6 +454,7 @@ app.whenReady().then(() => {
     toggleChat,
     showAvatar: () => avatarWin?.show(),
     openSettings: createSettingsWindow,
+    openCoding: () => createCodingWindow(),
     quit: () => app.quit(),
   });
   globalShortcut.register("CommandOrControl+Shift+Space", toggleChat);

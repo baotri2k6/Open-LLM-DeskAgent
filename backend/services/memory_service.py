@@ -524,6 +524,14 @@ class MemoryService:
                     count += 1
             if count > 0:
                 logger.info("Memory Reflection: Tự động ghi nhớ %d ký ức mới vào database.", count)
+
+            # Tự động tổng hợp tri thức Wiki từ hội thoại
+            try:
+                from services.wiki_service import WikiService
+                wiki_svc = WikiService()
+                await wiki_svc.consolidate_knowledge_async(conversations)
+            except Exception as wiki_exc:
+                logger.warning("Wiki consolidation during reflection failed: %s", wiki_exc)
         except Exception as exc:
             logger.warning("Memory Reflection failed: %s", exc)
 

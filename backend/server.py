@@ -822,6 +822,34 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": "Text is empty"})
             return
 
+        if path == "/swe/run":
+            self.send_response(200)
+            self._send_cors_headers()
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Transfer-Encoding", "chunked")
+            self.end_headers()
+
+            asyncio.run(self._handle_swe_stream(payload))
+            try:
+                self.wfile.write(b"0\r\n\r\n")
+                self.wfile.flush()
+            except Exception:
+                pass
+            return
+
+        if path == "/swe/scan":
+            directory = payload.get("directory", "").strip()
+            if not directory:
+                self._send_json({"success": False, "error": "Thiếu thông tin directory."})
+                return
+            try:
+                from services.swe_service import scan_files
+                files = scan_files(directory)
+                self._send_json({"success": True, "files": files})
+            except Exception as e:
+                self._send_json({"success": False, "error": str(e)}, status=500)
+            return
+
         if path == "/config/update":
             key = payload.get("key")
             value = payload.get("value")
@@ -841,6 +869,9 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                 
                 if key in ["features.twitchMode", "twitch.channel"]:
                     sync_twitch_reader()
+                if key in ["telegram.bot_token", "telegram.allowed_chat_id"]:
+                    from services.telegram_service import sync_telegram_service
+                    sync_telegram_service()
                 self._send_json({"success": True})
             except Exception as e:
                 self._send_json({"success": False, "error": str(e)}, status=500)
@@ -1103,6 +1134,25 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
         finally:
             _ai_busy = False
 
+    async def _handle_swe_stream(self, payload: dict) -> None:
+        prompt = payload.get("prompt", "").strip()
+        directory = payload.get("directory", "").strip()
+
+        if not prompt or not directory:
+            self._send_chunk({"type": "error", "message": "Thiếu thông tin prompt hoặc directory."})
+            return
+
+        from services.swe_service import run_swe_task_api
+
+        async def progress_callback(event: dict):
+            self._send_chunk(event)
+
+        try:
+            await run_swe_task_api(prompt, directory, progress_callback)
+        except Exception as e:
+            logger.error(f"Error in SWE stream execution: {e}", exc_info=True)
+            self._send_chunk({"type": "error", "message": f"Hệ thống gặp lỗi: {e}"})
+
     async def _handle_chat(self, payload: dict) -> dict:
         global _ai_busy
         _ai_busy = True
@@ -1316,6 +1366,13 @@ def main() -> None:
 
             # Khởi động Twitch Client nếu được cấu hình sẵn
             sync_twitch_reader()
+
+            # Khởi động Telegram Bot nếu được cấu hình sẵn
+            try:
+                from services.telegram_service import sync_telegram_service
+                sync_telegram_service()
+            except Exception as tg_err:
+                logger.error("Failed to start Telegram service: %s", tg_err)
 
             # Chạy warm-up mô hình và tài nguyên
             warmup()

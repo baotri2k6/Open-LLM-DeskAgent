@@ -68,5 +68,9 @@
     "permissions": {
       "mode": "auto_safe"
     }
+  },
+  "telegram": {
+    "bot_token": "",
+    "allowed_chat_id": ""
   }
 }

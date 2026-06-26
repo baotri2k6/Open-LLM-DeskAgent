@@ -357,12 +357,26 @@ def build_system_prompt(persona_config: dict, rel_level: str = "Người quen", 
     elif activity == "working_document":
         context_note += "Người dùng đang làm việc với tài liệu/văn bản. Tớ nên cổ vũ họ hoặc trêu đùa về việc chăm chỉ.\n"
         
+    # Get Wiki Knowledge Profile if available
+    wiki_knowledge = ""
+    try:
+        from services.wiki_service import WikiService
+        wiki_knowledge = WikiService().get_knowledge()
+    except Exception as e:
+        pass
+
     prompt = (
         f"{core_identity}\n"
         f"Mối quan hệ hiện tại: {rel_level}. {rel_guidelines}\n"
         f"Tâm trạng hiện tại của bạn: {mood}\n"
         f"{style_guidelines}\n"
         f"{emotion_guidelines}\n"
+    )
+    
+    if wiki_knowledge:
+        prompt += f"\n--- WIKI KNOWLEDGE PROFILE (THÔNG TIN ĐÃ BIẾT VỀ CẬU) ---\n{wiki_knowledge}\n\n"
+        
+    prompt += (
         f"QUAN TRỌNG: Hãy phản hồi bằng cùng ngôn ngữ mà người dùng đang sử dụng để trò chuyện với bạn (tiếng Anh hoặc tiếng Việt). Tự động nhận diện và phản hồi song ngữ.\n"
         f"{context_note}"
     )

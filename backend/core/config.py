@@ -47,6 +47,10 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "twitch": {
         "channel": "",
     },
+    "telegram": {
+        "bot_token": "",
+        "allowed_chat_id": "",
+    },
 }
 
 

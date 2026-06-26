@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld("companion", {
   invoke: (ch, data) => ipcRenderer.invoke(ch, data),
   setIgnoreMouseEvents: (ignore, options) =>
     ipcRenderer.send("window:set-ignore-mouse-events", ignore, options),
+  openCoding: (folderPath) => ipcRenderer.send("window:open-coding", folderPath),
 
   on: (channel, cb) => {
     const ALLOWED = [
@@ -44,6 +45,7 @@ contextBridge.exposeInMainWorld("companion", {
       "chat:command",
       "config:updated",
       "chat:request-approval",
+      "workspace:set-folder",
     ];
     if (ALLOWED.includes(channel)) {
       ipcRenderer.on(channel, (_e, ...args) => cb(...args));

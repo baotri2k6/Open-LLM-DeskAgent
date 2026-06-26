@@ -18,6 +18,7 @@ function createTray({ toggleChat, showAvatar, openSettings, quit }) {
     Menu.buildFromTemplate([
       { label: "Show / Hide Chat", click: toggleChat },
       { label: "Show Avatar", click: showAvatar },
+      { label: "Coding Console", click: openCoding },
       { label: "Option", click: openSettings },
       { type: "separator" },
       { label: "Quit", click: quit },

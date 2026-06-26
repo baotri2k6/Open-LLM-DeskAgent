@@ -1159,9 +1159,9 @@ class LLMService:
 
             # Determine if we should stop the agent loop
             should_stop = False
-            if stop_reason in ["stop", "STOP", "end_turn", "length", "MAX_TOKENS"]:
+            if not tool_calls_to_run:
                 should_stop = True
-            elif not tool_calls_to_run:
+            elif stop_reason in ["length", "MAX_TOKENS"]:
                 should_stop = True
 
             if should_stop:
