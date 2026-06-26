@@ -5,9 +5,9 @@ from pathlib import Path
 # Add project root to sys.path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
-sys.path.insert(0, str(PROJECT_ROOT / "backend"))
+sys.path.insert(0, str(PROJECT_ROOT / "api"))
 
-from backend.agents.planner_agent import PlannerAgent
+from agents.planner.planner_agent import PlannerAgent
 
 class TestPlannerAgent(unittest.TestCase):
     def test_planner_agent_initialization(self):

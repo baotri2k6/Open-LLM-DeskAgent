@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IceGirl Settings</title>
+    <link rel="stylesheet" href="./settings.css" />
+  </head>
+  <body>
+    <main class="settings-shell">
+      <!-- Header -->
+      <div class="settings-header">
+        <div class="settings-header-icon">⚙️</div>
+        <div>
+          <h1>Cài đặt</h1>
+          <p>Tùy chỉnh AI companion của bạn</p>
+        </div>
+      </div>
+
+      <!-- Card: AI Brain -->
+      <div class="settings-card">
+        <div class="card-header">
+          <div class="card-icon">🧠</div>
+          <span class="card-title">Trí tuệ AI</span>
+        </div>
+        <div class="card-divider"></div>
+
+        <div class="field">
+          <span class="field-label">Bộ não AI (LLM Provider)</span>
+          <select id="llmSelect">
+            <option value="ollama">🏠 Ollama — Chạy local, miễn phí</option>
+            <option value="gemini">✨ Gemini API — Đám mây Google</option>
+            <option value="openai">⚡ OpenAI API — Đám mây OpenAI</option>
+            <option value="deepseek">🐳 DeepSeek API — Đám mây DeepSeek</option>
+            <option value="glm">🔮 Zhipu GLM API — Đám mây GLM</option>
+            <option value="qwen">☁️ DashScope Qwen API — Đám mây Ali</option>
+            <option value="openai-compatible">🔌 OpenAI Compatible — Tùy chỉnh</option>
+          </select>
+        </div>
+
+        <!-- Dynamic LLM Config Sections -->
+        <div id="llmConfigSections" style="margin-top: 12px; display: flex; flex-direction: column; gap: 12px;">
+          <!-- Gemini Config -->
+          <div id="config-gemini" class="llm-sub-config" style="display: none;">
+            <div class="field">
+              <span class="field-label">Gemini API Key</span>
+              <input type="text" id="geminiKeyInput" placeholder="Nhập API Key của Gemini (AI Studio)..." />
+            </div>
+            <div class="field" style="margin-top: 8px;">
+              <span class="field-label">Gemini Model</span>
+              <input type="text" id="geminiModelInput" placeholder="Ví dụ: gemini-2.5-flash" />
+            </div>
+          </div>
+
+          <!-- OpenAI Config -->
+          <div id="config-openai" class="llm-sub-config" style="display: none;">
+            <div class="field">
+              <span class="field-label">OpenAI API Key</span>
+              <input type="text" id="openaiKeyInput" placeholder="sk-..." />
+            </div>
+            <div class="field" style="margin-top: 8px;">
+              <span class="field-label">OpenAI Model</span>
+              <input type="text" id="openaiModelInput" placeholder="Ví dụ: gpt-4o-mini" />
+            </div>
+          </div>
+
+          <!-- DeepSeek Config -->
+          <div id="config-deepseek" class="llm-sub-config" style="display: none;">
+            <div class="field">
+              <span class="field-label">DeepSeek API Key</span>
+              <input type="text" id="deepseekKeyInput" placeholder="sk-..." />
+            </div>
+            <div class="field" style="margin-top: 8px;">
+              <span class="field-label">DeepSeek Model</span>
+              <input type="text" id="deepseekModelInput" placeholder="Ví dụ: deepseek-chat" />
+            </div>
+          </div>
+
+          <!-- GLM Config -->
+          <div id="config-glm" class="llm-sub-config" style="display: none;">
+            <div class="field">
+              <span class="field-label">Zhipu GLM API Key</span>
+              <input type="text" id="glmKeyInput" placeholder="Nhập Zhipu API Key..." />
+            </div>
+            <div class="field" style="margin-top: 8px;">
+              <span class="field-label">GLM Model</span>
+              <input type="text" id="glmModelInput" placeholder="Ví dụ: glm-4" />
+            </div>
+          </div>
+
+          <!-- Qwen Config -->
+          <div id="config-qwen" class="llm-sub-config" style="display: none;">
+            <div class="field">
+              <span class="field-label">DashScope Qwen API Key</span>
+              <input type="text" id="qwenKeyInput" placeholder="Nhập DashScope API Key..." />
+            </div>
+            <div class="field" style="margin-top: 8px;">
+              <span class="field-label">Qwen Model</span>
+              <input type="text" id="qwenModelInput" placeholder="Ví dụ: qwen-plus" />
+            </div>
+          </div>
+
+          <!-- OpenAI Compatible Config -->
+          <div id="config-openai-compatible" class="llm-sub-config" style="display: none;">
+            <div class="field">
+              <span class="field-label">Custom API Base URL</span>
+              <input type="text" id="openaiCompatibleBaseUrlInput" placeholder="Ví dụ: http://localhost:11434/v1" />
+            </div>
+            <div class="field" style="margin-top: 8px;">
+              <span class="field-label">Custom API Key (nếu có)</span>
+              <input type="text" id="openaiCompatibleKeyInput" placeholder="Nhập API Key..." />
+            </div>
+            <div class="field" style="margin-top: 8px;">
+              <span class="field-label">Custom Model Name</span>
+              <input type="text" id="openaiCompatibleModelInput" placeholder="Ví dụ: llama3" />
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="field-label">Mô hình nhận diện giọng nói (STT)</span>
+          <select id="sttSelect">
+            <option value="tiny">🚀 Tiny — Rất nhanh, nhẹ máy</option>
+            <option value="base">🎯 Base — Chính xác hơn, vừa phải</option>
+            <option value="funasr">🔥 Alibaba FunASR — Cực nhanh & Đa ngôn ngữ</option>
+          </select>
+        </div>
+
+        <div id="stt-funasr-config" class="field" style="display: none;">
+          <span class="field-label">Tên mô hình FunASR (Model Name)</span>
+          <input type="text" id="sttFunasrModelInput" placeholder="Ví dụ: iic/SenseVoiceSmall" />
+        </div>
+      </div>
+
+      <!-- Card: Character -->
+      <div class="settings-card">
+        <div class="card-header">
+          <div class="card-icon">🎭</div>
+          <span class="card-title">Nhân vật</span>
+        </div>
+        <div class="card-divider"></div>
+
+        <div class="avatar-grid">
+          <label class="avatar-card">
+            <input
+              type="radio"
+              name="avatarModel"
+              id="avatarIcegirl"
+              value="assets/live2d/IceGirl/IceGirl.model3.json"
+            />
+            <div class="avatar-card-inner">
+              <span class="avatar-emoji">🧊</span>
+              <div>
+                <div class="avatar-card-name">IceGirl</div>
+                <div class="avatar-card-sub">Mặc định</div>
+              </div>
+            </div>
+          </label>
+
+          <label class="avatar-card">
+            <input
+              type="radio"
+              name="avatarModel"
+              id="avatarHiyori"
+              value="assets/live2d/hiyori_en/hiyori_pro/runtime/hiyori_pro_t11.model3.json"
+            />
+            <div class="avatar-card-inner">
+              <span class="avatar-emoji">🌸</span>
+              <div>
+                <div class="avatar-card-name">Hiyori</div>
+                <div class="avatar-card-sub">Free Model</div>
+              </div>
+            </div>
+          </label>
+
+          <label class="avatar-card">
+            <input
+              type="radio"
+              name="avatarModel"
+              id="avatarMao"
+              value="assets/live2d/mao_en/runtime/mao_pro.model3.json"
+            />
+            <div class="avatar-card-inner">
+              <span class="avatar-emoji">🐱</span>
+              <div>
+                <div class="avatar-card-name">Mao</div>
+                <div class="avatar-card-sub">Pro Model</div>
+              </div>
+            </div>
+          </label>
+
+          <label class="avatar-card">
+            <input
+              type="radio"
+              name="avatarModel"
+              id="avatarHuohuo"
+              value="assets/live2d/huohuo2/huohuo/huohuo.model3.json"
+            />
+            <div class="avatar-card-inner">
+              <span class="avatar-emoji">🦋</span>
+              <div>
+                <div class="avatar-card-name">Huohuo</div>
+                <div class="avatar-card-sub">HSR Model</div>
+              </div>
+            </div>
+          </label>
+
+        </div>
+        <div class="field" style="margin-top: 14px;">
+          <span class="field-label">Kích thước nhân vật</span>
+          <select id="avatarScaleSelect">
+            <option value="0.75">Nhỏ (75%)</option>
+            <option value="1.0">Mặc định (100%)</option>
+            <option value="1.25">Lớn (125%)</option>
+            <option value="1.5">Rất lớn (150%)</option>
+            <option value="1.75">Cực lớn (175%)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Card: Interaction Mode -->
+      <div class="settings-card">
+        <div class="card-header">
+          <div class="card-icon">🎮</div>
+          <span class="card-title">Chế độ hoạt động</span>
+        </div>
+        <div class="card-divider"></div>
+
+        <div class="radio-grid">
+          <label class="radio-card">
+            <input
+              type="radio"
+              name="interactionMode"
+              value="streamer"
+              id="radModeStreamer"
+            />
+            <div class="radio-card-inner">
+              <span class="radio-card-icon">🎙️</span>
+              <span class="radio-card-name">Streamer</span>
+              <span class="radio-card-desc"
+                >Kiểu Neuro-Sama — nghe liên tục, ẩn chat</span
+              >
+            </div>
+          </label>
+
+          <label class="radio-card">
+            <input
+              type="radio"
+              name="interactionMode"
+              value="assistant"
+              id="radModeAssistant"
+            />
+            <div class="radio-card-inner">
+              <span class="radio-card-icon">💬</span>
+              <span class="radio-card-name">Trợ lý</span>
+              <span class="radio-card-desc"
+                >Kiểu Chat Box — hiện khung chat để nhập</span
+              >
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Card: Livestream -->
+      <div class="settings-card">
+        <div class="card-header">
+          <div class="card-icon">📺</div>
+          <span class="card-title">Livestream Twitch</span>
+        </div>
+        <div class="card-divider"></div>
+
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-name">Đọc chat Twitch</div>
+            <div class="toggle-desc">AI tự bình luận tin nhắn từ viewer</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="chkTwitchMode" />
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="twitch-channel-wrap" id="twitchChannelWrap">
+          <div class="field">
+            <span class="field-label">Tên kênh Twitch</span>
+            <input
+              type="text"
+              id="txtTwitchChannel"
+              placeholder="Ví dụ: mixigaming"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Card: Memory Manager -->
+      <div class="settings-card">
+        <div class="card-header">
+          <div class="card-icon">💾</div>
+          <span class="card-title">Quản lý ký ức (Memory)</span>
+        </div>
+        <div class="card-divider"></div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-name">Ghi nhớ dài hạn</div>
+            <div class="toggle-desc">Cho phép tự động đúc kết & lưu ký ức về người dùng</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="chkMemoryMode" />
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="card-divider"></div>
+        <div class="memory-manager-area" style="display: flex; flex-direction: column; gap: 8px;">
+          <span class="field-label">Danh sách ký ức đã lưu</span>
+          <div id="memoryList" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 4px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-input);">
+            <div style="text-align: center; color: var(--text-3); padding: 20px;">Đang tải danh sách ký ức...</div>
+          </div>
+          <div class="memory-add-wrap" style="display: flex; gap: 6px; margin-top: 6px;">
+            <input type="text" id="txtNewMemory" placeholder="Thêm ký ức thủ công..." style="flex: 1;" />
+            <button id="btnAddMemory" style="padding: 0 16px; height: 38px; background: var(--accent); color: var(--bg-base); font-weight: bold; border: none; border-radius: var(--radius-sm); cursor: pointer; transition: opacity 0.2s;">Thêm</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div class="save-status" id="saveStatus">Đã lưu cài đặt</div>
+    <script type="module" src="./settings.js"></script>
+  </body>
+</html>

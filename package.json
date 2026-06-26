@@ -2,12 +2,12 @@
   "name": "ai-companion-desktop-2d",
   "version": "0.2.0",
   "description": "AI Companion Desktop 2D",
-  "main": "apps/desktop/main/main.js",
+  "main": "desktop/main.js",
   "private": true,
   "scripts": {
     "start": "node scripts/start-electron.js",
     "dev": "node scripts/start-electron.js",
-    "python": "python backend/server.py",
+    "python": "python api/server.py",
     "build": "electron-builder"
   },
   "dependencies": {

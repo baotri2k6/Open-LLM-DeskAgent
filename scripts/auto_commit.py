@@ -13,13 +13,13 @@ import subprocess
 import asyncio
 from pathlib import Path
 
-# Add project root and backend folder to sys.path
+# Add project root and api folder to sys.path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
-sys.path.insert(0, str(PROJECT_ROOT / "backend"))
+sys.path.insert(0, str(PROJECT_ROOT / "api"))
 
-from backend.services.llm_service import LLMService
-from backend.core.config import config
+from llm.manager import LLMService
+from config.config import config
 
 
 async def generate_commit_message(diff_text: str) -> str | None:
