@@ -382,3 +382,55 @@ def build_system_prompt(persona_config: dict, rel_level: str = "Người quen", 
     )
     
     return prompt
+
+
+def build_dynamic_state_block(
+    mood_state=None,
+    emotion: str = "neutral",
+    goal_hint: str = "",
+    relationship_score: int = 0,
+) -> str:
+    """
+    Build a concise dynamic state block to inject into the system prompt.
+    This is appended after the main system prompt to give the LLM
+    real-time context about the companion's current internal state.
+
+    Args:
+        mood_state: MoodState object (from persona.mood.mood_states).
+        emotion: Current emotion label from EmotionEngine.
+        goal_hint: Today's goal hint string from GoalManager.
+        relationship_score: Current relationship score (int).
+
+    Returns:
+        A formatted string block (empty if all inputs are default).
+    """
+    parts: list[str] = []
+
+    if mood_state is not None:
+        try:
+            energy_word = (
+                "cao" if mood_state.energy > 0.65
+                else ("trung bình" if mood_state.energy > 0.35 else "thấp")
+            )
+            state_parts = [f"Tâm trạng: {mood_state.mood}", f"Năng lượng: {energy_word}"]
+            if mood_state.curiosity > 0.7:
+                state_parts.append("Đang tò mò")
+            if mood_state.stress > 0.6:
+                state_parts.append("Có chút căng thẳng")
+            if mood_state.focus > 0.75:
+                state_parts.append("Đang tập trung cao độ")
+            parts.append("[TRẠNG THÁI NỘI TÂM] " + " | ".join(state_parts))
+        except Exception:
+            pass
+
+    if emotion and emotion not in ("neutral", ""):
+        parts.append(f"[CẢM XÚC HIỆN TẠI] {emotion}")
+
+    if goal_hint:
+        parts.append(goal_hint)
+
+    if not parts:
+        return ""
+
+    return "\n".join(parts) + "\n"
+

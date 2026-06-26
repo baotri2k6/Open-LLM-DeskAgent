@@ -880,8 +880,6 @@ class LLMService:
         context = context or {}
 
         companion_ctx = context.get("companion", {})
-        rel_level = companion_ctx.get("rel_level", "Người quen")
-        mood = companion_ctx.get("mood", "vui vẻ")
         time_note = companion_ctx.get("time_note", "")
 
         # Trích xuất plain text nếu message là danh sách multimodal
@@ -898,8 +896,52 @@ class LLMService:
         perception = context.get("perception", {})
         activity = perception.get("activity", "unknown")
 
+        # ── Companion Intelligence: pull live state from engines ──────────
+        _mood_state = None
+        _emotion_label = "neutral"
+        _goal_hint = ""
+        try:
+            from persona.mood.mood_engine import mood_engine
+            from persona.emotion.emotion_engine import emotion_engine
+            from persona.relationship.relationship_tracker import relationship_tracker
+            from persona.goals.goal_manager import goal_manager
+            from life.observe.observer import life_observer
+
+            _mood_state    = mood_engine.state
+            _emotion_label = emotion_engine.emotion
+            rel_level      = relationship_tracker.level
+            mood           = _mood_state.mood
+            _goal_hint     = goal_manager.get_prompt_hint()
+
+            # Record the user's message so the observer knows user is active
+            life_observer.record_user_message()
+
+            # Update emotion from user's text
+            emotion_engine.update_from_user_text(plain_text)
+
+            # Inject activity modifier into mood
+            mood_engine.inject_activity_modifier(activity)
+        except Exception:
+            rel_level = companion_ctx.get("rel_level", "Người quen")
+            mood      = companion_ctx.get("mood", "vui vẻ")
+
+
+
         force_eng = not self._is_vietnamese(plain_text)
         system_prompt = self._build_system_prompt(rel_level, mood, time_note, force_english=force_eng, activity=activity)
+
+        # ── Inject dynamic companion state block ──────────────────────────
+        try:
+            from persona.dialogue.system_prompt import build_dynamic_state_block
+            state_block = build_dynamic_state_block(
+                mood_state=_mood_state,
+                emotion=_emotion_label,
+                goal_hint=_goal_hint,
+            )
+            if state_block:
+                system_prompt = system_prompt + "\n" + state_block
+        except Exception:
+            pass
 
         messages = [{"role": "system", "content": system_prompt}]
 
@@ -1001,6 +1043,24 @@ class LLMService:
         if full_reply:
             self._append_to_history("user", plain_text)
             self._append_to_history("assistant", full_reply)
+
+            # ── Post-response: update companion intelligence engines ──────
+            try:
+                from persona.emotion.emotion_engine import emotion_engine
+                from persona.relationship.relationship_tracker import relationship_tracker
+                from persona.goals.goal_manager import goal_manager
+
+                # Update emotion from what the AI actually said
+                emotion_engine.update_from_ai_text(full_reply)
+
+                # Award relationship point for successful interaction
+                relationship_tracker.add_points("chat_turn")
+
+                # Try to auto-complete conversation-triggered goals
+                goal_manager.try_complete_by_trigger("conversation")
+            except Exception:
+                pass
+
 
     async def _run_agent_loop(self, messages: list[dict], force_eng: bool):
         provider, api_key, model, base_url = _get_llm_credentials()

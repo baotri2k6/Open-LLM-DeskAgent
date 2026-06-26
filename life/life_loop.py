@@ -1,0 +1,123 @@
+"""Life Loop — main autonomous async loop: Observe → Feel → Decide → Act."""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+from typing import Optional
+
+logger = logging.getLogger("ai-companion.life")
+
+
+class LifeLoop:
+    """
+    The autonomous life loop that makes the companion proactively alive.
+
+    Runs as a background asyncio task inside the Python server.
+    Cycle: Observe → Feel → Decide → Act → Sleep → Repeat
+
+    Integration: Started from api/server.py on startup via asyncio.create_task().
+    """
+
+    def __init__(self, ws_clients: Optional[set] = None) -> None:
+        self._ws_clients  = ws_clients or set()
+        self._running     = False
+        self._task: Optional[asyncio.Task] = None
+
+    def start(self, ws_clients: Optional[set] = None) -> None:
+        """Start the life loop as an asyncio background task."""
+        if ws_clients:
+            self._ws_clients = ws_clients
+        if self._running:
+            return
+        self._running = True
+        try:
+            loop = asyncio.get_event_loop()
+            self._task = loop.create_task(self._run())
+            logger.info("LifeLoop: Started ✓")
+        except RuntimeError:
+            logger.warning("LifeLoop: No running event loop — will start on next await")
+
+    def stop(self) -> None:
+        """Stop the life loop."""
+        self._running = False
+        if self._task:
+            self._task.cancel()
+        logger.info("LifeLoop: Stopped")
+
+    async def start_async(self, ws_clients: Optional[set] = None) -> None:
+        """Start the life loop from an async context."""
+        if ws_clients:
+            self._ws_clients = ws_clients
+        if self._running:
+            return
+        self._running = True
+        self._task = asyncio.create_task(self._run())
+        logger.info("LifeLoop: Started (async) ✓")
+
+    # ── Main loop ──────────────────────────────────────────────────────────
+
+    async def _run(self) -> None:
+        """Main coroutine — loops until stopped."""
+        # Lazy imports to avoid circular dependencies at startup
+        from life.observe.observer import life_observer
+        from life.decide.decision_engine import decision_engine
+        from life.act.proactive_messenger import proactive_messenger
+        from persona.mood.mood_engine import mood_engine
+        from persona.emotion.emotion_engine import emotion_engine
+
+        # Wire WebSocket clients to messenger
+        proactive_messenger.register_ws_clients(self._ws_clients)
+
+        # Configure decision engine from config
+        try:
+            from config.config import config
+            interval = float(config.get("life.proactive_interval_seconds", 600))
+            decision_engine.configure(interval)
+        except Exception:
+            pass
+
+        logger.info("LifeLoop: Entering main loop")
+
+        while self._running:
+            try:
+                # ── Observe ────────────────────────────────────────────────
+                mood_state = mood_engine.state
+                context = life_observer.observe(
+                    mood    = mood_state.mood,
+                    emotion = emotion_engine.emotion,
+                    energy  = mood_state.energy,
+                )
+
+                # ── Feel — update mood based on idle ──────────────────────
+                if context.user_idle_seconds > 1800:      # 30 min
+                    mood_engine.update_from_event("idle_long")
+                    emotion_engine.update_from_event("idle_long")
+                elif context.user_idle_seconds > 300:      # 5 min
+                    mood_engine.update_from_event("idle_short")
+
+                # ── Decide ─────────────────────────────────────────────────
+                decision = decision_engine.decide(context)
+
+                # ── Act ────────────────────────────────────────────────────
+                if decision.should_act:
+                    await proactive_messenger.send(
+                        action_type  = decision.action_type,
+                        message_hint = decision.message_hint,
+                    )
+
+                # ── Sleep until next check ─────────────────────────────────
+                await asyncio.sleep(decision.next_check_seconds)
+
+            except asyncio.CancelledError:
+                logger.info("LifeLoop: Cancelled")
+                break
+            except Exception as e:
+                logger.error(f"LifeLoop: Error in cycle — {e}")
+                await asyncio.sleep(60)   # backoff on error
+
+        logger.info("LifeLoop: Exited")
+
+
+# ── Global singleton ───────────────────────────────────────────────────────────
+life_loop = LifeLoop()

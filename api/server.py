@@ -2,6 +2,7 @@
 
 Endpoints:
   GET  /health
+  GET  /api/companion/state    ← Live emotion/mood/relationship state
   POST /chat
   GET  /memory/profile
   POST /voice/transcribe      ← STT
@@ -10,6 +11,7 @@ Endpoints:
   POST /documents/delete      ← RAG delete
   GET  /tts/cache/<filename>  ← serve TTS audio files
 """
+
 
 from __future__ import annotations
 
@@ -722,7 +724,24 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
             self._serve_file(TTS_CACHE_DIR / filename)
             return
 
+        if path == "/api/companion/state":
+            try:
+                from persona.emotion.emotion_engine import emotion_engine
+                from persona.mood.mood_engine import mood_engine
+                from persona.relationship.relationship_tracker import relationship_tracker
+                from persona.goals.goal_manager import goal_manager
+                self._send_json({
+                    "emotion":      emotion_engine.snapshot(),
+                    "mood":         mood_engine.get_snapshot(),
+                    "relationship": relationship_tracker.snapshot(),
+                    "goals":        goal_manager.snapshot(),
+                })
+            except Exception as exc:
+                self._send_json({"error": str(exc)}, status=500)
+            return
+
         self._send_json({"type": "error", "message": "Not found"}, status=404)
+
 
     # ─── POST ────────────────────────────────────────────────────────────────
 
@@ -1363,6 +1382,14 @@ def main() -> None:
             # Đăng ký các tác vụ ngầm chạy tuần kỳ vào event loop
             asyncio.run_coroutine_threadsafe(_autonomous_agent_loop(), _background_loop)
             asyncio.run_coroutine_threadsafe(_twitch_commentator_loop(), _background_loop)
+
+            # ── Khởi động Life Loop (autonomous companion cycle) ──────────
+            try:
+                from life.life_loop import life_loop
+                asyncio.run_coroutine_threadsafe(life_loop.start_async(), _background_loop)
+                logger.info("LifeLoop: Scheduled for startup ✓")
+            except Exception as ll_err:
+                logger.warning("LifeLoop startup failed (non-critical): %s", ll_err)
 
             # Khởi động Twitch Client nếu được cấu hình sẵn
             sync_twitch_reader()

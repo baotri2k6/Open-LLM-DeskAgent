@@ -1,42 +1,110 @@
-"""Persona manager to load character configurations from YAML files."""
+"""Persona manager — loads and caches character configurations."""
 
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Optional
+
 import yaml
 
 from config.config import PROJECT_ROOT, RESOURCE_BASE, IS_FROZEN
+from persona.identity.character_profile import CharacterProfile
+from persona.behavior.personality import PersonalityProfile
 
 
 class PersonaManager:
-    def __init__(self, characters_dir: Path | None = None) -> None:
+    """
+    Loads character YAML files and returns structured CharacterProfile objects.
+    Caches profiles in memory to avoid repeated disk reads.
+    """
+
+    def __init__(self, characters_dir: Optional[Path] = None) -> None:
         if characters_dir:
-            self.characters_dir = characters_dir
+            self.characters_dir = Path(characters_dir)
         else:
-            if IS_FROZEN:
-                self.characters_dir = RESOURCE_BASE / "api" / "persona" / "characters"
-            else:
-                self.characters_dir = PROJECT_ROOT / "api" / "persona" / "characters"
+            # Primary: flat project structure (Vision 3.0)
+            self.characters_dir = PROJECT_ROOT / "persona" / "characters"
+
+        self._cache: dict[str, CharacterProfile] = {}
+
+    # ── Public API ─────────────────────────────────────────────────────────
 
     def load_persona(self, name: str) -> dict:
-        """Loads a character persona configuration by name (YAML)."""
-        filename = f"{name.lower()}.yaml"
-        path = self.characters_dir / filename
+        """
+        Load a character persona as a raw dict (backward-compatible).
+        Returns empty dict if not found.
+        """
+        profile = self.get_character_profile(name)
+        return {
+            "name":           profile.name,
+            "description":    profile.description,
+            "personality":    profile.personality,
+            "speech_style":   profile.speech_style,
+            "favorite_topics": profile.favorite_topics,
+            "tts":            profile.tts,
+        }
 
-        # Fallback to main project config/characters if not in api
-        if not path.exists():
-            alt_path = PROJECT_ROOT / "config" / "characters" / filename
-            if not alt_path.exists() and IS_FROZEN:
-                alt_path = RESOURCE_BASE / "config" / "characters" / filename
-            if alt_path.exists():
-                path = alt_path
+    def get_character_profile(self, name: str) -> CharacterProfile:
+        """
+        Load and return a structured CharacterProfile.
+        Uses cache if available; returns default if not found.
+        """
+        key = name.lower().strip()
+        if key in self._cache:
+            return self._cache[key]
 
-        if not path.exists():
-            return {}
+        raw = self._load_yaml(key)
+        if not raw:
+            return CharacterProfile.default()
 
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                data = yaml.safe_load(f)
-                return data if isinstance(data, dict) else {}
-        except Exception:
-            return {}
+        profile = CharacterProfile.from_yaml(raw)
+        self._cache[key] = profile
+        return profile
+
+    def get_personality_profile(self, name: str) -> PersonalityProfile:
+        """Return a PersonalityProfile built from the character's YAML."""
+        character = self.get_character_profile(name)
+        return PersonalityProfile.from_character_profile(character)
+
+    def list_characters(self) -> list[str]:
+        """Return available character names (without extension)."""
+        if not self.characters_dir.exists():
+            return []
+        return [f.stem for f in self.characters_dir.glob("*.yaml")]
+
+    def clear_cache(self) -> None:
+        """Clear the in-memory profile cache."""
+        self._cache.clear()
+
+    # ── Internal ───────────────────────────────────────────────────────────
+
+    def _load_yaml(self, name: str) -> dict:
+        """Resolve YAML file path with fallbacks and return parsed dict."""
+        filename = f"{name}.yaml"
+
+        candidates = [
+            self.characters_dir / filename,
+        ]
+
+        # Legacy fallbacks (old path structure)
+        if IS_FROZEN:
+            candidates += [
+                RESOURCE_BASE / "api" / "persona" / "characters" / filename,
+                RESOURCE_BASE / "config" / "characters" / filename,
+            ]
+        else:
+            candidates += [
+                PROJECT_ROOT / "api" / "persona" / "characters" / filename,
+                PROJECT_ROOT / "config" / "characters" / filename,
+            ]
+
+        for path in candidates:
+            if path.exists():
+                try:
+                    with open(path, "r", encoding="utf-8") as f:
+                        data = yaml.safe_load(f)
+                        return data if isinstance(data, dict) else {}
+                except Exception:
+                    continue
+
+        return {}
