@@ -29,4 +29,4 @@ COPY . .
 EXPOSE 8765 9001
 
 # Run the python backend server
-CMD ["python", "backend/server.py"]
+CMD ["python", "api/server.py"]

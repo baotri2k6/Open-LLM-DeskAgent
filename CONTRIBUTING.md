@@ -10,7 +10,7 @@ Thank you for contributing to DeskAgent! To maintain code quality and clean proj
     *   Create a virtual environment: `python -m venv venv`
     *   Activate it: `.\venv\Scripts\activate` (Windows) or `source venv/bin/activate` (Linux/Mac)
     *   Install dependencies: `pip install -r requirements.txt`
-    *   Start Python server: `npm run python` (or `python backend/server.py`)
+    *   Start Python server: `npm run python` (or `python api/server.py`)
 
 2.  **Desktop App Setup**:
     *   Install Node dependencies: `npm install`

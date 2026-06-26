@@ -153,7 +153,7 @@ function startPython() {
     cmd = getPythonCommand();
     const script = path.join(
       app.getAppPath(),
-      "backend",
+      "api",
       "server.py",
     );
     args = [script];
