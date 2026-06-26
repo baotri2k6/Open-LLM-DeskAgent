@@ -66,9 +66,10 @@ class PlannerAgent:
         if url_match:
             return {"name": "open_url", "url": url_match.group(1)}
 
-        # Thông tin hệ thống
-        if re.search(r"(ram|cpu|bộ nhớ|máy tính|thông số|system info)", t):
-            return {"name": "system_info"}
+        # Thông tin hệ thống (Tránh trùng khớp với các lệnh tắt máy/khóa/khởi động lại)
+        if re.search(r"(ram|cpu|bộ nhớ|máy tính|thông số|system info|cấu hình)", t):
+            if not re.search(r"(tắt|khóa|khởi động lại|reset|shutdown|restart|hẹn giờ)", t):
+                return {"name": "system_info"}
 
         # Hỏi về tài liệu (RAG)
         if re.search(r"(tài liệu|document|file|pdf|docx|sách|chương|nội dung)", t):

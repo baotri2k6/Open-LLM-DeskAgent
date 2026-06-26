@@ -2,7 +2,7 @@ const { Tray, Menu, app, nativeImage } = require("electron");
 const path = require("path");
 let tray = null;
 
-function createTray({ toggleChat, showAvatar, openSettings, quit }) {
+function createTray({ toggleChat, showAvatar, openSettings, openCoding, quit }) {
   const iconPath = path.join(app.getAppPath(), "assets", "icons", "icon.png");
   let icon;
   try {
