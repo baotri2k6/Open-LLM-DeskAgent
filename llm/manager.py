@@ -925,6 +925,34 @@ class LLMService:
             rel_level = companion_ctx.get("rel_level", "Người quen")
             mood      = companion_ctx.get("mood", "vui vẻ")
 
+        # ── EmpathyEngine: detect user emotion & update conversation ──────
+        _empathy_prefix = ""
+        try:
+            from social.empathy.empathy_engine import empathy_engine
+            from social.conversation.conversation_manager import conversation_manager
+            from motivation.motivation_manager import motivation_manager
+            from runtime.session.session_manager import session_manager
+
+            reading = empathy_engine.analyze(plain_text)
+            _empathy_prefix = empathy_engine.get_empathy_prefix(reading)
+
+            conversation_manager.on_user_message(plain_text, reading.detected_emotion)
+            motivation_manager.on_conversation(plain_text)
+            session_manager.on_user_activity()
+        except Exception:
+            pass
+
+        # ── MemoryManager: semantic recall for context ────────────────────
+        try:
+            from memory.memory_manager import memory_manager
+            memory_manager.add_turn("user", plain_text)
+            if plain_text and not context.get("memory"):
+                recalled = memory_manager.recall_for_prompt(plain_text)
+                if recalled:
+                    context["memory"] = [{"text": s} for s in recalled]
+        except Exception:
+            pass
+
 
 
         force_eng = not self._is_vietnamese(plain_text)
@@ -1058,6 +1086,22 @@ class LLMService:
 
                 # Try to auto-complete conversation-triggered goals
                 goal_manager.try_complete_by_trigger("conversation")
+            except Exception:
+                pass
+
+            # ── Post-response: MemoryManager + ConversationManager ────────
+            try:
+                from memory.memory_manager import memory_manager
+                from social.conversation.conversation_manager import conversation_manager
+                memory_manager.add_turn("assistant", full_reply)
+                conversation_manager.on_assistant_message(full_reply)
+            except Exception:
+                pass
+
+            # ── Post-response: MotivationManager task complete ────────────
+            try:
+                from motivation.motivation_manager import motivation_manager
+                motivation_manager.on_conversation()
             except Exception:
                 pass
 

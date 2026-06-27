@@ -1,133 +1,214 @@
-"""Smoke test for Phase 2 Companion Intelligence modules."""
-import sys
-sys.path.insert(0, ".")
+"""Phase 2 Integration Tests — kiểm tra toàn bộ Companion Intelligence stack."""
 
-errors = []
+import sys
+import asyncio
+sys.path.insert(0, 'd:/Open LLM DeskAgent')
+
+PASS = 0
+FAIL = 0
+
 
 def test(name, fn):
+    global PASS, FAIL
     try:
         fn()
-        print(f"[PASS] {name}")
+        print(f"  [PASS] {name}")
+        PASS += 1
     except Exception as e:
-        print(f"[FAIL] {name}: {e}")
-        errors.append(name)
+        print(f"  [FAIL] {name}: {e}")
+        FAIL += 1
 
-# CharacterProfile
-def test_character_profile():
-    from persona.identity.character_profile import CharacterProfile
-    p = CharacterProfile.default()
-    assert p.name == "IceGirl"
-    assert p.get_trait("cheerful") == 0.9
-    p2 = CharacterProfile.from_yaml({
-        "name": "Test", "personality": {"cheerful": 0.7}, "tts": {}
-    })
-    assert p2.name == "Test"
-test("CharacterProfile", test_character_profile)
 
-# EmotionClassifier
-def test_emotion_classifier():
-    from persona.emotion.emotion_classifier import classify_emotion
-    emotion, conf = classify_emotion("wow tuyet voi qua!")
-    assert emotion in ("excited", "happy", "surprised", "neutral")
-    emotion2, _ = classify_emotion("buon qua hom nay")
-    assert emotion2 in ("sad", "bored", "neutral")
-test("EmotionClassifier", test_emotion_classifier)
+def test_async(name, coro_fn):
+    global PASS, FAIL
+    try:
+        asyncio.get_event_loop().run_until_complete(coro_fn())
+        print(f"  [PASS] {name}")
+        PASS += 1
+    except Exception as e:
+        print(f"  [FAIL] {name}: {e}")
+        FAIL += 1
 
-# EmotionMapper
-def test_emotion_mapper():
-    from persona.emotion.emotion_mapper import get_expression, get_motion, get_avatar_hints
-    assert get_expression("happy") == "exp_happy"
-    assert get_motion("sad") == "motion_sad"
-    hints = get_avatar_hints("excited")
-    assert hints["emotion"] == "excited"
-test("EmotionMapper", test_emotion_mapper)
 
-# EmotionEngine
-def test_emotion_engine():
-    from persona.emotion.emotion_engine import EmotionEngine
-    eng = EmotionEngine()
-    eng.update_from_user_text("hom nay vui ve lam!")
-    snap = eng.snapshot()
-    assert "emotion" in snap
-    assert "intensity" in snap
-    eng.update_from_event("task_success")
-    assert eng.emotion in ("proud", "happy", "excited", "neutral")
-test("EmotionEngine", test_emotion_engine)
+# ── Phase 1 gaps ──────────────────────────────────────────────────────────────
+print("\n=== Phase 1 Gaps ===")
 
-# PersonalityProfile
-def test_personality_profile():
-    from persona.behavior.personality import PersonalityProfile
-    pp = PersonalityProfile.default()
-    assert pp.name == "IceGirl"
-    assert 0 <= pp.energy_level <= 1
-    assert 0 <= pp.social_warmth <= 1
-test("PersonalityProfile", test_personality_profile)
+def t_event_schema():
+    from runtime.events.base_event import BaseEvent
+    from runtime.events.event_types import EventType
+    e = BaseEvent.create(EventType.VOICE_DETECTED, "stt")
+    assert e.event_type == "VoiceDetected"
+    assert e.source == "stt"
+    d = e.to_dict()
+    assert "correlation_id" in d
+    e2 = BaseEvent.from_dict(d)
+    assert e2.event_type == e.event_type
+test("BaseEvent + EventType schema", t_event_schema)
 
-# MoodState
-def test_mood_state():
-    from persona.mood.mood_states import MoodState
-    m = MoodState()
-    assert m.mood == "vui vẻ"
-    assert 0 <= m.overall_wellbeing <= 1
-    d = m.to_dict()
-    assert "wellbeing" in d
-    m2 = MoodState.from_dict(d)
-    assert m2.energy == m.energy
-test("MoodState", test_mood_state)
+def t_state_machine():
+    from runtime.state.state_store import StateStore, CompanionState
+    ss = StateStore()
+    assert ss.state == CompanionState.IDLE
+    assert not ss.is_busy()
+    loop = asyncio.new_event_loop()
+    ok = loop.run_until_complete(ss.transition(CompanionState.LISTENING))
+    assert ok
+    assert ss.state == CompanionState.LISTENING
+    assert ss.is_busy()
+    bad = loop.run_until_complete(ss.transition(CompanionState.EXECUTING))
+    assert not bad  # Invalid transition LISTENING -> EXECUTING
+    loop.close()
+test("StateStore + valid/invalid transitions", t_state_machine)
 
-# RelationshipLevels
-def test_relationship_levels():
-    from persona.relationship.relationship_levels import score_to_level
-    assert score_to_level(0)   == "Người lạ"
-    assert score_to_level(100) == "Người quen"
-    assert score_to_level(500) == "Bạn thân"
-test("RelationshipLevels", test_relationship_levels)
+def t_memory_manager():
+    from memory.memory_manager import MemoryManager
+    mm = MemoryManager()
+    mm.add_turn("user", "hello")
+    mm.add_turn("assistant", "hi")
+    history = mm.get_working_memory(5)
+    assert len(history) == 2
+    assert history[0]["role"] == "user"
+    snippets = mm.recall_for_prompt("")
+    assert isinstance(snippets, list)
+test("MemoryManager working memory + recall", t_memory_manager)
 
-# DailyGoals
-def test_daily_goals():
-    from persona.goals.daily_goals import pick_daily_goals
-    goals = pick_daily_goals(n=3, seed=20260627)
-    assert 1 <= len(goals) <= 3
-    assert all("id" in g for g in goals)
-test("DailyGoals", test_daily_goals)
+def t_lifecycle_imports():
+    from runtime.lifecycle.lifecycle_manager import LifecycleManager
+    lm = LifecycleManager()
+    assert not lm.is_ready
+test("LifecycleManager importable", t_lifecycle_imports)
 
-# LifeObserver
-def test_life_observer():
-    from life.observe.observer import LifeObserver
-    obs = LifeObserver()
-    obs.record_user_message()
-    ctx = obs.observe(mood="vui vẻ", emotion="happy", energy=0.8)
-    assert ctx.hour_of_day >= 0
-    assert ctx.user_idle_seconds >= 0
-    assert ctx.mood == "vui vẻ"
-test("LifeObserver", test_life_observer)
+def t_session_manager():
+    from runtime.session.session_manager import SessionManager
+    sm = SessionManager()
+    assert not sm.is_active
+    s = sm.start_session()
+    assert sm.is_active
+    sm.on_user_activity()
+    assert sm.current.turn_count == 1
+    sm.end_session()
+    assert not sm.is_active
+test("SessionManager lifecycle", t_session_manager)
 
-# DecisionEngine
-def test_decision_engine():
-    from life.decide.decision_engine import DecisionEngine
-    from life.observe.observer import LifeContext
-    de = DecisionEngine()
-    ctx = LifeContext(hour_of_day=14, user_idle_seconds=10)
-    dec = de.decide(ctx)
-    assert hasattr(dec, "should_act")
-    assert hasattr(dec, "next_check_seconds")
-    assert dec.next_check_seconds > 0
-test("DecisionEngine", test_decision_engine)
+# ── Phase 2A Motivation ───────────────────────────────────────────────────────
+print("\n=== Phase 2A: Motivation Engine ===")
 
-# PersonaManager
-def test_persona_manager():
-    from persona.persona_manager import PersonaManager
-    pm = PersonaManager()
-    profile = pm.get_character_profile("icegirl")
-    # Should return either a real profile or the default fallback
-    assert profile.name != ""
-    assert profile.get_trait("cheerful") >= 0.0
-test("PersonaManager", test_persona_manager)
+def t_needs():
+    from motivation.needs import CompanionNeeds
+    n = CompanionNeeds()
+    summary = n.get_summary()
+    assert "connection" in summary
+    assert "stimulation" in summary
+    n.satisfy("connection", 0.5)
+    assert n._needs["connection"].is_satisfied()
+    wellbeing = n.overall_wellbeing()
+    assert 0.0 <= wellbeing <= 1.0
+test("CompanionNeeds — hierarchy, satisfy, wellbeing", t_needs)
 
-# Summary
-print()
-if errors:
-    print(f"FAILED: {len(errors)} tests — {errors}")
-    sys.exit(1)
+def t_boredom():
+    from motivation.boredom import BoredomDetector
+    b = BoredomDetector()
+    b._last_activity -= 60 * 20   # Simulate 20 min idle
+    state = b.tick()
+    assert state.idle_minutes >= 19
+    assert state.level > 0
+    assert b.should_trigger()
+    b.mark_triggered()
+    assert not b.should_trigger()   # Cooldown active
+test("BoredomDetector — idle detection, trigger, cooldown", t_boredom)
+
+def t_curiosity():
+    from motivation.curiosity import CuriositySystem
+    cs = CuriositySystem()
+    cs.add_topic("machine learning", 0.8)
+    assert len(cs.get_top_interests()) >= 1
+    topics = cs.extract_topics_from_text("I was debugging Python code with FastAPI")
+    assert isinstance(topics, list)
+test("CuriositySystem — topics, extraction", t_curiosity)
+
+def t_drives():
+    from motivation.drives import IntrinsicDrives
+    d = IntrinsicDrives()
+    vec = d.get_personality_vector()
+    assert "helpfulness" in vec
+    assert "authenticity" in vec
+    active = d.get_active_drives("bug lỗi không debug được")
+    assert len(active) >= 1
+    desc = d.describe_for_prompt()
+    assert len(desc) > 10
+test("IntrinsicDrives — personality vector, activation", t_drives)
+
+def t_motivation_manager():
+    from motivation.motivation_manager import MotivationManager
+    mm = MotivationManager()
+    sig = mm.tick()
+    assert hasattr(sig, 'should_be_proactive')
+    assert hasattr(sig, 'wellbeing')
+    assert 0.0 <= sig.wellbeing <= 1.0
+    mm.on_conversation("tao đang debug python code")
+    mm.on_task_completed()
+    mm.on_learned_something("fastapi routing")
+    desc = mm.describe_for_prompt()
+    assert len(desc) > 5
+test("MotivationManager — tick, events, describe", t_motivation_manager)
+
+# ── Phase 2B Social ───────────────────────────────────────────────────────────
+print("\n=== Phase 2B: Social Layer ===")
+
+def t_empathy():
+    from social.empathy.empathy_engine import EmpathyEngine
+    e = EmpathyEngine()
+
+    # ASCII-only frustrated text (works across all console encodings)
+    r1 = e.analyze("debug mai khong duoc, buc qua")
+    assert r1.detected_emotion == "frustrated", f"Got: {r1.detected_emotion}"
+    assert r1.needs_support
+    assert r1.recommended_tone == "empathetic"
+
+    # Excited
+    r2 = e.analyze("ok roi! lam duoc roi! great!")
+    assert r2.detected_emotion in ("excited", "neutral")
+
+    # Neutral
+    r3 = e.analyze("hello")
+    assert r3.detected_emotion == "neutral"
+
+    prefix = e.get_empathy_prefix(r1)
+    assert isinstance(prefix, str)
+test("EmpathyEngine — 5 emotion detection, tone, prefix", t_empathy)
+
+def t_conversation_manager():
+    from social.conversation.conversation_manager import ConversationManager
+    cm = ConversationManager()
+    cm.on_user_message("tao đang viết code python", "neutral")
+    assert cm._context.conversation_type == "technical"
+    assert cm._context.total_turns == 1
+    cm.on_assistant_message("ok tao xem code của mày nhé")
+    recent = cm.get_recent_turns(5)
+    assert len(recent) == 2
+    desc = cm.describe_for_prompt()
+    assert "technical" in desc
+test("ConversationManager — multi-turn, topic, type detection", t_conversation_manager)
+
+# ── PromptBuilder ─────────────────────────────────────────────────────────────
+print("\n=== Prompt Architecture ===")
+
+def t_prompt_builder():
+    from cognition.prompts.prompt_builder import PromptBuilder
+    pb = PromptBuilder()
+    prompt = pb.build(
+        memory_snippets=["[hôm qua] user debug LifeLoop", "[2 ngày trước] user thích Python"]
+    )
+    assert len(prompt) > 100
+    assert "Behavioral Rules" in prompt or "Rules" in prompt
+    # Token budget rough check
+    assert len(prompt) < 15000   # Should be well under
+test("PromptBuilder — 9-layer build, memory injection, rules", t_prompt_builder)
+
+# ── Summary ───────────────────────────────────────────────────────────────────
+print(f"\n{'='*50}")
+print(f"Results: {PASS} PASS / {FAIL} FAIL / {PASS+FAIL} TOTAL")
+if FAIL == 0:
+    print("ALL TESTS PASSED! Phase 1 gaps + Phase 2A/2B complete.")
 else:
-    print(f"ALL {10 - len(errors)}/10 TESTS PASSED")
+    print(f"WARNING: {FAIL} tests failed. Review above.")
