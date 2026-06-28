@@ -96,8 +96,16 @@ class LifeLoop:
                 elif context.user_idle_seconds > 300:      # 5 min
                     mood_engine.update_from_event("idle_short")
 
+                # ── Think — internal monologue ────────────────────────────
+                from life.think.thinker import thinker
+                thought_res = thinker.think(context)
+
                 # ── Decide ─────────────────────────────────────────────────
                 decision = decision_engine.decide(context)
+                
+                # Áp dụng silence policy từ Thinker
+                if thought_res.get("stay_silent"):
+                    decision.should_act = False
 
                 # ── Act ────────────────────────────────────────────────────
                 if decision.should_act:
@@ -105,6 +113,7 @@ class LifeLoop:
                         action_type  = decision.action_type,
                         message_hint = decision.message_hint,
                     )
+
 
                 # ── Sleep until next check ─────────────────────────────────
                 await asyncio.sleep(decision.next_check_seconds)
