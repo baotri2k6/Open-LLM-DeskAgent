@@ -13,31 +13,22 @@ pyautogui.FAILSAFE = False
 
 def mouse_click(x: int, y: int, button: str = "left", double_click: bool = False) -> dict:
     """Click chuột tại tọa độ x, y."""
-    try:
-        pyautogui.moveTo(x, y, duration=0.5)
-        if double_click:
-            pyautogui.doubleClick(button=button)
-        else:
-            pyautogui.click(button=button)
-        return {"success": True, "message": f"Clicked {button} at ({x}, {y})"}
-    except Exception as exc:
-        return {"success": False, "error": str(exc)}
+    from execution.mouse.mouse_controller import mouse_controller
+    return mouse_controller.click(x, y, button, double_click)
 
 
 def mouse_move(x: int, y: int) -> dict:
     """Di chuyển chuột đến tọa độ x, y."""
-    try:
-        pyautogui.moveTo(x, y, duration=0.5)
-        return {"success": True, "message": f"Moved mouse to ({x}, {y})"}
-    except Exception as exc:
-        return {"success": False, "error": str(exc)}
+    from execution.mouse.mouse_controller import mouse_controller
+    return mouse_controller.move_to(x, y)
 
 
 def mouse_scroll(clicks: int, direction: str = "down", x: int | None = None, y: int | None = None) -> dict:
     """Cuộn chuột lên hoặc xuống. direction: 'up' hoặc 'down'."""
     try:
         if x is not None and y is not None:
-            pyautogui.moveTo(x, y, duration=0.5)
+            from execution.mouse.mouse_controller import mouse_controller
+            mouse_controller.move_to(x, y)
         
         amount = clicks if direction.lower() == "up" else -clicks
         pyautogui.scroll(amount)
@@ -48,34 +39,20 @@ def mouse_scroll(clicks: int, direction: str = "down", x: int | None = None, y: 
 
 def mouse_drag(x: int, y: int, button: str = "left", duration: float = 0.5) -> dict:
     """Kéo thả chuột từ vị trí hiện tại đến tọa độ (x, y)."""
-    try:
-        pyautogui.dragTo(x, y, duration=duration, button=button)
-        return {"success": True, "message": f"Dragged mouse to ({x}, {y}) using {button} button"}
-    except Exception as exc:
-        return {"success": False, "error": str(exc)}
+    from execution.mouse.mouse_controller import mouse_controller
+    return mouse_controller.drag_to(x, y, button, duration)
 
 
 def keyboard_type(text: str) -> dict:
     """Gõ chuỗi văn bản."""
-    try:
-        pyautogui.write(text, interval=0.01)
-        return {"success": True, "message": f"Typed text: {text[:30]}..."}
-    except Exception as exc:
-        return {"success": False, "error": str(exc)}
+    from execution.keyboard.keyboard_controller import keyboard_controller
+    return keyboard_controller.type_text(text)
 
 
 def keyboard_press(keys: str) -> dict:
     """Ấn một phím hoặc tổ hợp phím (ví dụ: 'ctrl+c', 'enter')."""
-    try:
-        # Hỗ trợ tổ hợp phím cách nhau bởi dấu cộng
-        parts = [p.strip() for p in keys.split("+")]
-        if len(parts) > 1:
-            pyautogui.hotkey(*parts)
-        else:
-            pyautogui.press(keys)
-        return {"success": True, "message": f"Pressed keys: {keys}"}
-    except Exception as exc:
-        return {"success": False, "error": str(exc)}
+    from execution.keyboard.keyboard_controller import keyboard_controller
+    return keyboard_controller.press_key(keys)
 
 
 def execute_command(command: str) -> dict:

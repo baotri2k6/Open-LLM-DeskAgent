@@ -745,11 +745,13 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                 from persona.mood.mood_engine import mood_engine
                 from persona.relationship.relationship_tracker import relationship_tracker
                 from persona.goals.goal_manager import goal_manager
+                from motivation.motivation_manager import motivation_manager
                 self._send_json({
                     "emotion":      emotion_engine.snapshot(),
                     "mood":         mood_engine.get_snapshot(),
                     "relationship": relationship_tracker.snapshot(),
                     "goals":        goal_manager.snapshot(),
+                    "motivation":   motivation_manager.get_state_snapshot(),
                 })
             except Exception as exc:
                 self._send_json({"error": str(exc)}, status=500)
