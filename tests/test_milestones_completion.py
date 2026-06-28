@@ -279,7 +279,33 @@ def t_new_v7_stubs():
     evts = activity_timeline.get_recent_events()
     assert len(evts) > 0
     assert evts[0].activity == "coding"
-test("V7 Stubs — ContextPacket, Pipeline, RuntimeManager, InterruptionHandler, PromptLibrary, ActivityTimeline", t_new_v7_stubs)
+    
+    # 8. StreamHandler (Phase 6-8)
+    from llm.streaming.stream_handler import StreamHandler
+    handler = StreamHandler()
+    assert handler.feed_token("Hello") is None
+    assert handler.feed_token(".") == "Hello."
+    
+    # 9. StreamSTT (Phase 6-8)
+    from speech.stt.streaming.stream_stt import StreamSTT
+    stt = StreamSTT()
+    stt.start_streaming()
+    assert stt._is_active
+    text = stt.stop_streaming()
+    assert "ghi âm" in text
+    
+    # 10. KnowledgeGraph & GraphBuilder (Phase 6-8)
+    from knowledge.graph.knowledge_graph import knowledge_graph
+    from knowledge.graph.graph_builder import graph_builder
+    graph_builder.build_from_fact("User thích chơi cờ vua")
+    triplets = knowledge_graph.get_all_triplets()
+    assert ("User", "LIKES", "chơi cờ vua") in triplets
+    
+    # 11. Ontology (Phase 6-8)
+    from knowledge.ontology.ontology import ontology
+    assert ontology.is_subclass_of("python", "programming_language")
+    assert not ontology.is_subclass_of("python", "game")
+test("V7 Stubs — ContextPacket, Pipeline, RuntimeManager, InterruptionHandler, PromptLibrary, ActivityTimeline, StreamHandler, StreamSTT, KnowledgeGraph, Ontology", t_new_v7_stubs)
 
 
 # ── Summary ───────────────────────────────────────────────────────────────────
