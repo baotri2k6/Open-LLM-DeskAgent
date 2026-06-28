@@ -93,13 +93,9 @@ class LifeLoop:
                 from persona.persona_manager import persona_manager
                 persona_manager.evolve_personality()
 
-                # ── Feel — update mood based on idle ──────────────────────
-                if context.user_idle_seconds > 1800:      # 30 min
-                    mood_engine.update_from_event("idle_long")
-                    emotion_engine.update_from_event("idle_long")
-
-                elif context.user_idle_seconds > 300:      # 5 min
-                    mood_engine.update_from_event("idle_short")
+                # ── Feel — update emotional and mood states ────────────────
+                from life.feel.feel_engine import feel_engine
+                feel_engine.feel(context)
 
                 # ── Think — internal monologue ────────────────────────────
                 from life.think.thinker import thinker
@@ -113,12 +109,16 @@ class LifeLoop:
                     decision.should_act = False
 
                 # ── Act ────────────────────────────────────────────────────
+                action_taken = False
                 if decision.should_act:
-                    await proactive_messenger.send(
+                    action_taken = await proactive_messenger.send(
                         action_type  = decision.action_type,
                         message_hint = decision.message_hint,
                     )
 
+                # ── Reflect ────────────────────────────────────────────────
+                from life.reflect.reflect_engine import reflect_engine
+                reflect_engine.reflect_cycle(context, decision, action_taken)
 
                 # ── Sleep until next check ─────────────────────────────────
                 await asyncio.sleep(decision.next_check_seconds)
