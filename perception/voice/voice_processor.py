@@ -1,7 +1,23 @@
-"""Processes voice input before STT.
+"""Processes voice input before STT."""
 
-TODO: Implement in Phase 1.
-"""
+from __future__ import annotations
+
+import logging
+
+logger = logging.getLogger("ai-companion.perception.voice")
+
+
 class VoiceProcessor:
-    """Stub — Processes voice input before STT."""
-    pass
+    """Processes voice input before STT."""
+
+    def __init__(self) -> None:
+        pass
+
+    def clean_audio_data(self, raw_audio: bytes) -> bytes:
+        """Simple mock filtering/denoising of raw audio data."""
+        logger.debug("VoiceProcessor: Cleaning raw audio bytes")
+        return raw_audio
+
+
+# Global singleton
+voice_processor = VoiceProcessor()

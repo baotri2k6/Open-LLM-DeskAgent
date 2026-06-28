@@ -106,6 +106,63 @@ def t_perception_fusion_real_ocr():
 test("PerceptionFusion — auto-OCR during context packets fusion", t_perception_fusion_real_ocr)
 
 
+# ── Expanded Stubs Verification ──────────────────────────────────────────────
+print("\n=== Expanded Stubs Verification ===")
+
+def t_learning_stubs():
+    from learning.learning_manager import learning_manager
+    from learning.policy.policy_learner import policy_learner
+    from learning.evaluation.task_evaluator import task_evaluator
+    from learning.evaluator.performance_evaluator import performance_evaluator
+    
+    learning_manager.process_task_outcome("task123", success=True, feedback="Excellent work!")
+    assert learning_manager.learner.policy_weights["task123"] > 0
+    
+    performance_evaluator.record_metrics(success=True)
+    assert performance_evaluator.get_performance_ratio() == 1.0
+test("Learning components — LearningManager, PolicyLearner, PerformanceEvaluator", t_learning_stubs)
+
+def t_vision_execution_stubs():
+    from vision.screen_understanding.screen_understander import screen_understander
+    from vision.parser.screen_parser import screen_parser
+    from execution.browser.browser_executor import browser_executor
+    from execution.filesystem.fs_executor import fs_executor
+    from execution.recovery.recovery_handler import recovery_handler
+    
+    res = screen_understander.analyze_screen()
+    assert "summary" in res
+    
+    lines = screen_parser.parse_screen_text("hello\n\nworld")
+    assert len(lines) == 2
+    
+    browser_executor.open_url("http://example.com")
+    assert browser_executor.browser_open
+    
+    action = recovery_handler.handle_failure("file not found", "context")
+    assert action == "SEARCH_WORKSPACE"
+test("Vision & Execution — ScreenUnderstander, BrowserExecutor, RecoveryHandler", t_vision_execution_stubs)
+
+def t_persona_voice_stubs():
+    from persona.expressions.expression_registry import expression_registry
+    from persona.motions.motion_registry import motion_registry
+    from persona.habits.habit_tracker import habit_tracker
+    from learning.habits.habit_tracker import habit_tracker as learning_habit_tracker
+    from perception.voice.voice_processor import voice_processor
+    
+    exp = expression_registry.get_expression("vui vẻ")
+    assert exp == "exp_happy"
+    
+    mot = motion_registry.get_motion("happy")
+    assert mot == "motion_cheer"
+    
+    habit_tracker.record_activity("coding")
+    assert habit_tracker.get_frequent_activity() == "coding"
+    
+    cleaned = voice_processor.clean_audio_data(b"audio")
+    assert cleaned == b"audio"
+test("Persona & Voice — ExpressionRegistry, MotionRegistry, HabitTrackers, VoiceProcessor", t_persona_voice_stubs)
+
+
 # ── Summary ───────────────────────────────────────────────────────────────────
 print(f"\n{'='*50}")
 print(f"Results: {PASS} PASS / {FAIL} FAIL / {PASS+FAIL} TOTAL")
@@ -113,3 +170,4 @@ if FAIL == 0:
     print("ALL TESTS PASSED! Milestones stubs and empties filled successfully.")
 else:
     print(f"WARNING: {FAIL} tests failed. Review above.")
+
