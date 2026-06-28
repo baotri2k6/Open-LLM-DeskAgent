@@ -53,6 +53,13 @@ class KnowledgeExtractor:
         if extracted:
             logger.info("KnowledgeExtractor successfully extracted %d facts from text", len(extracted))
             
+        # Tích hợp cập nhật Đồ thị tri thức (Knowledge Graph)
+        try:
+            from knowledge.graph.graph_builder import graph_builder
+            graph_builder.build_from_fact(text)
+        except Exception as e:
+            logger.warning("KnowledgeExtractor failed to build relation triplets: %s", e)
+            
         return extracted
 
 
