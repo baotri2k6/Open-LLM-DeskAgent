@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 # ── Level labels (Vietnamese) ──────────────────────────────────────────────────
-LEVELS = ["Người lạ", "Người quen", "Bạn thân"]
+LEVELS = ["Người lạ", "Người quen", "Bạn thân", "Tri kỷ"]
 
 # Score thresholds: (min_score, max_score_exclusive)
 THRESHOLDS: dict[str, tuple[int, float]] = {
     "Người lạ":   (0,   100),
     "Người quen": (100, 500),
-    "Bạn thân":   (500, float("inf")),
+    "Bạn thân":   (500, 800),
+    "Tri kỷ":     (800, float("inf")),
 }
 
 # Points earned per interaction type
@@ -42,7 +43,13 @@ LEVEL_PERKS: dict[str, list[str]] = {
         "Deep personal conversations",
         "Inside jokes",
     ],
+    "Tri kỷ": [
+        "Unconditional trust",
+        "Telepathic understanding",
+        "Shared core identity",
+    ],
 }
+
 
 
 def score_to_level(score: int) -> str:

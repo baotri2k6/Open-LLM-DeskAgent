@@ -70,6 +70,18 @@ class AgentCoordinator:
             logger.error("Error executing delegated task on agent %s: %s", agent_name, e)
             return {"success": False, "error": str(e)}
 
+    async def execute_parallel_workflow(self, subtasks: List[dict]) -> List[dict]:
+        """Điều phối chạy song song các subtask sử dụng subagent_service."""
+        logger.info("Executing parallel workflow with %d subtasks", len(subtasks))
+        
+        from agents.subagent_service import run_parallel_subagents
+        
+        tasks_text = [t.get("task", "") for t in subtasks]
+        focus_files_list = [t.get("focus_files", []) for t in subtasks]
+        
+        return await run_parallel_subagents(tasks_text, focus_files_list)
+
 
 # Global singleton
 agent_coordinator = AgentCoordinator()
+

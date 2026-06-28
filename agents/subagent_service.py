@@ -53,3 +53,26 @@ async def run_subagent(task: str, focus_files: Optional[List[str]] = None) -> di
             "success": False,
             "error": str(e)
         }
+
+
+async def run_parallel_subagents(tasks: List[str], focus_files_list: Optional[List[List[str]]] = None) -> List[dict]:
+    """Khởi chạy nhiều subagent song song để xử lý các tác vụ độc lập."""
+    logger.info("Spawning %d parallel subagents", len(tasks))
+    
+    import asyncio
+    coros = []
+    for idx, task in enumerate(tasks):
+        focus = focus_files_list[idx] if focus_files_list and idx < len(focus_files_list) else None
+        coros.append(run_subagent(task, focus))
+        
+    results = await asyncio.gather(*coros, return_exceptions=True)
+    
+    processed_results = []
+    for res in results:
+        if isinstance(res, Exception):
+            processed_results.append({"success": False, "error": str(res)})
+        else:
+            processed_results.append(res)
+            
+    return processed_results
+

@@ -34,7 +34,9 @@ class RelationshipTracker:
     def __init__(self, profile_path: Optional[Path] = None) -> None:
         self._path  = profile_path or _PROFILE_PATH
         self._lock  = threading.Lock()
-        self._score = self._load_score()
+        self._inside_jokes: list[str] = []
+        self._shared_experiences: int = 0
+        self._score = self._load_data()
 
     # ── Public API ─────────────────────────────────────────────────────────
 
@@ -56,6 +58,27 @@ class RelationshipTracker:
     def perks(self) -> list[str]:
         """Unlocked perks at current level."""
         return get_perks(self.level)
+
+    def add_inside_joke(self, joke: str) -> None:
+        """Thêm một inside joke giữa companion và user."""
+        with self._lock:
+            if joke not in self._inside_jokes:
+                self._inside_jokes.append(joke)
+        self._save()
+
+    def get_inside_jokes(self) -> list[str]:
+        """Lấy danh sách các inside jokes."""
+        return self._inside_jokes
+
+    def add_shared_experience(self) -> None:
+        """Tăng số lượng trải nghiệm chung chia sẻ."""
+        with self._lock:
+            self._shared_experiences += 1
+        self._save()
+
+    def get_shared_experiences(self) -> int:
+        """Lấy số lượng trải nghiệm chung."""
+        return self._shared_experiences
 
     def add_points(self, interaction: str = "chat_turn") -> int:
         """
@@ -86,27 +109,35 @@ class RelationshipTracker:
             "level":       self.level,
             "level_index": self.level_index,
             "perks":       self.perks,
+            "inside_jokes": self._inside_jokes,
+            "shared_experiences": self._shared_experiences
         }
 
     # ── Persistence ────────────────────────────────────────────────────────
 
-    def _load_score(self) -> int:
-        """Load relationship score from user profile JSON."""
+    def _load_data(self) -> int:
+        """Load relationship data from user profile JSON."""
         try:
             if self._path.exists():
                 with open(self._path, "r", encoding="utf-8") as f:
                     data = json.load(f)
                 rel = data.get("relationship", {})
                 if isinstance(rel, dict):
+                    self._inside_jokes = list(rel.get("inside_jokes", []))
+                    self._shared_experiences = int(rel.get("shared_experiences", 0))
                     return int(rel.get("score", 0))
                 # Legacy: MemoryService stored relationship as a dict with 'score' key
+                self._inside_jokes = []
+                self._shared_experiences = 0
                 return int(data.get("relationship_score", 0))
         except Exception:
             pass
+        self._inside_jokes = []
+        self._shared_experiences = 0
         return 0
 
     def _save(self) -> None:
-        """Persist score to user profile JSON."""
+        """Persist data to user profile JSON."""
         try:
             self._path.parent.mkdir(parents=True, exist_ok=True)
             existing: dict = {}
@@ -116,10 +147,13 @@ class RelationshipTracker:
             existing.setdefault("relationship", {})
             existing["relationship"]["score"] = self._score
             existing["relationship"]["level"] = self.level
+            existing["relationship"]["inside_jokes"] = self._inside_jokes
+            existing["relationship"]["shared_experiences"] = self._shared_experiences
             with open(self._path, "w", encoding="utf-8") as f:
                 json.dump(existing, f, ensure_ascii=False, indent=2)
         except Exception:
             pass
+
 
 
 # ── Global singleton ───────────────────────────────────────────────────────────
