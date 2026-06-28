@@ -389,6 +389,8 @@ def build_dynamic_state_block(
     emotion: str = "neutral",
     goal_hint: str = "",
     relationship_score: int = 0,
+    motivation_desc: str = "",
+    recommended_tone: str = "",
 ) -> str:
     """
     Build a concise dynamic state block to inject into the system prompt.
@@ -400,6 +402,8 @@ def build_dynamic_state_block(
         emotion: Current emotion label from EmotionEngine.
         goal_hint: Today's goal hint string from GoalManager.
         relationship_score: Current relationship score (int).
+        motivation_desc: Formatted motivation needs description.
+        recommended_tone: Recommended response tone.
 
     Returns:
         A formatted string block (empty if all inputs are default).
@@ -425,6 +429,12 @@ def build_dynamic_state_block(
 
     if emotion and emotion not in ("neutral", ""):
         parts.append(f"[CẢM XÚC HIỆN TẠI] {emotion}")
+
+    if motivation_desc:
+        parts.append(f"[ĐỘNG LỰC & NHU CẦU]\n{motivation_desc}")
+
+    if recommended_tone and recommended_tone != "neutral":
+        parts.append(f"[TÔNG GIỌNG GỢI Ý ĐỂ ĐỒNG CẢM] {recommended_tone}")
 
     if goal_hint:
         parts.append(goal_hint)

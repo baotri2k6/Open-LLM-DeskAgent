@@ -783,10 +783,19 @@ class LLMService:
         # ── Inject dynamic companion state block ──────────────────────────
         try:
             from persona.dialogue.system_prompt import build_dynamic_state_block
+            
+            empathy_ctx = context.get("empathy") if context else None
+            motivation_ctx = context.get("motivation") if context else None
+            
+            motivation_desc = motivation_ctx.get("description", "") if motivation_ctx else ""
+            recommended_tone = empathy_ctx.get("recommended_tone", "neutral") if empathy_ctx else "neutral"
+            
             state_block = build_dynamic_state_block(
                 mood_state=_mood_state,
                 emotion=_emotion_label,
                 goal_hint=_goal_hint,
+                motivation_desc=motivation_desc,
+                recommended_tone=recommended_tone,
             )
             if state_block:
                 system_prompt = system_prompt + "\n" + state_block

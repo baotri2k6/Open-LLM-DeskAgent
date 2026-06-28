@@ -155,10 +155,14 @@ def click_element_by_vision(description: str, action_type: str = "click") -> dic
         img_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
         
         # 2. Gọi VLM (Gemini hoặc OpenAI) để lấy tọa độ
-        from llm.manager import _get_llm_credentials, _gemini_chat_with_tools, _openai_chat_with_tools
+        from llm.manager import LLMService
         from config.config import config
         
-        provider, api_key, model, base_url = _get_llm_credentials()
+        llm_service = LLMService()
+        provider = llm_service.provider
+        api_key = llm_service.api_key
+        model = llm_service.model
+        base_url = llm_service.base_url
         
         vlm_provider = provider
         vlm_model = model
@@ -187,36 +191,34 @@ def click_element_by_vision(description: str, action_type: str = "click") -> dic
             f"Chỉ trả về đúng khối JSON, không viết lời giải thích nào khác."
         )
         
+        # Chuẩn hóa tin nhắn
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_b64}"}}
+                ]
+            }
+        ]
+        
         text_resp = ""
-        if vlm_provider == "gemini":
-            contents = [
-                {
-                    "role": "user",
-                    "parts": [
-                        {"text": prompt},
-                        {
-                            "inlineData": {
-                                "mimeType": "image/png",
-                                "data": img_b64
-                            }
-                        }
-                    ]
-                }
-            ]
-            res = _gemini_chat_with_tools(contents, None, vlm_api_key, vlm_model)
-            text_resp = res["candidates"][0]["content"]["parts"][0]["text"]
-        else:
-            messages = [
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_b64}"}}
-                    ]
-                }
-            ]
-            res = _openai_chat_with_tools(messages, vlm_api_key, vlm_model, vlm_base_url)
-            text_resp = res["choices"][0]["message"]["content"]
+        try:
+            provider_instance = None
+            if vlm_provider == "gemini":
+                from llm.providers.gemini import GeminiProvider
+                provider_instance = GeminiProvider()
+            elif vlm_provider in ["openai", "deepseek", "glm", "qwen", "openai-compatible"]:
+                from llm.providers.openai import OpenAIProvider
+                provider_instance = OpenAIProvider()
+            else:
+                from llm.providers.ollama import OllamaProvider
+                provider_instance = OllamaProvider()
+            
+            res = provider_instance.chat_with_tools(messages, vlm_api_key, vlm_model, vlm_base_url)
+            text_resp = res.get("content", "") or ""
+        except Exception as e:
+            return {"success": False, "error": f"Failed to call VLM provider: {e}"}
             
         # Parse tọa độ
         m = re.search(r"(\{[\s\S]*?\})", text_resp)

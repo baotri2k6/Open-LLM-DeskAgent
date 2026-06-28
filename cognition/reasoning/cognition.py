@@ -64,6 +64,25 @@ class CognitionEngine:
                 "mood": mood_state.mood,
                 "time_note": context.get("companion", {}).get("time_note", "")
             }
+            
+            # ── Inject Empathy analysis & Motivation manager state ──
+            from social.empathy.empathy_engine import empathy_engine
+            from motivation.motivation_manager import motivation_manager
+            
+            # Analyze user emotion and suggest recommended tone
+            user_emotion = empathy_engine.analyze(prompt)
+            context["empathy"] = {
+                "detected_emotion": user_emotion.detected_emotion,
+                "recommended_tone": user_emotion.recommended_tone,
+                "needs_support": user_emotion.needs_support,
+            }
+            
+            # Update motivation after this conversation turn and get prompt description
+            motivation_manager.on_conversation(prompt)
+            context["motivation"] = {
+                "description": motivation_manager.describe_for_prompt(),
+                "wellbeing": motivation_manager._needs.overall_wellbeing(),
+            }
         except Exception as e:
             logger.warning("CognitionEngine failed to inject companion details: %s", e)
 
