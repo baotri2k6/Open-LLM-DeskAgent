@@ -1,8 +1,8 @@
 """Phase 2C/D & Phase 3 Integration Tests — kiểm tra toàn bộ Behavior, Interaction, Planning và Cognition stack."""
 
-import sys
-import asyncio
-sys.path.insert(0, 'd:/Open LLM DeskAgent')
+from pathlib import Path
+ROOT_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT_DIR))
 
 PASS = 0
 FAIL = 0

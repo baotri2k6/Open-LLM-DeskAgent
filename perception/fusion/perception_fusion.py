@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 import time
 from tools.screen_reader import ocr_screenshot
+from runtime.context.context_packet import ContextPacket
 
 logger = logging.getLogger("ai-companion.perception.fusion")
 
@@ -17,8 +17,8 @@ class PerceptionFusion:
         screen_text: str | None = None,
         last_interaction_time: float | None = None,
         activity: str | None = None
-    ) -> dict:
-        """Gom tất cả các tín hiệu (Văn bản, OCR màn hình, thời gian idle) thành ContextPacket."""
+    ) -> ContextPacket:
+        """Gom tất cả các tín hiệu (Văn bản, OCR màn hình, thời gian idle) thành một ContextPacket."""
         now = time.time()
         idle_time_seconds = 0.0
         if last_interaction_time:
@@ -33,11 +33,10 @@ class PerceptionFusion:
             except Exception as e:
                 logger.warning("Failed to auto-OCR screen during fusion: %s", e)
 
-        # Trả về ContextPacket dưới dạng cấu trúc dictionary
-        return {
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "idle_time_seconds": idle_time_seconds,
-            "user_message": user_message or "",
-            "screen_text": screen_text or "",
-            "activity": activity or "unknown"
-        }
+        # Trả về ContextPacket dataclass instance
+        return ContextPacket(
+            user_message=user_message or "",
+            ocr_text=screen_text or "",
+            idle_seconds=idle_time_seconds,
+            activity=activity or "unknown"
+        )

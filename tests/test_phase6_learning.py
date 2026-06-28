@@ -1,9 +1,8 @@
 """Phase 6 Integration Tests — kiểm tra Skill Extraction, Distillation, Knowledge và Experience Replay."""
 
-import os
-import sys
-import shutil
-sys.path.insert(0, 'd:/Open LLM DeskAgent')
+from pathlib import Path
+ROOT_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT_DIR))
 
 PASS = 0
 FAIL = 0
@@ -25,6 +24,7 @@ SKILL_TEST_NAME = "test_distilled_git"
 
 
 def cleanup():
+    import shutil
     from config.config import PROJECT_ROOT
     test_skill_dir = PROJECT_ROOT / "skills" / SKILL_TEST_NAME
     if test_skill_dir.exists():

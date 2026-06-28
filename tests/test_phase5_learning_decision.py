@@ -1,7 +1,8 @@
 """Phase 5 Integration Tests — kiểm tra Belief, Learning và Decision stack."""
 
-import sys
-sys.path.insert(0, 'd:/Open LLM DeskAgent')
+from pathlib import Path
+ROOT_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT_DIR))
 
 PASS = 0
 FAIL = 0

@@ -2,9 +2,8 @@
 
 import sys
 import asyncio
-from pathlib import Path
-
-sys.path.insert(0, 'd:/Open LLM DeskAgent')
+ROOT_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT_DIR))
 
 PASS = 0
 FAIL = 0

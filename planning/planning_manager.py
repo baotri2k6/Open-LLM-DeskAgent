@@ -95,6 +95,35 @@ class PlanningManager:
             # Chờ dọn dẹp các task chạy ngầm cuối cùng
             await self._scheduler.wait_all()
 
+            # ── Run learning & reflection pipeline ──
+            try:
+                from cognition.reflection.self_reflection import self_reflection
+                from learning.learning_manager import learning_manager
+                from learning.experience.experience_store import experience_store
+                
+                goal_id_str = str(goal_id)
+                goal_desc = goal.description if goal else f"Mục tiêu {goal_id_str}"
+                
+                # B1: Thực hiện Self-Reflection
+                reflection_res = self_reflection.reflect(goal_id_str, goal_desc, graph)
+                
+                # B2: Cập nhật policy học tập qua Learning Manager
+                learning_manager.process_task_outcome(
+                    task_id=goal_id_str,
+                    success=graph.is_completed(),
+                    feedback=reflection_res.lessons_learned
+                )
+                
+                # B3: Lưu trữ trải nghiệm vào ExperienceStore để dùng cho ExperienceReplay
+                experience_store.record_experience(
+                    goal_id=goal_id_str,
+                    goal_desc=goal_desc,
+                    is_successful=graph.is_completed(),
+                    lessons_learned=reflection_res.lessons_learned
+                )
+            except Exception as le:
+                logger.error("Failed to run learning & reflection pipeline on plan completion: %s", le)
+
             # 4. Cập nhật kết quả cuối cùng của Goal
             if graph.is_completed():
                 if goal:
