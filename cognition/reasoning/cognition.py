@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import AsyncGenerator
 
 from llm.manager import LLMService
-from core.emotion_parser import EmotionStreamParser
+from persona.dialogue.emotion_parser import EmotionStreamParser
 
 class CognitionEngine:
     def __init__(self, llm_service: LLMService | None = None) -> None:

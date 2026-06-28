@@ -189,7 +189,7 @@ def start_background_loop():
 async def _speak_and_notify_proactive(full_reply, type_name):
     global _ai_busy
     try:
-        from core.emotion_parser import EmotionStreamParser
+        from persona.dialogue.emotion_parser import EmotionStreamParser
         parser = EmotionStreamParser()
         clean_reply_parts = []
         final_emotion = "thinking"
@@ -453,7 +453,7 @@ async def _twitch_commentator_loop():
                 
             full_reply = "".join(full_reply_parts).strip()
             
-            from core.emotion_parser import EmotionStreamParser
+            from persona.dialogue.emotion_parser import EmotionStreamParser
             parser = EmotionStreamParser()
             clean_reply_parts = []
             final_emotion = "friendly"

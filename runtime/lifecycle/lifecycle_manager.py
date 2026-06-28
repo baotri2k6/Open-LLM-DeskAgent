@@ -73,6 +73,7 @@ class LifecycleManager:
             ("Memory",     self._init_memory),
             ("Persona",    self._init_persona),
             ("Motivation", self._init_motivation),
+            ("Agents",     self._init_agents),
             ("LifeLoop",   self._init_life_loop),
         ]
 
@@ -153,6 +154,28 @@ class LifecycleManager:
 
     def _init_motivation(self) -> None:
         from motivation.motivation_manager import motivation_manager  # noqa: F401
+
+    def _init_agents(self) -> None:
+        from agents.registry.agent_registry import agent_registry
+        from agents.planner.planner_agent import PlannerAgent
+        from agents.browser.browser_agent import BrowserAgent
+        from agents.memory.memory_agent import MemoryAgent
+        from agents.vision.vision_agent import VisionAgent
+        from agents.desktop.desktop_agent import DesktopAgent
+        
+        # Instantiate agents
+        planner = PlannerAgent()
+        browser = BrowserAgent()
+        memory = MemoryAgent()
+        vision = VisionAgent()
+        desktop = DesktopAgent()
+        
+        # Register capabilities
+        agent_registry.register("planner", planner, ["classify_intent", "route_task"])
+        agent_registry.register("browser", browser, ["web_search", "open_url"])
+        agent_registry.register("memory", memory, ["remember", "recall"])
+        agent_registry.register("vision", vision, ["screen_read", "describe_screen"])
+        agent_registry.register("desktop", desktop, ["open_app", "execute_command"])
 
     async def _init_life_loop(self) -> None:
         from life.life_loop import life_loop
