@@ -17,7 +17,7 @@ if IS_FROZEN:
     RESOURCE_BASE = Path(getattr(sys, "_MEIPASS", sys.executable))
     WRITABLE_ROOT = Path.home() / ".deskagent"
 else:
-    PROJECT_ROOT = Path(__file__).resolve().parents[2]
+    PROJECT_ROOT = Path(__file__).resolve().parents[1]
     RESOURCE_BASE = PROJECT_ROOT
     WRITABLE_ROOT = PROJECT_ROOT
 
@@ -65,11 +65,40 @@ def _deep_merge(base: dict[str, Any], incoming: dict[str, Any]) -> dict[str, Any
 
 class Config:
     def __init__(self) -> None:
+        # Load local .env if exists in project root
+        env_path = PROJECT_ROOT / ".env"
+        if env_path.exists() and env_path.stat().st_size > 0:
+            try:
+                with env_path.open("r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith("#") or "=" not in line:
+                            continue
+                        k, v = line.split("=", 1)
+                        # strip quotes if present
+                        val_str = v.strip().strip("'").strip('"')
+                        os.environ[k.strip()] = val_str
+            except Exception as err:
+                print(f"[Config] Failed to load .env: {err}")
+
         self.data = json.loads(json.dumps(DEFAULT_CONFIG))
         self._load_json("config/companion.config.json")
         persona = self._read_json("config/persona.config.json")
         if persona:
             self.data["persona"] = {**self.data.get("persona", {}), **persona}
+
+        # Override configurations with environment variables
+        for env_key, config_path in [
+            ("GEMINI_API_KEY", "llm.gemini_api_key"),
+            ("OPENAI_API_KEY", "llm.openai_api_key"),
+            ("DEEPSEEK_API_KEY", "llm.deepseek_api_key"),
+            ("GLM_API_KEY", "llm.glm_api_key"),
+            ("QWEN_API_KEY", "llm.qwen_api_key"),
+            ("FISH_AUDIO_API_KEY", "tts.fish_audio_api_key"),
+        ]:
+            val = os.getenv(env_key)
+            if val:
+                self.set(config_path, val)
 
         port = os.getenv("AI_COMPANION_PORT")
         if port:

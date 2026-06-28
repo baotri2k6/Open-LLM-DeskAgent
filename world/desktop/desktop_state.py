@@ -1,8 +1,26 @@
-"""Captures full desktop layout and icon positions.
+"""Captures a lightweight desktop state snapshot."""
 
-TODO: Implement in Phase 4.
-"""
+from __future__ import annotations
+
+from tools.screen_reader import capture_screenshot
+from world.windows.window_tracker import window_tracker
+
 
 class DesktopState:
-    """Stub: Captures full desktop layout and icon positions."""
-    pass
+    """Tracks active window and screen size without expensive UI automation."""
+
+    def snapshot(self) -> dict:
+        screen = capture_screenshot()
+        return {
+            "active_window": window_tracker.get_active_window(),
+            "screen_size": screen.get("size") if screen.get("success") else None,
+            "screen_available": bool(screen.get("success")),
+        }
+
+    def describe(self) -> str:
+        state = self.snapshot()
+        win = state["active_window"]
+        return f"Desktop active window: {win.get('title', 'unknown')} ({win.get('app', 'unknown')})"
+
+
+desktop_state = DesktopState()

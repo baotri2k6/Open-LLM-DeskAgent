@@ -17,6 +17,41 @@
         </div>
       </div>
 
+      <!-- Card: System Status -->
+      <div class="settings-card">
+        <div class="card-header">
+          <div class="card-icon">🖥️</div>
+          <span class="card-title">Trạng thái hệ thống</span>
+        </div>
+        <div class="card-divider"></div>
+        <div class="status-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 13px;">
+          <div class="status-item" style="padding: 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: rgba(255,255,255,0.02); display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--text-2);">Backend Service</span>
+            <span id="status-backend" style="font-weight: bold; color: var(--accent);">Đang kiểm tra...</span>
+          </div>
+          <div class="status-item" style="padding: 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: rgba(255,255,255,0.02); display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--text-2);">Trí tuệ AI (LLM)</span>
+            <span id="status-llm" style="font-weight: bold; color: var(--accent);">Đang kiểm tra...</span>
+          </div>
+          <div class="status-item" style="padding: 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: rgba(255,255,255,0.02); display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--text-2);">Giọng nói (TTS)</span>
+            <span id="status-tts" style="font-weight: bold; color: var(--accent);">Đang kiểm tra...</span>
+          </div>
+          <div class="status-item" style="padding: 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: rgba(255,255,255,0.02); display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--text-2);">Nhận diện (STT)</span>
+            <span id="status-stt" style="font-weight: bold; color: var(--accent);">Đang kiểm tra...</span>
+          </div>
+          <div class="status-item" style="padding: 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: rgba(255,255,255,0.02); display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--text-2);">Bộ nhớ (Memory)</span>
+            <span id="status-memory" style="font-weight: bold; color: var(--accent);">Đang kiểm tra...</span>
+          </div>
+          <div class="status-item" style="padding: 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: rgba(255,255,255,0.02); display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--text-2);">Avatar Live2D</span>
+            <span id="status-avatar" style="font-weight: bold; color: var(--accent);">Online</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Card: AI Brain -->
       <div class="settings-card">
         <div class="card-header">

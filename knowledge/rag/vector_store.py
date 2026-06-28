@@ -65,13 +65,14 @@ class ChromaStore:
             from sentence_transformers import SentenceTransformer  # type: ignore
 
             model_name = "all-MiniLM-L6-v2"
+            # Warm-up: tải model ngay để lần query đầu không bị block
+            # Nếu offline hoặc tải lỗi, ta bắt exception để fallback
+            SentenceTransformer(model_name)
             self._embed_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
                 model_name=model_name
             )
-            # Warm-up: tải model ngay để lần query đầu không bị block
-            SentenceTransformer(model_name)
-        except ImportError:
-            logger.warning("sentence-transformers chưa có → dùng default embedding")
+        except Exception as e:
+            logger.warning("sentence-transformers load failed (%s) → fallback to DefaultEmbeddingFunction", e)
             self._embed_fn = embedding_functions.DefaultEmbeddingFunction()
 
         self._col = self._client.get_or_create_collection(

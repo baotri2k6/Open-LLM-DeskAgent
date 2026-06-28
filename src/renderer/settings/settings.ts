@@ -336,6 +336,57 @@ if (!(window as any).companion) {
     }
   });
 
-  (window as any).companion.on("python:ready", loadConfig);
+  async function updateSystemStatus(): Promise<void> {
+    const statusBackend = document.getElementById("status-backend");
+    const statusLlm = document.getElementById("status-llm");
+    const statusTts = document.getElementById("status-tts");
+    const statusStt = document.getElementById("status-stt");
+    const statusMemory = document.getElementById("status-memory");
+
+    try {
+      const res = await (window as any).companion.health();
+      if (res && res.status === "ok" && res.checks) {
+        const checks = res.checks;
+        if (statusBackend) {
+          statusBackend.textContent = "Online";
+          statusBackend.style.color = "var(--accent)";
+        }
+        if (statusLlm) {
+          statusLlm.textContent = `${checks.llm.status} (${checks.llm.provider})`;
+          statusLlm.style.color = checks.llm.status === "Online" ? "var(--accent)" : "#ef4444";
+        }
+        if (statusTts) {
+          statusTts.textContent = `${checks.tts.status} (${checks.tts.backend})`;
+          statusTts.style.color = checks.tts.status === "Online" ? "var(--accent)" : "#ef4444";
+        }
+        if (statusStt) {
+          statusStt.textContent = `${checks.stt.status} (${checks.stt.model})`;
+          statusStt.style.color = checks.stt.status === "Online" ? "var(--accent)" : "#ef4444";
+        }
+        if (statusMemory) {
+          statusMemory.textContent = checks.memory.status;
+          statusMemory.style.color = checks.memory.status === "Online" ? "var(--accent)" : "#ef4444";
+        }
+      } else {
+        throw new Error("offline");
+      }
+    } catch (err) {
+      const offlineList = [statusBackend, statusLlm, statusTts, statusStt, statusMemory];
+      offlineList.forEach(el => {
+        if (el) {
+          el.textContent = "Offline";
+          el.style.color = "#ef4444";
+        }
+      });
+    }
+  }
+
+  (window as any).companion.on("python:ready", () => {
+    loadConfig();
+    updateSystemStatus();
+  });
+  
   loadConfig();
+  updateSystemStatus();
+  setInterval(updateSystemStatus, 4000);
 }

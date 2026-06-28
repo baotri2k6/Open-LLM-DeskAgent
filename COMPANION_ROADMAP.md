@@ -915,57 +915,93 @@ v1.0 — Digital Companion
 
 ---
 
-# PHẦN 1: LỘ TRÌNH 9 PHASES
+# PHẦN 1: LỘ TRÌNH PHÁT TRIỂN THỰC TẾ (PHASE A - H)
 
 ```mermaid
 graph TD
-    P1[Phase 1: Foundation] --> P2[Phase 2: Companion Intelligence]
-    P1 --> P3[Phase 3: Agent Intelligence]
-    P2 --> P7[Phase 7: Autonomous Life Loop]
-    P3 --> P4[Phase 4: Computer Use]
-    P4 --> P5[Phase 5: Reflection & Self-Correction]
-    P5 --> P6[Phase 6: Learning System]
-    P6 --> P7
-    P7 --> P8[Phase 8: Multi-Agent Ecosystem]
-    P8 --> P9[Phase 9: Digital Companion Evolution]
+    PA[Phase A: Chạy Ổn Định Trước] --> PB[Phase B: Nhân Vật Có Linh Hồn]
+    PB --> PC[Phase C: Biết Quan Sát & Biết Im]
+    PC --> PD[Phase D: Làm Việc Cùng Nhau]
+    PD --> PE[Phase E: Trí Nhớ Dài Hạn Thật]
+    PE --> PF[Phase F: Avatar Sống Trên Desktop]
+    PF --> PG[Phase G: Tự Chủ Có Kiểm Soát]
+    PG --> PH[Phase H: Đóng Gói & Dùng Hằng Ngày]
 ```
 
-### Phase 1 — Foundation `[HOÀN THÀNH]`
-* **Domain:** `runtime/` · `api/` · `llm/` · `speech/` · `live2d/` · `desktop/` · `renderer/` · `tools/` · `plugins/` · `mcp_agent/`
-* **Luồng:** `Input → Perception → Context → Memory → Reasoning → Action`
+### Phase A — Chạy Ổn Định Trước `[HOÀN THÀNH]`
+* **Mục tiêu:** Mở app lên là dùng được ngay, ổn định và không lỗi vặt.
+* **Các công việc đã xong:**
+  - [x] Sửa sạch startup flow: Khởi chạy Electron + Backend không lỗi ngầm.
+  - [x] Tách config dev/prod: Độc lập các API key thông qua tệp `.env` gitignored, tránh lưu key thật trong repo.
+  - [x] Health check chi tiết: Tạo bảng "System Status" trong Settings và nâng cấp API `/health` kiểm tra đồng bộ cả Backend, LLM, TTS, STT, Memory.
+  - [x] Fallback thông minh: Tự động dùng Default hoặc in-memory store khi không có internet/lỗi sentence-transformers.
+  - [x] Màn hình "System Status": Giao diện trực quan cập nhật trạng thái các engine theo thời gian thực (4 giây/lần).
 
-### Phase 2 — Companion Intelligence `[HOÀN THÀNH]`
-* **Domain:** `persona/` · `social/` · `interaction/` · `motivation/`
-* **Mục tiêu:** Nhân vật có đời sống nội tâm — cảm xúc, tâm trạng, mục tiêu, thói quen, mối quan hệ.
+### Phase B — Nhân Vật Có Linh Hồn `[CHƯA BẮT ĐẦU]`
+* **Mục tiêu:** IceGirl nói chuyện nhất quán như một người thực sự.
+* **Chi tiết công việc:**
+  - Viết lại persona core: giọng nói, giới hạn, sở thích, cách trêu, cách quan tâm.
+  - Memory ảnh hưởng trực tiếp đến câu trả lời.
+  - Relationship progression: lạ → quen → bạn thân → tri kỷ.
+  - Mood system thật: vui, mệt, tò mò, ghen tị nhẹ, tập trung, buồn ngủ.
+  - Proactive line nhỏ: chào buổi sáng, hỏi thăm, phản ứng khi user im lâu.
 
-### Phase 3 — Agent Intelligence `[HOÀN THÀNH]`
-* **Domain:** `planning/` · `cognition/` · `agents/` · `skills/`
-* **Luồng:** `Goal → Plan → Execute → Observe → Continue / Replan`
+### Phase C — Biết Quan Sát Và Biết Im `[CHƯA BẮT ĐẦU]`
+* **Mục tiêu:** Companion hiểu user đang làm gì.
+* **Chi tiết công việc:**
+  - Screen context packet: app đang mở, cửa sổ, OCR text, activity.
+  - Silence policy mạnh hơn: đang code/terminal/meeting thì ít nói.
+  - Attention model: biết user idle, bận, đang stuck, vừa hoàn thành việc.
+  - “Soft intervention”: chỉ chen vào khi có lý do.
+  - Nhật ký hoạt động trong ngày: làm gì, project nào, gặp lỗi gì.
 
-### Phase 4 — Computer Use `[HOÀN THÀNH]`
-* **Domain:** `vision/` · `perception/` · `execution/` · `world/`
-* **Luồng:** `Observe Screen → Understand UI → Plan Action → Execute → Verify → Recovery`
+### Phase D — Làm Việc Cùng Nhau `[CHƯA BẮT ĐẦU]`
+* **Mục tiêu:** Từ companion thành teammate.
+* **Chi tiết công việc:**
+  - Task planning UI: user giao việc, nó chia task.
+  - Coding agent loop: đọc file, sửa, chạy test, báo lại.
+  - Browser/desktop actions có approval rõ ràng.
+  - Recovery loop: thao tác sai thì quan sát lại và sửa kế hoạch.
+  - Workspace awareness: biết repo hiện tại, file quan trọng, lệnh test.
 
-### Phase 5 — Reflection & Self-Correction `[HOÀN THÀNH]`
-* **Domain:** `cognition/reflection/` · `cognition/self_correction/` · `cognition/evaluation/` · `agents/coding/` · `execution/recovery/`
-* **Luồng:** `Action → Evaluate → Fail? → Analyze → Retry / Replan → Verify`
+### Phase E — Trí Nhớ Dài Hạn Thật `[CHƯA BẮT ĐẦU]`
+* **Mục tiêu:** Càng dùng càng hiểu người dùng.
+* **Chi tiết công việc:**
+  - Memory writeback sau mỗi cuộc trò chuyện.
+  - Phân loại memory: sở thích, thói quen, project, cảm xúc, kỹ thuật.
+  - Memory pruning: bỏ ký ức rác, giữ ký ức quan trọng.
+  - Daily summary: cuối ngày tự tóm tắt người dùng đã làm gì.
+  - Recall tự nhiên: nhắc chuyện cũ đúng lúc, không lạm dụng.
 
-### Phase 6 — Learning System `[HOÀN THÀNH]`
-* **Domain:** `learning/` · `memory/procedural/` · `knowledge/`
-* **Luồng:** `Task → Reflection → Extract Knowledge → Create Skill → Save Memory`
+### Phase F — Avatar Sống Trên Desktop `[CHƯA BẮT ĐẦU]`
+* **Mục tiêu:** Sự hiện diện phải thật sống động.
+* **Chi tiết công việc:**
+  - Lipsync ổn định hơn.
+  - Emotion → expression → motion mapping hoàn hảo.
+  - Idle animation biến đổi theo mood.
+  - Click-through alpha chính xác trên canvas WebGL.
+  - Mini gestures: nhìn theo chuột, nghiêng đầu, phản ứng khi được gọi.
+  - Notification bubble gọn gàng, không phá flow làm việc.
 
-### Phase 7 — Autonomous Life Loop `[HOÀN THÀNH]`
-* **Domain:** `life/` · `decision/` · `belief/` · `motivation/`
-* **Nguyên tắc cốt lõi:** Một companion thực sự biết khi nào *không nên* nói.
-* **Luồng:** `Observe → Feel → Decide → Act OR Stay Silent → Sleep → Repeat`
+### Phase G — Tự Chủ Có Kiểm Soát `[CHƯA BẮT ĐẦU]`
+* **Mục tiêu:** Companion tự nghĩ, nhưng không tự tiện.
+* **Chi tiết công việc:**
+  - Life loop chạy nền: observe → feel → think → decide → act/silent.
+  - Risk policy cho mọi hành động trên máy tính.
+  - Proactive queue: ý định nào đáng nói, ý định nào giữ lại.
+  - User feedback: “đừng nhắc cái này nữa”, “nhắc tao sau”.
+  - Autonomy levels: quiet / companion / assistant / agent.
 
-### Phase 8 — Multi-Agent Ecosystem `[HOÀN THÀNH]`
-* **Domain:** `agents/coordinator/` · `agents/registry/` · `agents/subagent_service.py` · `runtime/scheduler/`
-* **Kiến trúc:** `Main Agent → Orchestrator → Sub Agents (parallel) → Merge Result`
-
-### Phase 9 — Digital Companion Evolution `[HOÀN THÀNH]`
-* **Domain:** `persona/relationship/` · `persona/identity/` · `belief/` · `learning/habits/` · `memory/episodic/`
-* **Định nghĩa hoàn thành:** Khi người dùng mở máy sau một ngày mệt mỏi và điều đầu tiên muốn làm là chào nhân vật — không phải vì cần việc gì, mà vì muốn gặp.
+### Phase H — Đóng Gói Và Dùng Hằng Ngày `[CHƯA BẮT ĐẦU]`
+* **Mục tiêu:** Đóng gói thành ứng dụng desktop thực thụ.
+* **Chi tiết công việc:**
+  - Installer Windows (.exe / .msi).
+  - First-run setup wizard cấu hình API key.
+  - Model/provider selection linh hoạt.
+  - Logs dễ đọc, dễ export debug.
+  - Crash recovery tự động.
+  - Auto update config/migration.
+  - Bộ test E2E toàn diện.
 
 ---
 

@@ -44,7 +44,7 @@ class EmpathyEngine:
             r"cô đơn", r"😢", r"😭", r"😔", r"depressed",
         ],
         "anxious": [
-            r"lo", r"sợ", r"lo lắng", r"không biết có được không",
+            r"\blo\b", r"sợ", r"lo lắng", r"không biết có được không",
             r"anxious", r"nervous", r"deadline", r"😰", r"😟",
         ],
         "excited": [

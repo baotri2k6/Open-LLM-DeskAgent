@@ -649,15 +649,80 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
 
         if path == "/health":
+            # 1. LLM Check
+            llm_ok = False
+            llm_error = None
+            provider = "Unknown"
+            model = "Unknown"
+            try:
+                from llm.manager import _get_llm_credentials
+                provider, api_key, model, base_url = _get_llm_credentials()
+                if provider == "ollama":
+                    import urllib.request
+                    try:
+                        # 1s timeout to keep it fast
+                        with urllib.request.urlopen(f"http://127.0.0.1:11434", timeout=1.0) as response:
+                            llm_ok = response.status == 200 or response.status == 404
+                    except Exception as e:
+                        llm_error = f"Ollama offline: {e}"
+                else:
+                    if api_key:
+                        llm_ok = True
+                    else:
+                        llm_error = f"Missing API key for {provider}"
+            except Exception as e:
+                llm_error = str(e)
+
+            # 2. TTS Check
+            tts_ok = False
+            tts_backend = config.get("tts.api", "edge")
+            try:
+                tts_svc = get_tts()
+                tts_ok = tts_svc is not None and tts_svc.available
+            except Exception:
+                pass
+
+            # 3. STT Check
+            stt_ok = False
+            stt_model = config.get("stt.model", "base")
+            try:
+                stt_svc = get_stt()
+                stt_ok = stt_svc is not None and stt_svc.available
+            except Exception:
+                pass
+
+            # 4. Memory check
+            memory_ok = False
+            try:
+                rag_svc = get_rag()
+                memory_ok = rag_svc is not None
+            except Exception:
+                pass
+
             self._send_json({
                 "status": "ok",
                 "name": config.get("app.name"),
                 "version": "0.2.0",
-                "features": {
-                    "stt": _stt_service is not None,
-                    "tts": _tts_service is not None,
-                    "rag": _rag_retriever is not None,
-                },
+                "checks": {
+                    "backend": {"status": "Online"},
+                    "llm": {
+                        "status": "Online" if llm_ok else "Offline",
+                        "provider": provider,
+                        "model": model,
+                        "error": llm_error
+                    },
+                    "tts": {
+                        "status": "Online" if tts_ok else "Offline",
+                        "backend": tts_backend
+                    },
+                    "stt": {
+                        "status": "Online" if stt_ok else "Offline",
+                        "model": stt_model
+                    },
+                    "memory": {
+                        "status": "Online" if memory_ok else "Offline"
+                    }
+                }
             })
             return
 
