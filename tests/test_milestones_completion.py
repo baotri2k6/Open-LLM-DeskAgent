@@ -238,6 +238,49 @@ def t_config_and_health():
     assert new_cfg.get("server.port") == 8765
 test("Config & Health — verify environment overrides and status helper integration", t_config_and_health)
 
+def t_new_v7_stubs():
+    # 1. ContextPacket
+    from runtime.context.context_packet import ContextPacket
+    packet = ContextPacket(user_message="test message", ocr_text="screen raw text")
+    assert packet.user_message == "test message"
+    assert packet["screen_text"] == "screen raw text"
+    
+    # 2. ContextManager
+    from cognition.context.context_manager import context_manager
+    context_manager.clear()
+    context_manager.add_packet(packet)
+    assert len(context_manager.get_history()) == 1
+    
+    # 3. Pipeline
+    from runtime.pipeline.pipeline import Pipeline
+    pipeline = Pipeline()
+    pipeline.add_stage(lambda x: x + " stage1")
+    assert pipeline.process("input") == "input stage1"
+    
+    # 4. RuntimeManager
+    from runtime.runtime_manager import runtime_manager
+    runtime_manager.boot()
+    assert runtime_manager._booted
+    runtime_manager.shutdown()
+    assert not runtime_manager._booted
+    
+    # 5. InterruptionHandler
+    from persona.behavior.interruption.interruption_handler import interruption_handler
+    assert interruption_handler.should_interrupt(user_active=True, idle_time=0.5)
+    assert not interruption_handler.should_interrupt(user_active=False, idle_time=10.0)
+    
+    # 6. PromptLibrary
+    from cognition.prompts.prompt_library import PromptLibrary
+    assert PromptLibrary.get_prompt("SYSTEM_BASE") is not None
+    
+    # 7. ActivityTimeline
+    from world.timeline.activity_timeline import activity_timeline
+    activity_timeline.record_activity("coding")
+    evts = activity_timeline.get_recent_events()
+    assert len(evts) > 0
+    assert evts[0].activity == "coding"
+test("V7 Stubs — ContextPacket, Pipeline, RuntimeManager, InterruptionHandler, PromptLibrary, ActivityTimeline", t_new_v7_stubs)
+
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 print(f"\n{'='*50}")

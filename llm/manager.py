@@ -641,16 +641,19 @@ class LLMService:
             
             summary = ""
             try:
+                provider_instance = None
                 if provider == "gemini":
-                    contents, sys_instr = _to_gemini_format(summary_messages)
-                    res = _gemini_chat_with_tools(contents, sys_instr, api_key, model)
-                    summary = res["candidates"][0]["content"]["parts"][0]["text"]
+                    from llm.providers.gemini import GeminiProvider
+                    provider_instance = GeminiProvider()
                 elif provider in ["openai", "deepseek", "glm", "qwen", "openai-compatible"]:
-                    res = _openai_chat_with_tools(summary_messages, api_key, model, base_url)
-                    summary = res["choices"][0]["message"]["content"]
+                    from llm.providers.openai import OpenAIProvider
+                    provider_instance = OpenAIProvider()
                 else: # ollama
-                    res = _ollama_chat_with_tools(summary_messages, model, base_url)
-                    summary = res["message"]["content"]
+                    from llm.providers.ollama import OllamaProvider
+                    provider_instance = OllamaProvider()
+                
+                res = provider_instance.chat_with_tools(summary_messages, api_key, model, base_url)
+                summary = res.get("content", "") or "Không thể tạo tóm tắt do lỗi hệ thống."
             except Exception as e:
                 logger.error("Failed to generate context compaction summary: %s", e)
                 summary = "Không thể tạo tóm tắt do lỗi hệ thống."
