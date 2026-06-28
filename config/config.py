@@ -98,11 +98,21 @@ class Config:
         ]:
             val = os.getenv(env_key)
             if val:
-                self.set(config_path, val)
+                self._set_runtime(config_path, val)
 
         port = os.getenv("AI_COMPANION_PORT")
         if port:
             self.data.setdefault("server", {})["port"] = int(port)
+
+    def _set_runtime(self, dotted_key: str, value: Any) -> None:
+        """Set a value in memory without persisting it to user config."""
+        parts = dotted_key.split(".")
+        current = self.data
+        for part in parts[:-1]:
+            if part not in current or not isinstance(current[part], dict):
+                current[part] = {}
+            current = current[part]
+        current[parts[-1]] = value
 
     def _read_json(self, relative_path: str) -> dict[str, Any]:
         # Try writable root first (user configuration)

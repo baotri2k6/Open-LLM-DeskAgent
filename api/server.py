@@ -649,80 +649,30 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
 
         if path == "/health":
-            # 1. LLM Check
-            llm_ok = False
-            llm_error = None
-            provider = "Unknown"
-            model = "Unknown"
-            try:
-                from llm.manager import _get_llm_credentials
-                provider, api_key, model, base_url = _get_llm_credentials()
-                if provider == "ollama":
-                    import urllib.request
-                    try:
-                        # 1s timeout to keep it fast
-                        with urllib.request.urlopen(f"http://127.0.0.1:11434", timeout=1.0) as response:
-                            llm_ok = response.status == 200 or response.status == 404
-                    except Exception as e:
-                        llm_error = f"Ollama offline: {e}"
-                else:
-                    if api_key:
-                        llm_ok = True
-                    else:
-                        llm_error = f"Missing API key for {provider}"
-            except Exception as e:
-                llm_error = str(e)
-
-            # 2. TTS Check
-            tts_ok = False
-            tts_backend = config.get("tts.api", "edge")
-            try:
-                tts_svc = get_tts()
-                tts_ok = tts_svc is not None and tts_svc.available
-            except Exception:
-                pass
-
-            # 3. STT Check
-            stt_ok = False
-            stt_model = config.get("stt.model", "base")
-            try:
-                stt_svc = get_stt()
-                stt_ok = stt_svc is not None and stt_svc.available
-            except Exception:
-                pass
-
-            # 4. Memory check
-            memory_ok = False
-            try:
-                rag_svc = get_rag()
-                memory_ok = rag_svc is not None
-            except Exception:
-                pass
-
+            from runtime.services.service_registry import service_registry
+            checks = service_registry.check_all()
+            
+            # Format to match expectations of settings UI exactly
+            formatted_checks = {}
+            for name, svc_stat in checks.items():
+                status_str = "Online" if svc_stat["status"] == "online" else "Offline"
+                # Backend is always Online
+                if name == "backend":
+                    status_str = "Online"
+                
+                details = svc_stat.get("details", {})
+                formatted_checks[name] = {
+                    "status": status_str,
+                    **details
+                }
+                if svc_stat.get("error"):
+                    formatted_checks[name]["error"] = svc_stat["error"]
+            
             self._send_json({
                 "status": "ok",
                 "name": config.get("app.name"),
                 "version": "0.2.0",
-                "checks": {
-                    "backend": {"status": "Online"},
-                    "llm": {
-                        "status": "Online" if llm_ok else "Offline",
-                        "provider": provider,
-                        "model": model,
-                        "error": llm_error
-                    },
-                    "tts": {
-                        "status": "Online" if tts_ok else "Offline",
-                        "backend": tts_backend
-                    },
-                    "stt": {
-                        "status": "Online" if stt_ok else "Offline",
-                        "model": stt_model
-                    },
-                    "memory": {
-                        "status": "Online" if memory_ok else "Offline"
-                    }
-                }
+                "checks": formatted_checks
             })
             return
 
@@ -1402,6 +1352,77 @@ def _patch_llm_service_for_rag():
 def main() -> None:
     global screen_watcher
     _patch_llm_service_for_rag()
+
+    # Register services with the ServiceRegistry
+    from runtime.services.service_registry import service_registry
+
+    # 1. Backend check
+    service_registry.register("backend", lambda: {"ok": True})
+
+    # 2. LLM check
+    def check_llm():
+        llm_ok = False
+        llm_error = None
+        provider = "Unknown"
+        model = "Unknown"
+        try:
+            from llm.manager import _get_llm_credentials
+            provider, api_key, model, base_url = _get_llm_credentials()
+            if provider == "ollama":
+                import urllib.request
+                try:
+                    with urllib.request.urlopen("http://127.0.0.1:11434", timeout=1.0) as response:
+                        llm_ok = response.status == 200 or response.status == 404
+                except Exception as e:
+                    llm_error = f"Ollama offline: {e}"
+            else:
+                if api_key:
+                    llm_ok = True
+                else:
+                    llm_error = f"Missing API key for {provider}"
+        except Exception as e:
+            llm_error = str(e)
+        return {"ok": llm_ok, "provider": provider, "model": model, "error": llm_error}
+
+    service_registry.register("llm", check_llm)
+
+    # 3. TTS check
+    def check_tts():
+        tts_ok = False
+        tts_backend = config.get("tts.api", "edge")
+        try:
+            tts_svc = get_tts()
+            tts_ok = tts_svc is not None and tts_svc.available
+        except Exception:
+            pass
+        return {"ok": tts_ok, "backend": tts_backend}
+
+    service_registry.register("tts", check_tts)
+
+    # 4. STT check
+    def check_stt():
+        stt_ok = False
+        stt_model = config.get("stt.model", "base")
+        try:
+            stt_svc = get_stt()
+            stt_ok = stt_svc is not None and stt_svc.available
+        except Exception:
+            pass
+        return {"ok": stt_ok, "model": stt_model}
+
+    service_registry.register("stt", check_stt)
+
+    # 5. Memory check
+    def check_memory():
+        memory_ok = False
+        try:
+            rag_svc = get_rag()
+            memory_ok = rag_svc is not None
+        except Exception:
+            pass
+        return {"ok": memory_ok}
+
+    service_registry.register("memory", check_memory)
 
     import threading
 
