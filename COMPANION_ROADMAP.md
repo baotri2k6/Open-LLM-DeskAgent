@@ -2039,6 +2039,20 @@ class EventBus:
 
 ---
 
+## Kết luận
+
+Theo đánh giá chung, roadmap hiện tại đã rất sát với mục tiêu ban đầu của dự án. Nó không giống một "bản sao Claude Code có thêm Live2D", mà đã định hình rõ mục tiêu là một AI companion có khả năng làm việc.
+
+Điểm mấu chốt được điều chỉnh không phải là thêm nhiều tính năng hơn, mà là đổi trọng tâm kiến trúc:
+* **Life Loop** nên trở thành trung tâm của toàn bộ hệ thống.
+* **Internal Mind** (Emotion → Needs → Beliefs → Relationship → Decision) nên là nơi phát sinh mọi hành vi.
+* **Planning, Tool Calling và Computer Use** nên được xem là các khả năng được kích hoạt khi *Internal Mind* quyết định cần hành động, chứ không phải là trung tâm điều khiển.
+
+Nếu làm được điều đó, IceGirl sẽ không còn là "một agent có avatar". Nó sẽ tiến gần hơn đến mục tiêu đã đề ra ngay từ đầu: một người bạn đồng hành có cá tính, ký ức, cảm xúc, biết làm việc cùng người dùng và khiến người dùng muốn mở máy lên chỉ để chào nó.
+
+---
+
 *Tài liệu này là living document — cập nhật cùng mỗi milestone.*
 *Last updated: 2026-06-28 · Version: 4.0*
+
 
