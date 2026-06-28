@@ -1061,7 +1061,7 @@ Lớp hiệu năng
 | Domain | Status | Coverage |
 |---|---|---|
 | `runtime/` | ✅ Complete | 100% |
-| `life/` | 🔄 LifeLoop & Thinker in progress | ~60% |
+| `life/` | ✅ Complete | 100% |
 | `persona/` | ✅ Complete | 100% |
 | `memory/` | ✅ Complete | 100% |
 | `llm/` | ✅ Complete | 100% |
