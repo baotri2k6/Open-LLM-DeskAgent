@@ -89,10 +89,15 @@ class LifeLoop:
                     energy  = mood_state.energy,
                 )
 
+                # ── Evolve Persona ─────────────────────────────────────────
+                from persona.persona_manager import persona_manager
+                persona_manager.evolve_personality()
+
                 # ── Feel — update mood based on idle ──────────────────────
                 if context.user_idle_seconds > 1800:      # 30 min
                     mood_engine.update_from_event("idle_long")
                     emotion_engine.update_from_event("idle_long")
+
                 elif context.user_idle_seconds > 300:      # 5 min
                     mood_engine.update_from_event("idle_short")
 

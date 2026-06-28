@@ -26,6 +26,53 @@ class PersonaManager:
             self.characters_dir = PROJECT_ROOT / "persona" / "characters"
 
         self._cache: dict[str, CharacterProfile] = {}
+        self.active_character = "icegirl"
+
+    def get_system_prompt_section(self) -> str:
+        """Sinh chuỗi system prompt biểu diễn thông tin Persona Core hiện tại."""
+        profile = self.get_character_profile(self.active_character)
+        traits_str = ", ".join(profile.personality.keys())
+        speech_str = ", ".join(profile.speech_style)
+        topics_str = ", ".join(profile.favorite_topics)
+        
+        return (
+            f"[Persona Core]\n"
+            f"Name: {profile.name}\n"
+            f"Description: {profile.description}\n"
+            f"Traits: {traits_str}\n"
+            f"Speech Style: {speech_str}\n"
+            f"Favorite Topics: {topics_str}"
+        )
+
+    def evolve_personality(self) -> None:
+        """Tiến hóa tính cách dựa trên mối quan hệ và đặc điểm người dùng."""
+        try:
+            from persona.relationship.relationship_tracker import relationship_tracker
+            from belief.user_model import user_model
+            
+            profile = self.get_character_profile(self.active_character)
+            
+            # 1. Tiến hóa speech style dựa trên perks của mối quan hệ
+            perks = relationship_tracker.perks
+            for perk in perks:
+                if "Casual" in perk and "casual" not in profile.speech_style:
+                    profile.speech_style.append("casual")
+                if "Intimate" in perk and "intimate" not in profile.speech_style:
+                    profile.speech_style.append("intimate")
+                if "teasing" in perk.lower() and "teasing" not in profile.speech_style:
+                    profile.speech_style.append("teasing")
+
+            # 2. Tiến hóa chủ đề ưa thích dựa trên thói quen của user
+            traits = user_model.get_user_traits()
+            if "night_owl" in traits and "night owl hacks" not in profile.favorite_topics:
+                profile.favorite_topics.append("night owl hacks")
+                
+            pref_editor = user_model.get_preference("editor")
+            if pref_editor and f"{pref_editor} tips" not in profile.favorite_topics:
+                profile.favorite_topics.append(f"{pref_editor} tips")
+                
+        except Exception:
+            pass
 
     # ── Public API ─────────────────────────────────────────────────────────
 
@@ -55,7 +102,9 @@ class PersonaManager:
 
         raw = self._load_yaml(key)
         if not raw:
-            return CharacterProfile.default()
+            profile = CharacterProfile.default()
+            self._cache[key] = profile
+            return profile
 
         profile = CharacterProfile.from_yaml(raw)
         self._cache[key] = profile
@@ -108,3 +157,8 @@ class PersonaManager:
                     continue
 
         return {}
+
+
+# Global singleton
+persona_manager = PersonaManager()
+

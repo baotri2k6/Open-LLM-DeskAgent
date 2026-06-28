@@ -83,6 +83,40 @@ def t_decision_with_silence_policy():
     assert not dec.should_act  # Phải im lặng
 test("DecisionEngine — override proactive action during busy periods", t_decision_with_silence_policy)
 
+def t_persona_evolution():
+    from persona.persona_manager import persona_manager
+    from persona.relationship.relationship_tracker import relationship_tracker
+    from belief.user_model import user_model
+    
+    # 1. Tăng điểm quan hệ lên "Bạn thân"
+    relationship_tracker.add_raw(600) # Threshold > 500
+    user_model.set_user_trait("night_owl", active=True, confidence=0.8)
+    user_model.set_preference("editor", "vscode")
+    
+    # 2. Tiến hóa tính cách
+    persona_manager.evolve_personality()
+    
+    profile = persona_manager.get_character_profile(persona_manager.active_character)
+    print("DEBUG SPEECH STYLE:", profile.speech_style)
+    print("DEBUG FAVORITE TOPICS:", profile.favorite_topics)
+    
+    assert "teasing" in profile.speech_style or "intimate" in profile.speech_style or "casual" in profile.speech_style, f"Speech styles: {profile.speech_style}"
+    assert "night owl hacks" in profile.favorite_topics, f"Topics: {profile.favorite_topics}"
+    assert "vscode tips" in profile.favorite_topics, f"Topics: {profile.favorite_topics}"
+test("PersonaManager — dynamic personality evolution based on user profile", t_persona_evolution)
+
+def t_prompt_builder():
+    from cognition.prompts.prompt_builder import PromptBuilder
+    pb = PromptBuilder()
+    prompt = pb.build(include_tools=False)
+    
+    # Phải chứa cả Persona Core thực tế từ yaml chứ không dùng default fallback
+    assert "[Persona Core]" in prompt
+    assert "IceGirl" in prompt
+    assert "night owl hacks" in prompt
+test("PromptBuilder — integrates evolved persona core successfully", t_prompt_builder)
+
+
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 print(f"\n{'='*50}")
