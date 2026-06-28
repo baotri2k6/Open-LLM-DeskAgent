@@ -180,7 +180,7 @@ class MemoryManager:
     def get_state_snapshot(self) -> dict:
         """Snapshot cho API /status."""
         return {
-            "working_memory_turns": len(self._working),
+            "working_memory_turns": len(self._working_store.entries),
             "session_duration_s":   int(time.time() - self._session_start),
             "has_vector_store":     getattr(self._get_service(), "_has_vector", False),
         }

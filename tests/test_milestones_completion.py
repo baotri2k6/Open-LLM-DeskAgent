@@ -114,13 +114,20 @@ def t_learning_stubs():
     from learning.policy.policy_learner import policy_learner
     from learning.evaluation.task_evaluator import task_evaluator
     from learning.evaluator.performance_evaluator import performance_evaluator
+    from life.learn.life_learner import life_learner
+    from life.observe.observer import LifeContext
+    from life.decide.decision_engine import Decision
     
     learning_manager.process_task_outcome("task123", success=True, feedback="Excellent work!")
     assert learning_manager.learner.policy_weights["task123"] > 0
     
     performance_evaluator.record_metrics(success=True)
     assert performance_evaluator.get_performance_ratio() == 1.0
-test("Learning components — LearningManager, PolicyLearner, PerformanceEvaluator", t_learning_stubs)
+    
+    # Verify LifeLearner cycle execution
+    ctx = LifeContext(last_user_activity="gaming")
+    life_learner.learn_cycle_lessons(ctx, Decision(should_act=True), success=True)
+test("Learning components — LearningManager, PolicyLearner, PerformanceEvaluator, LifeLearner", t_learning_stubs)
 
 def t_vision_execution_stubs():
     from vision.screen_understanding.screen_understander import screen_understander
@@ -208,6 +215,11 @@ def t_expanded_memories():
     # 4. Short term memory
     short_term_memory.add_alert("CPU High Usage")
     assert "CPU High Usage" in short_term_memory.get_alerts()
+    
+    # 5. Chroma Store & Embeddings imports
+    from memory.vectorstore.chroma_store import ChromaStore
+    from memory.embeddings.embeddings import get_default_embedding_function
+    assert get_default_embedding_function() is not None
 test("Memory — Working, Episodic, Procedural, and ShortTerm stores implementation", t_expanded_memories)
 
 def t_config_and_health():
