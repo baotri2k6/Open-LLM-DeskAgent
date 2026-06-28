@@ -4,34 +4,32 @@ from __future__ import annotations
 
 import logging
 from typing import Any, List, Optional
-from knowledge.rag.vector_store import get_vector_store
-from knowledge.rag.chunker import Chunk
+from memory.vectorstore.chroma_store import ChromaMemoryStore
 
 logger = logging.getLogger("ai-companion.memory.long_term")
 
 
 class LongTermMemoryStore:
-    """Stores and queries semantic facts using the get_vector_store singleton."""
+    """Stores and queries semantic facts using ChromaMemoryStore."""
 
     def __init__(self) -> None:
         try:
-            self._vector_store = get_vector_store("companion_memories")
+            self._vector_store = ChromaMemoryStore("companion_memories")
             self._available = True
         except Exception as e:
-            logger.warning("ChromaDB not available: %s", e)
+            logger.warning("ChromaMemoryStore not available: %s", e)
             self._available = False
 
     def add_fact(self, text: str, category: str = "note", metadata: Optional[dict] = None) -> bool:
         if not self._available:
             return False
         try:
-            chunk = Chunk(
-                text=text.strip(),
-                doc_id="facts",
-                chunk_index=hash(text) % 1000000,
-                metadata={**(metadata or {}), "category": category}
+            doc_id = str(hash(text) % 1000000)
+            self._vector_store.add_memories(
+                ids=[doc_id],
+                documents=[text.strip()],
+                metadatas=[{**(metadata or {}), "category": category}]
             )
-            self._vector_store.add_chunks([chunk])
             return True
         except Exception as e:
             logger.error("Failed to add long-term memory: %s", e)
@@ -41,7 +39,7 @@ class LongTermMemoryStore:
         if not self._available or not query.strip():
             return []
         try:
-            results = self._vector_store.query(query, n_results=n_results)
+            results = self._vector_store.query_memories(query, n_results=n_results)
             recalled = []
             for item in results:
                 recalled.append({

@@ -84,182 +84,7 @@ def _is_multimodal_model(provider: str, model: str) -> bool:
     return False
 
 
-def _to_gemini_format(messages: list[dict]) -> tuple[list[dict], dict | None]:
-    contents = []
-    system_instruction = None
-    
-    for msg in messages:
-        role = msg.get("role")
-        content = msg.get("content", "")
-        
-        if role == "system":
-            if system_instruction is None:
-                system_instruction = {"parts": [{"text": content}]}
-            else:
-                system_instruction["parts"][0]["text"] += "\n" + content
-        else:
-            mapped_role = "user" if role == "user" else "model"
-            parts = []
-            if isinstance(content, list):
-                for item in content:
-                    if item.get("type") == "text":
-                        parts.append({"text": item["text"]})
-                    elif item.get("type") == "image_url":
-                        img_url = item["image_url"]["url"]
-                        if img_url.startswith("data:"):
-                            header, b64_data = img_url.split(",", 1)
-                            mime_type = header.split(";")[0].split(":")[1]
-                            parts.append({
-                                "inlineData": {
-                                    "mimeType": mime_type,
-                                    "data": b64_data
-                                }
-                            })
-            else:
-                if content:
-                    parts.append({"text": content})
-            if "functionCall" in msg:
-                parts.append({"functionCall": msg["functionCall"]})
-            if "functionResponse" in msg:
-                parts.append({"functionResponse": msg["functionResponse"]})
-                
-            contents.append({
-                "role": mapped_role,
-                "parts": parts
-            })
-            
-    return contents, system_instruction
 
-
-def _to_gemini_tools(tools_list: list) -> list:
-    def convert_schema(schema: dict) -> dict:
-        new_schema = {}
-        for k, v in schema.items():
-            if k == "type":
-                new_schema[k] = str(v).upper()
-            elif isinstance(v, dict):
-                new_schema[k] = convert_schema(v)
-            else:
-                new_schema[k] = v
-        return new_schema
-        
-    gemini_funcs = []
-    for tool in tools_list:
-        gemini_funcs.append({
-            "name": tool["name"],
-            "description": tool["description"],
-            "parameters": convert_schema(tool["parameters"])
-        })
-    return [{"functionDeclarations": gemini_funcs}]
-
-
-def _to_openai_tools(tools_list: list) -> list:
-    openai_tools = []
-    for tool in tools_list:
-        openai_tools.append({
-            "type": "function",
-            "function": tool
-        })
-    return openai_tools
-
-
-def _gemini_chat_with_tools(contents: list, system_instruction: dict | None, api_key: str, model: str, tools: list | None = None) -> dict:
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-    payload = {"contents": contents}
-    if system_instruction:
-        payload["systemInstruction"] = system_instruction
-    if tools:
-        payload["tools"] = tools
-    
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST"
-    )
-    with urllib.request.urlopen(req, timeout=45) as resp:
-        return json.loads(resp.read().decode("utf-8"))
-
-
-def _openai_chat_with_tools(messages: list, api_key: str, model: str, base_url: str, tools: list | None = None) -> dict:
-    url = base_url.rstrip("/")
-    if not url.endswith("/chat/completions") and not url.endswith("/completions"):
-        url = f"{url}/chat/completions"
-        
-    payload = {
-        "model": model,
-        "messages": messages,
-        "stream": False
-    }
-    if tools:
-        payload["tools"] = tools
-        
-    headers = {"Content-Type": "application/json"}
-    if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
-        
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers=headers,
-        method="POST"
-    )
-    with urllib.request.urlopen(req, timeout=45) as resp:
-        return json.loads(resp.read().decode("utf-8"))
-
-
-def _to_ollama_format(messages: list[dict]) -> list[dict]:
-    ollama_messages = []
-    for msg in messages:
-        role = msg.get("role")
-        content = msg.get("content")
-        new_msg = {"role": role}
-        
-        if isinstance(content, list):
-            text_parts = []
-            images = []
-            for item in content:
-                if item.get("type") == "text":
-                    text_parts.append(item["text"])
-                elif item.get("type") == "image_url":
-                    img_url = item["image_url"]["url"]
-                    if img_url.startswith("data:"):
-                        try:
-                            _, b64_data = img_url.split(",", 1)
-                            images.append(b64_data)
-                        except Exception:
-                            pass
-            new_msg["content"] = "\n".join(text_parts)
-            if images:
-                new_msg["images"] = images
-        else:
-            new_msg["content"] = content
-            
-        for k in ["tool_calls", "functionCall", "functionResponse"]:
-            if k in msg:
-                new_msg[k] = msg[k]
-        ollama_messages.append(new_msg)
-    return ollama_messages
-
-
-def _ollama_chat_with_tools(messages: list[dict], model: str, base_url: str, tools: list | None = None) -> dict:
-    formatted_messages = _to_ollama_format(messages)
-    payload = {
-        "model": model,
-        "messages": formatted_messages,
-        "stream": False,
-    }
-    if tools:
-        payload["tools"] = tools
-        
-    req = urllib.request.Request(
-        f"{base_url.rstrip('/')}/api/chat",
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=45) as resp:
-        return json.loads(resp.read().decode("utf-8"))
 
 
 async def execute_tool(name: str, args: dict, mcp_manager = None) -> dict:
@@ -915,12 +740,6 @@ class LLMService:
 
             # Record the user's message so the observer knows user is active
             life_observer.record_user_message()
-
-            # Update emotion from user's text
-            emotion_engine.update_from_user_text(plain_text)
-
-            # Inject activity modifier into mood
-            mood_engine.inject_activity_modifier(activity)
         except Exception:
             rel_level = companion_ctx.get("rel_level", "Người quen")
             mood      = companion_ctx.get("mood", "vui vẻ")
@@ -1072,18 +891,9 @@ class LLMService:
             self._append_to_history("user", plain_text)
             self._append_to_history("assistant", full_reply)
 
-            # ── Post-response: update companion intelligence engines ──────
+            # ── Post-response: update companion goals ──────
             try:
-                from persona.emotion.emotion_engine import emotion_engine
-                from persona.relationship.relationship_tracker import relationship_tracker
                 from persona.goals.goal_manager import goal_manager
-
-                # Update emotion from what the AI actually said
-                emotion_engine.update_from_ai_text(full_reply)
-
-                # Award relationship point for successful interaction
-                relationship_tracker.add_points("chat_turn")
-
                 # Try to auto-complete conversation-triggered goals
                 goal_manager.try_complete_by_trigger("conversation")
             except Exception:
@@ -1160,99 +970,39 @@ class LLMService:
             response_text = ""
             stop_reason = None
             
-            # 1. Gọi LLM API
+            # 1. Gọi LLM API qua Provider adapter tương ứng
+            provider_instance = None
             if provider == "gemini":
-                if api_key:
-                    try:
-                        contents, sys_instr_dict = _to_gemini_format(messages)
-                        gemini_tools = _to_gemini_tools(tools) if tools else None
-                        res = _gemini_chat_with_tools(contents, sys_instr_dict, api_key, model, gemini_tools)
-                        
-                        candidate = res["candidates"][0]
-                        content = candidate.get("content", {})
-                        parts = content.get("parts", [])
-                        stop_reason = candidate.get("finishReason")
-                        
-                        assistant_content = ""
-                        for part in parts:
-                            if "text" in part:
-                                assistant_content += part["text"]
-                            if "functionCall" in part:
-                                func = part["functionCall"]
-                                tool_calls_to_run.append({
-                                    "id": func.get("name"),
-                                    "name": func.get("name"),
-                                    "args": func.get("args", {})
-                                })
-                        response_text = assistant_content
-                    except Exception as exc:
-                        logger.error("Gemini API tools error: %s", exc)
-                        yield f" Có lỗi khi gọi Gemini: {exc}"
-                        return
-                else:
+                if not api_key:
                     yield " Gemini API Key đang để trống."
                     return
-                    
+                from llm.providers.gemini import GeminiProvider
+                provider_instance = GeminiProvider()
             elif provider in ["openai", "deepseek", "glm", "qwen", "openai-compatible"]:
-                if api_key or provider == "openai-compatible":
-                    try:
-                        openai_tools = _to_openai_tools(tools) if tools else None
-                        res = _openai_chat_with_tools(messages, api_key, model, base_url, openai_tools)
-                        
-                        msg = res["choices"][0]["message"]
-                        response_text = msg.get("content") or ""
-                        stop_reason = res["choices"][0].get("finish_reason")
-                        tool_calls = msg.get("tool_calls")
-                        if tool_calls:
-                            for tc in tool_calls:
-                                tool_calls_to_run.append({
-                                    "id": tc.get("id"),
-                                    "name": tc["function"].get("name"),
-                                    "args": json.loads(tc["function"].get("arguments", "{}"))
-                                })
-                    except Exception as exc:
-                        logger.error("%s API tools error: %s", provider.upper(), exc)
-                        yield f" Có lỗi khi gọi {provider.upper()}: {exc}"
-                        return
-                else:
+                if not api_key and provider != "openai-compatible":
                     yield f" {provider.upper()} API Key đang để trống."
                     return
-                    
+                from llm.providers.openai import OpenAIProvider
+                provider_instance = OpenAIProvider()
             else: # ollama
-                try:
-                    ollama_tools = _to_openai_tools(tools) if tools else None
-                    res = _ollama_chat_with_tools(messages, model, base_url, ollama_tools)
-                    
-                    msg = res.get("message", {})
-                    response_text = msg.get("content") or ""
-                    stop_reason = res.get("done_reason")
-                    
-                    # Thử lọc native tool calls
-                    tool_calls = msg.get("tool_calls")
-                    if tool_calls:
-                        for tc in tool_calls:
-                            tool_calls_to_run.append({
-                                    "id": tc.get("id") or f"call_{uuid.uuid4().hex[:8]}",
-                                    "name": tc["function"].get("name"),
-                                    "args": tc["function"].get("arguments", {})
-                            })
-                            
-                    # Fallback JSON parser nếu không tìm thấy native tool calls
-                    if not tool_calls_to_run and response_text:
-                        parsed = _parse_json_fallback(response_text)
-                        if parsed:
-                            tool_name = parsed.get("tool") or parsed.get("action")
-                            tool_args = parsed.get("args") or parsed.get("arguments") or {}
-                            if tool_name:
-                                tool_calls_to_run.append({
-                                    "id": f"call_{uuid.uuid4().hex[:8]}",
-                                    "name": tool_name,
-                                    "args": tool_args
-                                })
-                except Exception as exc:
-                    logger.error("Ollama tools error: %s", exc)
-                    yield f" Có lỗi khi kết nối tới Ollama local: {exc}"
-                    return
+                from llm.providers.ollama import OllamaProvider
+                provider_instance = OllamaProvider()
+
+            try:
+                res = provider_instance.chat_with_tools(
+                    messages=messages,
+                    api_key=api_key if api_key else "",
+                    model=model,
+                    base_url=base_url,
+                    tools=tools
+                )
+                response_text = res.get("content", "") or ""
+                tool_calls_to_run = res.get("tool_calls", []) or []
+                stop_reason = res.get("finish_reason")
+            except Exception as exc:
+                logger.error("%s API tools error: %s", provider.upper(), exc)
+                yield f" Có lỗi khi gọi {provider.upper()}: {exc}"
+                return
 
             # Stream response_text to user if any
             if response_text:
