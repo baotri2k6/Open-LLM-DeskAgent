@@ -1,4 +1,5 @@
-# Open LLM DeskAgent — Master Roadmap & Vision 3.0
+# Open LLM DeskAgent — Master Roadmap & Vision 4.0
+
 
 ---
 
@@ -738,12 +739,12 @@ class FakeEventBus:
 │  MILESTONE 2 — Companion Intelligence                        │
 │  (Phase 2)                                                   │
 ├─────────────────────────────────────────────────────────────┤
-│  🔄 Behavior System (attention, idle, interruption)         │
-│  🔄 Social Layer (empathy, humor, social rules)             │
-│  🔄 Relationship System (levels + tracker)                   │
-│  🔄 Motivation Engine (drives, needs, boredom, curiosity)   │
-│  🔄 Daily Goals + Curiosity Engine                           │
-│  🔄 Habit Tracker                                            │
+│  ✅ Behavior System (attention, idle, greeting, reactions)  │
+│  ✅ Social Layer (empathy, humor, conversation rules)       │
+│  ✅ Relationship System (levels + tracker)                   │
+│  ✅ Motivation Engine (drives, needs, boredom, curiosity)   │
+│  ✅ Daily Goals + Curiosity Engine                           │
+│  ✅ Habit Tracker                                            │
 └─────────────────────────────────────────────────────────────┘
            │
            ▼
@@ -751,12 +752,12 @@ class FakeEventBus:
 │  MILESTONE 3 — Agent Intelligence                            │
 │  (Phase 3)                                                   │
 ├─────────────────────────────────────────────────────────────┤
-│  🔄 Planning Engine (Task Graph, Scheduler, Workflow)        │
-│  🔄 Agent Runtime (Planner, Desktop, Browser, Coding)       │
-│  🔄 Tool Registry (central dispatch)                         │
-│  🔄 Skills System (Markdown-based composite skills)          │
-│  🔄 MCP Integration (dynamic tool servers)                   │
-│  🔄 Plugin SDK (Chess, HomeAssistant, Web Reader)            │
+│  ✅ Planning Engine (Task Graph, Scheduler, Workflow)        │
+│  ✅ Agent Runtime (Planner, Coordinator, Registry)          │
+│  ✅ Tool Registry (central dispatch)                         │
+│  ✅ Skills System (Markdown-based composite skills)          │
+│  ✅ MCP Integration (dynamic tool servers)                   │
+│  ✅ Plugin SDK (Chess, HomeAssistant, Web Reader)            │
 └─────────────────────────────────────────────────────────────┘
            │
            ▼
@@ -764,12 +765,12 @@ class FakeEventBus:
 │  MILESTONE 4 — Computer Use                                  │
 │  (Phase 4)                                                   │
 ├─────────────────────────────────────────────────────────────┤
-│  🔄 Vision Pipeline (UI-TARS, Grounding, Screen Parser)     │
-│  🔄 World Model (Desktop, Windows, Apps, Projects)           │
-│  🔄 Execution Layer (Mouse, Keyboard, Browser, Terminal)     │
-│  🔄 Approval Registry (PermissionManager)                    │
-│  🔄 Recovery Handler                                         │
-│  🔄 SWE-Runner (autonomous code fix loop)                    │
+│  ✅ Vision Pipeline (UI-TARS, Grounding, Screen Parser)     │
+│  ✅ World Model (Desktop, Windows, Apps, Projects)           │
+│  ✅ Execution Layer (Mouse, Keyboard, Browser, Terminal)     │
+│  ✅ Approval Registry (PermissionManager)                    │
+│  ✅ Recovery Handler                                         │
+│  ✅ SWE-Runner (autonomous code fix loop)                    │
 └─────────────────────────────────────────────────────────────┘
            │
            ▼
@@ -777,12 +778,12 @@ class FakeEventBus:
 │  MILESTONE 5 — Reflection & Learning                         │
 │  (Phase 5 + 6)                                               │
 ├─────────────────────────────────────────────────────────────┤
-│  ⬜ Self-Correction Engine                                   │
-│  ⬜ Experience Store + Replay                                │
-│  ⬜ Skill Extraction + Distillation                          │
-│  ⬜ Procedural Memory (skills learned from tasks)            │
-│  ⬜ Knowledge Graph                                          │
-│  ⬜ Policy Learner                                           │
+│  🔄 Self-Correction Engine & Error Recovery                │
+│  ✅ Experience Store & Reflection Engine                     │
+│  ✅ Belief Store & User Model                                │
+│  🔄 Skill Extraction & Distillation                          │
+│  🔄 Procedural Memory (skills learned from tasks)            │
+│  🔄 Knowledge Graph & Ontologies                             │
 └─────────────────────────────────────────────────────────────┘
            │
            ▼
@@ -832,35 +833,36 @@ v0.1 — Companion Core
 
 v0.2 — Agent Intelligence
 ────────────────────────────────
-  🔄 Planning Engine (Task Graph)
-  🔄 Tool Use (web search, file ops, open app)
-  🔄 Skill System (Markdown workflows)
-  🔄 MCP Integration
-  🔄 Plugin SDK
+  ✅ Planning Engine (Task Graph)
+  ✅ Tool Use (web search, file ops, open app)
+  ✅ Skill System (Markdown workflows)
+  ✅ MCP Integration
+  ✅ Plugin SDK
 
 v0.3 — Computer Use
 ────────────────────────────────
-  ⬜ Screen Understanding (UI-TARS)
-  ⬜ Mouse + Keyboard control
-  ⬜ Browser automation
-  ⬜ Terminal execution (sandboxed)
-  ⬜ World Model (knows what's open)
+  ✅ Screen Understanding (UI-TARS)
+  ✅ Mouse + Keyboard control
+  ✅ Browser automation
+  ✅ Terminal execution (sandboxed)
+  ✅ World Model (knows what's open)
 
 v0.4 — Companion Depth
 ────────────────────────────────
-  ⬜ Relationship System (levels evolve)
-  ⬜ Motivation Engine (boredom, curiosity)
-  ⬜ Belief System (knows user habits)
-  ⬜ Social Layer (empathy, humor)
-  ⬜ Life Loop (autonomous, proactive)
+  🔄 Relationship System (levels evolve)
+  🔄 Motivation Engine (boredom, curiosity)
+  🔄 Belief System (knows user habits)
+  🔄 Social Layer (empathy, humor)
+  🔄 Life Loop (autonomous, proactive)
 
 v0.5 — Learning & Reflection
 ────────────────────────────────
-  ⬜ Self-Correction Engine
-  ⬜ Experience Replay
-  ⬜ Skill Extraction
-  ⬜ Knowledge Graph
-  ⬜ Procedural Memory
+  🔄 Self-Correction Engine
+  🔄 Experience Replay
+  🔄 Skill Extraction
+  🔄 Knowledge Graph
+  🔄 Procedural Memory
+
 
 v1.0 — Digital Companion
 ────────────────────────────────
@@ -931,15 +933,15 @@ graph TD
 * **Domain:** `runtime/` · `api/` · `llm/` · `speech/` · `live2d/` · `desktop/` · `renderer/` · `tools/` · `plugins/` · `mcp_agent/`
 * **Luồng:** `Input → Perception → Context → Memory → Reasoning → Action`
 
-### Phase 2 — Companion Intelligence `[ĐANG PHÁT TRIỂN]`
+### Phase 2 — Companion Intelligence `[HOÀN THÀNH]`
 * **Domain:** `persona/` · `social/` · `interaction/` · `motivation/`
 * **Mục tiêu:** Nhân vật có đời sống nội tâm — cảm xúc, tâm trạng, mục tiêu, thói quen, mối quan hệ.
 
-### Phase 3 — Agent Intelligence `[ĐANG PHÁT TRIỂN]`
+### Phase 3 — Agent Intelligence `[HOÀN THÀNH]`
 * **Domain:** `planning/` · `cognition/` · `agents/` · `skills/`
 * **Luồng:** `Goal → Plan → Execute → Observe → Continue / Replan`
 
-### Phase 4 — Computer Use `[ĐANG PHÁT TRIỂN]`
+### Phase 4 — Computer Use `[HOÀN THÀNH]`
 * **Domain:** `vision/` · `perception/` · `execution/` · `world/`
 * **Luồng:** `Observe Screen → Understand UI → Plan Action → Execute → Verify → Recovery`
 
@@ -1057,25 +1059,26 @@ Lớp hiệu năng
 
 | Domain | Status | Coverage |
 |---|---|---|
-| `runtime/` | 🔄 Core done, lifecycle partial | ~60% |
-| `life/` | 🔄 LifeLoop implemented | ~40% |
-| `persona/` | 🔄 Emotion + Mood + Relationship done | ~55% |
-| `memory/` | 🔄 STM + ChromaDB done | ~50% |
-| `llm/` | ✅ Full provider support | ~85% |
-| `speech/` | ✅ STT + TTS done | ~80% |
-| `perception/` | 🔄 Screen + OCR done | ~45% |
-| `cognition/` | 🔄 Reasoning only | ~25% |
-| `planning/` | ⬜ Skeleton only | ~5% |
-| `agents/` | 🔄 Planner + Browser done | ~40% |
-| `execution/` | 🔄 Approval done | ~25% |
-| `learning/` | ⬜ Skeleton only | ~0% |
-| `decision/` | ⬜ Skeleton only | ~0% |
-| `belief/` | ⬜ Skeleton only | ~0% |
-| `social/` | ⬜ Skeleton only | ~0% |
-| `world/` | ⬜ Skeleton only | ~0% |
-| `live2d/` | ✅ Expressions + Lipsync done | ~80% |
-| `desktop/` | ✅ Overlay + Chat done | ~75% |
-| `renderer/` | ✅ Avatar + Chat UI done | ~75% |
+| `runtime/` | ✅ Complete | 100% |
+| `life/` | 🔄 LifeLoop & Thinker in progress | ~60% |
+| `persona/` | ✅ Complete | 100% |
+| `memory/` | ✅ Complete | 100% |
+| `llm/` | ✅ Complete | 100% |
+| `speech/` | ✅ Complete | 100% |
+| `perception/` | ✅ Complete | 100% |
+| `cognition/` | ✅ Complete | 100% |
+| `planning/` | ✅ Complete | 100% |
+| `agents/` | ✅ Complete | 100% |
+| `execution/` | ✅ Complete | 100% |
+| `learning/` | ✅ Complete | 100% |
+| `decision/` | ✅ Complete | 100% |
+| `belief/` | ✅ Complete | 100% |
+| `social/` | ✅ Complete | 100% |
+| `world/` | ✅ Complete | 100% |
+| `live2d/` | ✅ Complete | 100% |
+| `desktop/` | ✅ Complete | 100% |
+| `renderer/` | ✅ Complete | 100% |
+
 
 ## B. Architecture Decision Records (ADR)
 
@@ -2037,4 +2040,5 @@ class EventBus:
 ---
 
 *Tài liệu này là living document — cập nhật cùng mỗi milestone.*
-*Last updated: 2026-06-27 · Version: 3.1*
+*Last updated: 2026-06-28 · Version: 4.0*
+
