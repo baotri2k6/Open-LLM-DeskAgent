@@ -43,7 +43,8 @@ class MemoryManager:
     MAX_RECALL_RESULTS = 5     # Tối đa 5 kết quả recall cho prompt
 
     def __init__(self) -> None:
-        self._working: list[WorkingMemoryEntry] = []
+        from memory.working.working_memory import working_memory
+        self._working_store = working_memory
         self._service: Any = None   # Lazy init
         self._session_summary: str = ""
         self._session_start: float = time.time()
@@ -64,26 +65,20 @@ class MemoryManager:
 
     def add_turn(self, role: str, content: str, emotion: str = "neutral") -> None:
         """Thêm một turn vào working memory."""
-        self._working.append(WorkingMemoryEntry(
-            role=role, content=content, emotion=emotion
-        ))
-        # Prune nếu vượt limit
-        if len(self._working) > self.MAX_WORKING_MEMORY:
-            self._working = self._working[-self.MAX_WORKING_MEMORY:]
+        self._working_store.add_turn(role, content, emotion)
 
     def get_working_memory(self, last_n: int = 10) -> list[dict]:
         """Lấy n turns gần nhất từ working memory."""
-        turns = self._working[-last_n:]
-        return [{"role": t.role, "content": t.content, "emotion": t.emotion} for t in turns]
+        return self._working_store.get_turns(last_n)
 
     def get_history_for_llm(self, last_n: int = 15) -> list[dict]:
         """Format working memory cho LLM messages list."""
-        turns = self._working[-last_n:]
+        turns = self._working_store.entries[-last_n:]
         return [{"role": t.role, "content": t.content} for t in turns]
 
     def clear_working_memory(self) -> None:
         """Xóa working memory (khi session mới)."""
-        self._working.clear()
+        self._working_store.clear()
 
     # ── Persistent Memory ──────────────────────────────────────────────────
 

@@ -163,6 +163,54 @@ def t_persona_voice_stubs():
 test("Persona & Voice — ExpressionRegistry, MotionRegistry, HabitTrackers, VoiceProcessor", t_persona_voice_stubs)
 
 
+# ── Async EventBus & Expanded Memory Verification ─────────────────────────────
+print("\n=== Async EventBus & Expanded Memory Verification ===")
+
+async def t_async_event_bus():
+    from runtime.eventbus.event_bus import event_bus
+    from runtime.events.base_event import BaseEvent
+    
+    received = []
+    async def callback(evt_data):
+        received.append(evt_data)
+        
+    event_bus.subscribe("test_async_event", callback)
+    
+    event = BaseEvent.create("test_async_event", "test_source", {"hello": "world"})
+    await event_bus.publish_async(event)
+    assert len(received) == 1
+    assert received[0]["payload"]["hello"] == "world"
+test("EventBus — async publish/subscribe and BaseEvent compatibility", t_async_event_bus)
+
+def t_expanded_memories():
+    from memory.working.working_memory import working_memory
+    from memory.episodic.episodic_store import episodic_store
+    from memory.procedural.procedure_store import procedure_store
+    from memory.short_term.short_term import short_term_memory
+    from memory.memory_manager import memory_manager
+    
+    # 1. Working Memory via memory_manager
+    memory_manager.clear_working_memory()
+    memory_manager.add_turn("user", "Hello manager")
+    turns = memory_manager.get_working_memory()
+    assert len(turns) > 0
+    assert turns[0]["content"] == "Hello manager"
+    
+    # 2. Episodic store
+    episodic_store.record_episode("User started developer workspace testing", "positive")
+    assert len(episodic_store.episodes) > 0
+    
+    # 3. Procedure store
+    procedure_store.register_procedure("run_pytest", ["activate venv", "pytest tests/"])
+    steps = procedure_store.get_procedure("run_pytest")
+    assert steps == ["activate venv", "pytest tests/"]
+    
+    # 4. Short term memory
+    short_term_memory.add_alert("CPU High Usage")
+    assert "CPU High Usage" in short_term_memory.get_alerts()
+test("Memory — Working, Episodic, Procedural, and ShortTerm stores implementation", t_expanded_memories)
+
+
 # ── Summary ───────────────────────────────────────────────────────────────────
 print(f"\n{'='*50}")
 print(f"Results: {PASS} PASS / {FAIL} FAIL / {PASS+FAIL} TOTAL")

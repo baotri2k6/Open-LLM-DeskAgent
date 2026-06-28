@@ -1,4 +1,4 @@
-# AI Companion Desktop 2.5D - Architecture
+# AI Companion Desktop 2D - Architecture
 
 ## 1. Tam nhin san pham
 
@@ -301,14 +301,14 @@ LLM/Agent chi nen tra ve emotion o muc semantic. Renderer moi quyet dinh asset L
 
 Bang mapping de xuat:
 
-| Emotion | Expression | Motion | Use case |
-| --- | --- | --- | --- |
-| neutral | normal | idle | Tra loi thong thuong |
-| friendly | smile | nod | Chao hoi, xac nhan |
-| thinking | focused | look_side | Dang suy nghi |
-| surprised | surprised | head_back | Gap loi, thong tin bat ngo |
-| sad | sad | look_down | Dong cam, that bai |
-| excited | happy | bounce | Thanh cong, khen ngoi |
+| Emotion   | Expression | Motion    | Use case                   |
+| --------- | ---------- | --------- | -------------------------- |
+| neutral   | normal     | idle      | Tra loi thong thuong       |
+| friendly  | smile      | nod       | Chao hoi, xac nhan         |
+| thinking  | focused    | look_side | Dang suy nghi              |
+| surprised | surprised  | head_back | Gap loi, thong tin bat ngo |
+| sad       | sad        | look_down | Dong cam, that bai         |
+| excited   | happy      | bounce    | Thanh cong, khen ngoi      |
 
 ## 8. Bao mat va quyen rieng tu
 
