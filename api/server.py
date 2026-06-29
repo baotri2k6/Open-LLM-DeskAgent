@@ -1029,6 +1029,13 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                 self._send_chunk({"type": "done", "text": "", "emotion": "thinking", "motion": "idle", "audio_url": None, "duration_ms": 0})
                 return
 
+        # Trích xuất tri thức từ câu thoại của người dùng (Real-time learning)
+        try:
+            from learning.knowledge.knowledge_extractor import knowledge_extractor
+            knowledge_extractor.extract_from_text(text)
+        except Exception as le_err:
+            logger.warning("Failed to run knowledge_extractor on chat message stream: %s", le_err)
+
         # 1. Quản lý Mối quan hệ và Tâm trạng
         planner = router.planner
         memory = planner.memory.service
@@ -1228,6 +1235,13 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
     async def _actual_handle_chat(self, payload: dict) -> dict:
         text = str(payload.get("text", "")).strip()
         context = payload.get("context", {})
+
+        # Trích xuất tri thức từ câu thoại của người dùng (Real-time learning)
+        try:
+            from learning.knowledge.knowledge_extractor import knowledge_extractor
+            knowledge_extractor.extract_from_text(text)
+        except Exception as le_err:
+            logger.warning("Failed to run knowledge_extractor on chat message: %s", le_err)
 
         # Intent detection
         planner = router.planner

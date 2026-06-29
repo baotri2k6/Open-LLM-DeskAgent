@@ -870,6 +870,26 @@ class LLMService:
                 "content": f"Thông tin đã ghi nhớ về người dùng: {facts_text}"
             })
 
+        recent_ctx = context.get("recent_context", {})
+        if recent_ctx:
+            recent_lines = []
+            if "active_window" in recent_ctx:
+                recent_lines.append(f"Cửa sổ hiện tại: {recent_ctx['active_window']}")
+            if "recent_activities" in recent_ctx and recent_ctx["recent_activities"]:
+                recent_lines.append(f"Các hoạt động gần đây: {', '.join(recent_ctx['recent_activities'])}")
+            
+            # Inject Knowledge Graph triplets
+            graph_triplets = recent_ctx.get("knowledge_graph", [])
+            if graph_triplets:
+                triplet_str = ", ".join(f"({src} -[{rel}]-> {tgt})" for src, rel, tgt in graph_triplets[-10:])
+                recent_lines.append(f"Mối quan hệ đồ thị tri thức (Knowledge Graph): {triplet_str}")
+                
+            if recent_lines:
+                messages.append({
+                    "role": "system",
+                    "content": "=== THÔNG TIN BỐI CẢNH & ĐỒ THỊ TRI THỨC (CONTEXT & KNOWLEDGE GRAPH) ===\n" + "\n".join(recent_lines)
+                })
+
         rag_context = context.get("rag_context", "")
         if rag_context:
             messages.append({

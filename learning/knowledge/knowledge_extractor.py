@@ -68,7 +68,19 @@ class KnowledgeExtractor:
         # Tích hợp cập nhật Đồ thị tri thức (Knowledge Graph)
         try:
             from knowledge.graph.graph_builder import graph_builder
+            from knowledge.graph.knowledge_graph import knowledge_graph
+            
+            # 1. Build using parser patterns
             graph_builder.build_from_fact(text)
+            
+            # 2. Build structured relations from extracted dictionary
+            for k, v in extracted.items():
+                if k == "user.preference.editor":
+                    knowledge_graph.add_relation("User", v, "PREFERS_EDITOR")
+                elif k == "user.preference.theme":
+                    knowledge_graph.add_relation("User", v, "PREFERS_THEME")
+                elif k == "user.trait.night_owl":
+                    knowledge_graph.add_relation("User", "night_owl", "HAS_TRAIT")
         except Exception as e:
             logger.warning("KnowledgeExtractor failed to build relation triplets: %s", e)
             

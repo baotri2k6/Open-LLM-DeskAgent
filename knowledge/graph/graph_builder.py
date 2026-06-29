@@ -21,15 +21,18 @@ class GraphBuilder:
         triplets: List[Tuple[str, str, str]] = []
         text_lower = fact_text.lower()
         
-        if "thích" in text_lower or "love" in text_lower:
-            m = re.search(r"(?:cậu ấy|user|người dùng|tôi)\s+thích\s+([^.,?!]+)", fact_text, re.IGNORECASE)
+        # Match common pronouns like tôi, tớ, mình, bản thân, user, nguời dùng, i, we
+        pronoun_pat = r"(?:cậu ấy|user|người dùng|tôi|tớ|mình|bản thân|i|we)"
+        
+        if "thích" in text_lower or "love" in text_lower or "prefers" in text_lower:
+            m = re.search(pronoun_pat + r"\s+(?:thích|yêu thích|love|loves|prefer|prefers)\s+([^.,?!]+)", fact_text, re.IGNORECASE)
             if m:
                 obj = m.group(1).strip()
                 self.graph.add_relation("User", obj, "LIKES")
                 triplets.append(("User", "LIKES", obj))
                 
-        if "làm việc tại" in text_lower or "works at" in text_lower:
-            m = re.search(r"(?:cậu ấy|user|người dùng|tôi)\s+làm việc tại\s+([^.,?!]+)", fact_text, re.IGNORECASE)
+        if "làm việc tại" in text_lower or "works at" in text_lower or "work at" in text_lower:
+            m = re.search(pronoun_pat + r"\s+(?:làm việc tại|làm tại|work at|works at)\s+([^.,?!]+)", fact_text, re.IGNORECASE)
             if m:
                 obj = m.group(1).strip()
                 self.graph.add_relation("User", obj, "WORKS_AT")

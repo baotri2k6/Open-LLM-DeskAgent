@@ -50,11 +50,19 @@ class ContextManager:
                 user_messages.append(p.user_message)
             total_idle += p.idle_seconds
             
+        knowledge_triplets = []
+        try:
+            from knowledge.graph.knowledge_graph import knowledge_graph
+            knowledge_triplets = knowledge_graph.get_all_triplets()
+        except Exception as e:
+            logger.warning("ContextManager failed to query knowledge graph: %s", e)
+
         return {
             "active_window": latest.active_window or "Unknown",
             "total_idle_seconds": round(total_idle, 2),
             "recent_activities": activities,
-            "recent_user_messages": user_messages
+            "recent_user_messages": user_messages,
+            "knowledge_graph": knowledge_triplets
         }
 
     def clear(self) -> None:
