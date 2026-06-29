@@ -129,7 +129,7 @@ class LifeLoop:
                 from life.reflect.reflect_engine import reflect_engine
                 reflect_engine.reflect_cycle(context, decision, action_taken)
 
-                # ── Belief Decay ───────────────────────────────────────────
+                # ── Belief Decay & Personality Evolution ────────────────────
                 if cycle_count % 10 == 0:
                     try:
                         from belief.belief_updater import belief_updater
@@ -137,6 +137,13 @@ class LifeLoop:
                         logger.info("LifeLoop: Triggered periodic belief confidence decay (cycle %d)", cycle_count)
                     except Exception as bde:
                         logger.warning("LifeLoop failed to decay beliefs: %s", bde)
+
+                    try:
+                        from persona.identity.personality_evolution import personality_evolution
+                        personality_evolution.evolve_personality()
+                        logger.info("LifeLoop: Triggered personality evolution sweep (cycle %d)", cycle_count)
+                    except Exception as pee:
+                        logger.warning("LifeLoop failed to evolve personality: %s", pee)
 
                 # ── Sleep until next check ─────────────────────────────────
                 await asyncio.sleep(decision.next_check_seconds)

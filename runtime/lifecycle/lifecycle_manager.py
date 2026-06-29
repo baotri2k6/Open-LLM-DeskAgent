@@ -162,6 +162,7 @@ class LifecycleManager:
         from agents.memory.memory_agent import MemoryAgent
         from agents.vision.vision_agent import VisionAgent
         from agents.desktop.desktop_agent import DesktopAgent
+        from agents.research.research_agent import ResearchAgent
         
         # Instantiate agents
         planner = PlannerAgent()
@@ -169,6 +170,7 @@ class LifecycleManager:
         memory = MemoryAgent()
         vision = VisionAgent()
         desktop = DesktopAgent()
+        research = ResearchAgent()
         
         # Register capabilities
         agent_registry.register("planner", planner, ["classify_intent", "route_task"])
@@ -176,6 +178,7 @@ class LifecycleManager:
         agent_registry.register("memory", memory, ["remember", "recall"])
         agent_registry.register("vision", vision, ["screen_read", "describe_screen"])
         agent_registry.register("desktop", desktop, ["open_app", "execute_command"])
+        agent_registry.register("research", research, ["research_web", "literature_search", "synthesize_report", "read_sources"])
 
     async def _init_life_loop(self) -> None:
         from life.life_loop import life_loop

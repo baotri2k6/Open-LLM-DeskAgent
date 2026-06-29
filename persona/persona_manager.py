@@ -49,27 +49,10 @@ class PersonaManager:
         try:
             from persona.relationship.relationship_tracker import relationship_tracker
             from belief.user_model import user_model
+            from persona.evolution.personality_evolution import personality_evolution
             
             profile = self.get_character_profile(self.active_character)
-            
-            # 1. Tiến hóa speech style dựa trên perks của mối quan hệ
-            perks = relationship_tracker.perks
-            for perk in perks:
-                if "Casual" in perk and "casual" not in profile.speech_style:
-                    profile.speech_style.append("casual")
-                if "Intimate" in perk and "intimate" not in profile.speech_style:
-                    profile.speech_style.append("intimate")
-                if "teasing" in perk.lower() and "teasing" not in profile.speech_style:
-                    profile.speech_style.append("teasing")
-
-            # 2. Tiến hóa chủ đề ưa thích dựa trên thói quen của user
-            traits = user_model.get_user_traits()
-            if "night_owl" in traits and "night owl hacks" not in profile.favorite_topics:
-                profile.favorite_topics.append("night owl hacks")
-                
-            pref_editor = user_model.get_preference("editor")
-            if pref_editor and f"{pref_editor} tips" not in profile.favorite_topics:
-                profile.favorite_topics.append(f"{pref_editor} tips")
+            personality_evolution.evolve(profile, relationship_tracker, user_model)
                 
         except Exception:
             pass
@@ -161,4 +144,3 @@ class PersonaManager:
 
 # Global singleton
 persona_manager = PersonaManager()
-

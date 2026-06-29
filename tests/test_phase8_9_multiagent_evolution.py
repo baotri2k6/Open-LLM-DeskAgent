@@ -60,6 +60,20 @@ async def t_coordinator_parallel_workflow():
         assert "success" in res
 test("AgentCoordinator — execute parallel workflow coordination", t_coordinator_parallel_workflow)
 
+async def t_research_agent_registered_and_synthesizes():
+    from agents.registry.agent_registry import agent_registry
+
+    assert "research" in agent_registry.find_agents_by_capability("synthesize_report")
+    result = await agent_registry.route_task("synthesize_report", {
+        "query": "DeskAgent companion roadmap",
+        "sources": ["README.md", "COMPANION_ROADMAP.md"]
+    })
+    assert result["success"]
+    assert result["agent"] == "research"
+    assert result["result"]["source_count"] >= 1
+    assert len(result["result"]["findings"]) >= 1
+test("ResearchAgent — registered research synthesis capability", t_research_agent_registered_and_synthesizes)
+
 
 # ── Phase 9: Companion Evolution & Persistent Identity ──────────────────────
 print("\n=== Phase 9: Companion Evolution & Persistent Identity ===")
@@ -127,6 +141,58 @@ def t_belief_store_serialization():
         assert belief_trait.value == "true"
         assert belief_trait.confidence == 0.75
 test("BeliefStore — Serialize and load back beliefs from JSON", t_belief_store_serialization)
+
+def t_personality_evolution_and_persistent_identity():
+    from pathlib import Path
+    import tempfile
+    from persona.identity.character_profile import CharacterProfile
+    from persona.identity.persistent_identity import PersistentIdentity
+    from persona.evolution.personality_evolution import PersonalityEvolution
+    from persona.relationship.relationship_tracker import RelationshipTracker
+    from belief.user_model import UserModel
+    from belief.belief_store import BeliefStore
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        base = Path(tmpdir)
+        profile = CharacterProfile.default()
+        identity_path = base / "identity.json"
+        identity = PersistentIdentity(identity_path=identity_path)
+        evolution = PersonalityEvolution(identity=identity)
+
+        tracker = RelationshipTracker(profile_path=base / "user_profile.json")
+        tracker.add_raw(850)
+        tracker.add_shared_experience()
+        tracker.add_shared_experience()
+        tracker.add_shared_experience()
+
+        belief_store = BeliefStore(beliefs_path=base / "beliefs.json")
+        belief_store.set_belief("user.trait.night_owl", "true", confidence=0.9)
+        belief_store.set_belief("user.preference.editor", "vscode", confidence=0.9)
+
+        class LocalUserModel(UserModel):
+            def get_preference(self, key: str, default: str = "") -> str:
+                belief = belief_store.get_belief(f"user.preference.{key}")
+                return belief.value if belief and belief.confidence > 0.4 else default
+
+            def get_user_traits(self) -> list[str]:
+                traits = []
+                for belief in belief_store.list_all_beliefs():
+                    if belief.key.startswith("user.trait.") and belief.value == "true" and belief.confidence > 0.6:
+                        traits.append(belief.key.replace("user.trait.", ""))
+                return traits
+
+        result = evolution.evolve(profile, tracker, LocalUserModel())
+        assert result.changed
+        assert "supportive" in profile.speech_style
+        assert "night owl hacks" in profile.favorite_topics
+        assert "vscode tips" in profile.favorite_topics
+        assert "shared project memories" in profile.favorite_topics
+
+        identity2 = PersistentIdentity(identity_path=identity_path)
+        assert "supportive" in identity2.snapshot.unlocked_styles
+        assert "night owl hacks" in identity2.snapshot.favorite_topics
+        assert identity2.snapshot.display_name == profile.name
+test("PersonalityEvolution + PersistentIdentity — durable companion growth", t_personality_evolution_and_persistent_identity)
 
 
 # ── Summary ───────────────────────────────────────────────────────────────────

@@ -6,7 +6,7 @@ Sử dụng AgentRegistry để biết agent nào có khả năng xử lý tác 
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from agents.registry.agent_registry import agent_registry
 
@@ -84,4 +84,3 @@ class AgentCoordinator:
 
 # Global singleton
 agent_coordinator = AgentCoordinator()
-

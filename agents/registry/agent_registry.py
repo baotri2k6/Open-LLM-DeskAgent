@@ -45,6 +45,20 @@ class AgentRegistry:
             agent_instance=None,
             capabilities=["remember_fact", "recall_context", "update_beliefs", "write_diary"]
         )
+        # 5. Register Research Agent representation
+        try:
+            from agents.research.research_agent import research_agent
+            self.register(
+                name="research",
+                agent_instance=research_agent,
+                capabilities=["research_web", "literature_search", "synthesize_report"]
+            )
+        except Exception:
+            self.register(
+                name="research",
+                agent_instance=None,
+                capabilities=["research_web", "literature_search", "synthesize_report"]
+            )
 
     def register(self, name: str, agent_instance: Any, capabilities: List[str]) -> None:
         """Đăng ký một agent mới hoặc ghi đè agent hiện tại.

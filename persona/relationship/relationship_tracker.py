@@ -44,6 +44,10 @@ class RelationshipTracker:
     def score(self) -> int:
         return self._score
 
+    def get_relationship_points(self) -> int:
+        """Backward-compatible accessor for evolution modules."""
+        return self._score
+
     @property
     def level(self) -> str:
         """Current relationship level label (Vietnamese)."""
