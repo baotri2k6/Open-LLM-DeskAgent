@@ -258,3 +258,36 @@ def test_emotion_engine_reset() -> None:
     eng.reset()
     assert eng.emotion == "neutral"
     assert eng.intensity == 0.0
+
+
+@pytest.mark.anyio
+async def test_planner_agent_beliefs_blocking(tmp_path) -> None:
+    from belief.belief_store import BeliefStore
+    from agents.planner.planner_agent import PlannerAgent
+    import belief.belief_store as bs_mod
+
+    # Setup temporary belief store
+    test_db = tmp_path / "test_beliefs.json"
+    custom_store = BeliefStore(beliefs_path=test_db)
+    
+    # Mock global belief_store reference
+    original_store = bs_mod.belief_store
+    bs_mod.belief_store = custom_store
+    
+    try:
+        # Set execute_command as broken
+        custom_store.set_belief("env.tool_broken.execute_command", "true", confidence=0.8, source="reflection")
+        
+        planner = PlannerAgent()
+        
+        # Test open_app (which resolves to execute_command)
+        res = await planner.handle_message("mở terminal")
+        
+        # Verify it was blocked and marked sad/shake
+        assert "execute_command" in res["text"]
+        assert res["emotion"] == "sad"
+        assert res["avatar"]["motion"] == "shake"
+        
+    finally:
+        bs_mod.belief_store = original_store
+

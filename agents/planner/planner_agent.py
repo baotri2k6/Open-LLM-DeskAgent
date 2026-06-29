@@ -83,6 +83,57 @@ class PlannerAgent:
         self, text: str, context: dict[str, Any] | None = None
     ) -> dict[str, Any]:
         context = context or {}
+        
+        # ─── Load and Inject Beliefs ──────────────────────────────────────────
+        try:
+            from belief.belief_store import belief_store
+            beliefs = belief_store.list_all_beliefs()
+            active_beliefs = [b for b in beliefs if b.confidence >= 0.5]
+            if active_beliefs:
+                context["beliefs"] = [
+                    {"key": b.key, "value": b.value, "confidence": b.confidence}
+                    for b in active_beliefs
+                ]
+                
+                # Check if the requested intent depends on a broken tool
+                intent = self.detect_intent(text)
+                intent_name = intent["name"]
+                
+                intent_tool_map = {
+                    "open_url": "open_url",
+                    "web_search": "search_google",
+                    "read_file": "read_file",
+                    "screen_read": "click_element_by_vision",
+                }
+                
+                t_lower = text.lower()
+                is_shell_req = intent_name == "open_app" or "command" in t_lower or "chạy lệnh" in t_lower
+                
+                broken_tool = None
+                for b in active_beliefs:
+                    if b.key.startswith("env.tool_broken.") and b.value == "true":
+                        tool_name = b.key.split("env.tool_broken.")[-1]
+                        if intent_name in intent_tool_map and intent_tool_map[intent_name] == tool_name:
+                            broken_tool = tool_name
+                            break
+                        if is_shell_req and tool_name == "execute_command":
+                            broken_tool = "execute_command"
+                            break
+                
+                if broken_tool:
+                    import logging
+                    logging.getLogger("ai-companion.planner").warning(
+                        "PlannerAgent: Blocked execution of %s because it is marked broken in BeliefStore",
+                        broken_tool
+                    )
+                    return self._response(
+                        f"Mình nhận thấy công cụ `{broken_tool}` hiện đang bị lỗi trong môi trường này (dựa trên nhật ký tự kiểm điểm). Bạn có muốn mình thử phương án khác không?",
+                        emotion="sad", motion="shake"
+                    )
+        except Exception as e:
+            import logging
+            logging.getLogger("ai-companion.planner").warning("PlannerAgent failed to process/inject beliefs: %s", e)
+
         intent = self.detect_intent(text)
         intent_name = intent["name"]
         

@@ -802,6 +802,21 @@ class LLMService:
         except Exception:
             pass
 
+        # ── Inject dynamic belief state block ──────────────────────────────
+        try:
+            if context and "beliefs" in context:
+                belief_lines = []
+                for b in context["beliefs"]:
+                    if b.get("key", "").startswith("env.tool_broken.") and b.get("value") == "true":
+                        tool_name = b["key"].split("env.tool_broken.")[-1]
+                        belief_lines.append(f"- Công cụ '{tool_name}' hiện đang bị lỗi/hỏng trong hệ thống. ĐỪNG sử dụng nó.")
+                    else:
+                        belief_lines.append(f"- Niềm tin: {b.get('key')} = {b.get('value')}")
+                if belief_lines:
+                    system_prompt += "\n\n=== NIỀM TIN HIỆN TẠI (CURRENT BELIEFS) ===\n" + "\n".join(belief_lines)
+        except Exception:
+            pass
+
         messages = [{"role": "system", "content": system_prompt}]
 
         # Tầng 0.5: Tải danh sách kỹ năng khả dụng (lấy cảm hứng từ Hermes Agent)
