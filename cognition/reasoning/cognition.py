@@ -34,6 +34,29 @@ class CognitionEngine:
 
         # ── Step 1: Update Companion States from incoming user text ──────
         try:
+            from cognition.context.context_manager import context_manager
+            from runtime.context.context_packet import ContextPacket
+            
+            p_data = context.get("perception", {})
+            if p_data:
+                packet = ContextPacket(
+                    user_message=prompt or p_data.get("user_message", ""),
+                    ocr_text=p_data.get("ocr_text", ""),
+                    idle_seconds=p_data.get("idle_seconds", 0.0),
+                    activity=p_data.get("activity", "unknown"),
+                    active_window=p_data.get("active_window", "unknown")
+                )
+                context_manager.add_packet(packet)
+            elif not context_manager.get_history():
+                packet = ContextPacket(
+                    user_message=prompt,
+                    ocr_text="",
+                    idle_seconds=0.0,
+                    activity="unknown",
+                    active_window="unknown"
+                )
+                context_manager.add_packet(packet)
+            
             # Ghi nhận tin nhắn mới từ người dùng vào lịch sử memory
             memory_manager.add_turn("user", prompt)
             
@@ -41,7 +64,7 @@ class CognitionEngine:
             emotion_engine.update_from_user_text(prompt)
             
             # Bổ sung thông tin hoạt động người dùng vào mood_engine
-            activity = context.get("perception", {}).get("activity", "unknown")
+            activity = p_data.get("activity", "unknown") if p_data else "unknown"
             mood_engine.inject_activity_modifier(activity)
         except Exception as e:
             logger.warning("CognitionEngine failed to update live companion states: %s", e)
