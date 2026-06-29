@@ -1,5 +1,6 @@
 """Phase 6 Integration Tests — kiểm tra Skill Extraction, Distillation, Knowledge và Experience Replay."""
 
+import sys
 from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR))
