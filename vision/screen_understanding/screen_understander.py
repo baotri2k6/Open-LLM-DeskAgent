@@ -14,7 +14,7 @@ class ScreenUnderstander:
     def __init__(self) -> None:
         pass
 
-    def analyze_screen(self, query: str | None = None) -> dict:
+    async def analyze_screen(self, query: str | None = None) -> dict:
         """Captures screen and sends to VLM (using the companion's default LLM/VLM service)
         to return a detailed summary of what is on screen and where key elements might be.
         """
@@ -39,7 +39,7 @@ class ScreenUnderstander:
             if query:
                 prompt += f"\nHướng dẫn phân tích đặc biệt: Hãy chú ý tìm kiếm phần tử '{query}'."
 
-            reply = llm_service.chat(prompt, context={"image_base64": shot["png_base64"]})
+            reply = await llm_service.chat(prompt, context={"image_base64": shot["png_base64"]})
             
             import json
             import re

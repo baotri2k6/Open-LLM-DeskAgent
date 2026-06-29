@@ -10,7 +10,7 @@ class VisionAgent:
         """Chụp màn hình và mô tả nội dung bằng mô hình đa phương thức (nếu có) hoặc OCR."""
         try:
             from vision.screen_understanding.screen_understander import screen_understander
-            res = screen_understander.analyze_screen()
+            res = await screen_understander.analyze_screen()
             if res.get("success"):
                 return {
                     "success": True,

@@ -39,7 +39,10 @@ class InterruptionHandler:
             return True
 
         # 3. Proactive etiquette-based interruption check
-        return social_rules.should_interrupt(current_activity, urgency)
+        if current_activity != "unknown" or urgency != "normal":
+            return social_rules.should_interrupt(current_activity, urgency)
+
+        return False
 
     def should_barge_in(self, user_active: bool) -> bool:
         """Determine if user input should trigger immediate companion speech barge-in."""

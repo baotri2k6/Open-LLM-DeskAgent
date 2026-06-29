@@ -88,11 +88,11 @@ test("CuriosityEngine — context-driven proactive topic suggestion", t_curiosit
 # ── Priority 4: Grounding & Perception Fusion ────────────────────────────────
 print("\n=== Priority 4: Grounding & Perception Fusion ===")
 
-def t_grounding_engine():
+async def t_grounding_engine():
     from vision.grounding.grounding_engine import grounding_engine
     
     # Try grounding on screen, might return None if no word matches, which is safe
-    res = grounding_engine.ground("Sign In")
+    res = await grounding_engine.ground("Sign In")
     if res:
         assert len(res) == 2
 test("GroundingEngine — search element coords on screen", t_grounding_engine)
@@ -129,14 +129,14 @@ def t_learning_stubs():
     life_learner.learn_cycle_lessons(ctx, Decision(should_act=True), success=True)
 test("Learning components — LearningManager, PolicyLearner, PerformanceEvaluator, LifeLearner", t_learning_stubs)
 
-def t_vision_execution_stubs():
+async def t_vision_execution_stubs():
     from vision.screen_understanding.screen_understander import screen_understander
     from vision.parser.screen_parser import screen_parser
     from execution.browser.browser_executor import browser_executor
     from execution.filesystem.fs_executor import fs_executor
     from execution.recovery.recovery_handler import recovery_handler
     
-    res = screen_understander.analyze_screen()
+    res = await screen_understander.analyze_screen()
     assert "summary" in res
     
     lines = screen_parser.parse_screen_text("hello\n\nworld")
@@ -413,13 +413,13 @@ async def t_new_v8_stubs():
 
     # 16. ScreenUnderstander Layout Analysis
     from vision.screen_understanding.screen_understander import screen_understander
-    analysis = screen_understander.analyze_screen()
+    analysis = await screen_understander.analyze_screen()
     assert "success" in analysis
 
     # 17. GroundingEngine Coordinates Mapping
     from vision.grounding.grounding_engine import grounding_engine
     # Call ground (it handles mock or real and should return coords/None but not crash)
-    grounding_engine.ground("nút Start")
+    await grounding_engine.ground("nút Start")
 
     # 18. AgentRegistry capabilities auto-registration
     from agents.registry.agent_registry import agent_registry

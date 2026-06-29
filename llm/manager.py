@@ -1160,3 +1160,6 @@ class LLMService:
                             "role": "user",
                             "content": f"Kết quả công cụ '{t_name}': {json.dumps(t_output, ensure_ascii=False)}"
                         })
+
+# Global singleton
+llm_service = LLMService()

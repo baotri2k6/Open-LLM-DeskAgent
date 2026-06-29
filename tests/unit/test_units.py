@@ -34,10 +34,11 @@ def test_ui_tars_action_parser() -> None:
     assert res["args"]["y"] == 300
 
 
-def test_grounding_engine_ocr_matching() -> None:
+@pytest.mark.anyio
+async def test_grounding_engine_ocr_matching() -> None:
     from vision.grounding.grounding_engine import grounding_engine
     # Test mapping coordinates return pattern (should handle various calls or mock gracefully)
-    coords = grounding_engine.ground("nút Start")
+    coords = await grounding_engine.ground("nút Start")
     if coords:
         assert len(coords) == 2
         assert isinstance(coords[0], int)

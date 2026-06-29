@@ -18,7 +18,7 @@ class GroundingEngine:
     def __init__(self) -> None:
         pass
 
-    def ground(self, element_desc: str) -> Optional[Tuple[int, int]]:
+    async def ground(self, element_desc: str) -> Optional[Tuple[int, int]]:
         """Find the coordinates of a visual element matching the description.
 
         Args:
@@ -85,7 +85,7 @@ class GroundingEngine:
                 f"Hãy phản hồi duy nhất một dòng chứa tọa độ dạng: X, Y (ví dụ: 150, 450).\n"
                 f"Nếu không tìm thấy, trả về: None"
             )
-            reply = llm_service.chat(prompt, context={"image_base64": shot["png_base64"]})
+            reply = await llm_service.chat(prompt, context={"image_base64": shot["png_base64"]})
             logger.info("Grounding VLM response: '%s'", reply)
             
             import re
