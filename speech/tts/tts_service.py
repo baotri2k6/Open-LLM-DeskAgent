@@ -403,6 +403,127 @@ class _KokoroTTS:
         return {"success": False, "error": "Kokoro không tạo được file audio."}
 
 
+# ─── MOSS-TTS api ─────────────────────────────────────────────────────────
+
+class _MossTTS:
+    """
+    MOSS-TTS / MOSS-TTS-Nano CPU-optimized offline/online TTS api.
+    Hỗ trợ 2 chế độ:
+    1. 'api' (FastAPI server POST tới /api/generate)
+    2. 'cli' (chạy infer_onnx.py của MOSS-TTS-Nano thông qua subprocess)
+    """
+
+    def __init__(self) -> None:
+        self._mode = config.get("tts.moss_mode", "api")
+        self._api_url = config.get("tts.moss_api_url", "http://127.0.0.1:18083/api/generate")
+        self._voice = config.get("tts.moss_voice", "Junhao")
+        self._dir = config.get("tts.moss_dir", "")
+        self._ref_audio_path = config.get("tts.moss_ref_audio_path", "")
+        self._prompt_text = config.get("tts.moss_prompt_text", "")
+        logger.info("MOSS-TTS initialized (mode=%s, voice=%s)", self._mode, self._voice)
+
+    async def synthesize(self, text: str) -> dict:
+        if self._mode == "cli":
+            return await self._synthesize_cli(text)
+        else:
+            return await self._synthesize_api(text)
+
+    async def _synthesize_api(self, text: str) -> dict:
+        out_path = _cache_path(text, f"moss_api:{self._voice}", ext=".wav")
+        if out_path.exists():
+            return {"success": True, "audio_path": str(out_path), "cached": True}
+
+        try:
+            import urllib.request
+            import urllib.error
+            import uuid
+            
+            boundary = f"----WebKitFormBoundary{uuid.uuid4().hex}"
+            parts = []
+            
+            parts.append(f"--{boundary}")
+            parts.append('Content-Disposition: form-data; name="text"')
+            parts.append('')
+            parts.append(text)
+            
+            parts.append(f"--{boundary}")
+            parts.append('Content-Disposition: form-data; name="demo_id"')
+            parts.append('')
+            parts.append(self._voice)
+            
+            parts.append(f"--{boundary}--")
+            parts.append('')
+            
+            body = "\r\n".join(parts).encode("utf-8")
+            
+            req = urllib.request.Request(
+                self._api_url,
+                data=body,
+                headers={
+                    "Content-Type": f"multipart/form-data; boundary={boundary}"
+                },
+                method="POST"
+            )
+            
+            loop = asyncio.get_event_loop()
+            
+            def _call():
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    with open(out_path, "wb") as f:
+                        f.write(resp.read())
+            
+            await loop.run_in_executor(None, _call)
+            
+            if out_path.exists() and out_path.stat().st_size > 0:
+                logger.info("MOSS-TTS API synthesized → %s", out_path.name)
+                return {"success": True, "audio_path": str(out_path), "cached": False}
+        except Exception as e:
+            logger.error("MOSS-TTS API synthesis failed: %s", e)
+            return {"success": False, "error": str(e)}
+        
+        return {"success": False, "error": "MOSS-TTS API did not return audio."}
+
+    async def _synthesize_cli(self, text: str) -> dict:
+        if not self._dir:
+            return {"success": False, "error": "MOSS-TTS directory ('tts.moss_dir') not configured."}
+        
+        cache_key = f"moss_cli:{self._ref_audio_path}:{self._prompt_text}"
+        out_path = _cache_path(text, cache_key, ext=".wav")
+        if out_path.exists():
+            return {"success": True, "audio_path": str(out_path), "cached": True}
+
+        cmd = [
+            "python",
+            str(Path(self._dir) / "infer_onnx.py"),
+            "--text", text,
+            "--output_path", str(out_path)
+        ]
+        if self._ref_audio_path:
+            cmd.extend(["--prompt-audio-path", self._ref_audio_path])
+        if self._prompt_text:
+            cmd.extend(["--prompt-text", self._prompt_text])
+
+        try:
+            import subprocess
+            loop = asyncio.get_event_loop()
+            
+            def _run_sub():
+                logger.info("Running MOSS-TTS CLI command: %s", " ".join(cmd))
+                res = subprocess.run(cmd, cwd=self._dir, capture_output=True, text=True, check=True)
+                logger.info("MOSS-TTS CLI output: %s", res.stdout)
+            
+            await loop.run_in_executor(None, _run_sub)
+            
+            if out_path.exists() and out_path.stat().st_size > 0:
+                logger.info("MOSS-TTS CLI synthesized → %s", out_path.name)
+                return {"success": True, "audio_path": str(out_path), "cached": False}
+        except Exception as e:
+            logger.error("MOSS-TTS CLI synthesis failed: %s", e)
+            return {"success": False, "error": str(e)}
+
+        return {"success": False, "error": "MOSS-TTS CLI did not generate audio file."}
+
+
 
 # ─── TTSService facade ────────────────────────────────────────────────────────
 
@@ -418,9 +539,7 @@ class TTSService:
             files = list(TTS_CACHE.glob("*.mp3")) + list(TTS_CACHE.glob("*.wav"))
             if len(files) <= max_files:
                 return
-            # Sắp xếp theo thời gian sửa đổi (mtime) giảm dần (mới nhất lên đầu)
             files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
-            # Xóa các file cũ vượt quá số lượng tối đa
             for f in files[max_files:]:
                 try:
                     f.unlink()
@@ -432,6 +551,12 @@ class TTSService:
 
     def _load_backend(self):
         preferred = config.get("tts.api", "edge")
+
+        if preferred == "moss":
+            try:
+                return _MossTTS()
+            except Exception as exc:
+                logger.warning("MOSS-TTS init failed: %s", exc)
 
         if preferred == "kokoro":
             try:
