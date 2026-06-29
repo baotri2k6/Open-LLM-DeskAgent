@@ -213,6 +213,9 @@ async def _speak_and_notify_proactive(full_reply, type_name):
         if tts and clean_reply:
             speak_text = re.sub(r"\[.*?\]", "", clean_reply).strip()
             try:
+                from runtime.state.state_store import state_store, CompanionState
+                await state_store.transition(CompanionState.SPEAKING)
+                
                 tts_result = await tts.speak(speak_text)
                 if tts_result.get("success") and tts_result.get("audio_url"):
                     audio_url = tts_result["audio_url"]
@@ -228,6 +231,8 @@ async def _speak_and_notify_proactive(full_reply, type_name):
             "duration_ms": duration_ms
         })
     finally:
+        from runtime.state.state_store import state_store, CompanionState
+        await state_store.transition(CompanionState.IDLE)
         _ai_busy = False
 
 
@@ -582,6 +587,9 @@ class SentenceAudioStreamer:
             return
             
         try:
+            from runtime.state.state_store import state_store, CompanionState
+            await state_store.transition(CompanionState.SPEAKING)
+            
             tts_res = await self.tts.speak(clean_s)
             if tts_res.get("success") and tts_res.get("audio_url"):
                 self.send_chunk({
@@ -1079,6 +1087,9 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
         self._send_chunk({"type": "start", "emotion": initial_emotion, "motion": initial_motion})
 
         if intent["name"] in ["llm_chat", "rag_query"]:
+            from runtime.state.state_store import state_store, CompanionState
+            await state_store.transition(CompanionState.THINKING)
+
             # Tầng 4: Cognition — LLM Reasoning
             from cognition.reasoning.cognition import CognitionEngine
             cognition = CognitionEngine(planner.llm)
@@ -1133,8 +1144,13 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                 "audio_url": None,
                 "duration_ms": 0
             })
+            from runtime.state.state_store import state_store, CompanionState
+            await state_store.transition(CompanionState.IDLE)
         else:
             # Local intent: execute synchronously
+            from runtime.state.state_store import state_store, CompanionState
+            await state_store.transition(CompanionState.PLANNING)
+            
             response = await router.route({**payload, "text": text, "context": context})
             reply_text = response.get("text", "")
 
@@ -1146,6 +1162,7 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
             tts = get_tts()
             if tts and reply_text:
                 try:
+                    await state_store.transition(CompanionState.SPEAKING)
                     tts_result = await tts.speak(reply_text)
                     if tts_result.get("success") and tts_result.get("audio_url"):
                         audio_url = tts_result["audio_url"]
@@ -1161,6 +1178,7 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                 "audio_url": audio_url,
                 "duration_ms": duration_ms
             })
+            await state_store.transition(CompanionState.IDLE)
 
     async def _handle_chat_stream(self, payload: dict) -> None:
         global _ai_busy
@@ -1248,6 +1266,9 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                 "error": "STT chưa sẵn sàng. Cài: pip install faster-whisper",
             }
 
+        from runtime.state.state_store import state_store, CompanionState
+        await state_store.transition(CompanionState.LISTENING)
+
         sequence = payload.get("sequence")
         timestamp = payload.get("timestamp")
         is_draft = payload.get("is_draft", False)
@@ -1258,15 +1279,21 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
         mime_type = payload.get("mime_type", "audio/webm")
 
         if not audio_bytes_list:
+            await state_store.transition(CompanionState.IDLE)
             return {"success": False, "error": "Không có audio_bytes."}
 
         try:
             raw = bytes(audio_bytes_list)
         except Exception:
+            await state_store.transition(CompanionState.IDLE)
             return {"success": False, "error": "audio_bytes không hợp lệ."}
 
         suffix = ".webm" if "webm" in mime_type else ".wav"
-        return await stt.transcribe_bytes(raw, suffix=suffix)
+        try:
+            res = await stt.transcribe_bytes(raw, suffix=suffix)
+            return res
+        finally:
+            await state_store.transition(CompanionState.IDLE)
 
     async def _handle_rag_import(self, payload: dict) -> dict:
         rag = get_rag()
