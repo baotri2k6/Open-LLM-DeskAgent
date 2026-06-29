@@ -454,6 +454,17 @@ async def t_new_v8_stubs():
     from execution.browser.browser_executor import browser_executor
     res_b = browser_executor.open_url("https://www.google.com")
     assert res_b is True
+
+    # 22. LifeObserver querying ActivityTimeline
+    from life.observe.observer import life_observer
+    obs_context = life_observer.observe()
+    assert obs_context.last_user_activity == "coding"
+
+    # 23. LifeLoop periodic decay worker test
+    from life.life_loop import LifeLoop
+    loop_inst = LifeLoop()
+    # Check that loop fields initialization is correct
+    assert loop_inst._decay_task is None
 test("V8 Stubs — Belief, Gesture, Wiki, StreamParser, PromptBuilder, DependencyGraph, ContentModerator, StreamTTS", t_new_v8_stubs)
 
 

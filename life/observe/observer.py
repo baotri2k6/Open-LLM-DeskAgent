@@ -92,15 +92,26 @@ class LifeObserver:
     ) -> LifeContext:
         """Produce a LifeContext snapshot."""
         now = datetime.now()
+        
+        # Query ActivityTimeline for the most recent activity
+        resolved_activity = self._last_activity
+        try:
+            from world.timeline.activity_timeline import activity_timeline
+            recent = activity_timeline.get_recent_events(limit=1)
+            if recent:
+                resolved_activity = recent[0].activity
+        except Exception:
+            pass
+
         return LifeContext(
             timestamp            = time.time(),
             hour_of_day          = now.hour,
             day_of_week          = now.strftime("%A"),
             user_idle_seconds    = time.time() - self._last_user_message_time,
-            last_user_activity   = self._last_activity,
+            last_user_activity   = resolved_activity,
             session_message_count= self._session_message_count,
             session_started      = self._session_message_count > 0,
-            screen_activity      = self._last_activity,
+            screen_activity      = resolved_activity,
             mood                 = mood,
             emotion              = emotion,
             energy               = energy,
