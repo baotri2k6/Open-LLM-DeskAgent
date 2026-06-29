@@ -360,6 +360,21 @@ async def t_new_v8_stubs():
     async for chunk in stream_tts.stream_audio("Test audio stream"):
         chunks.append(chunk)
     assert len(chunks) > 0
+    
+    # 9. ContextManager Aggregation
+    from cognition.context.context_manager import context_manager
+    from runtime.context.context_packet import ContextPacket
+    context_manager.clear()
+    context_manager.add_packet(ContextPacket(user_message="Hello", active_window="Browser", idle_seconds=5.0))
+    agg = context_manager.get_aggregated_context()
+    assert agg["active_window"] == "Browser"
+    assert agg["total_idle_seconds"] == 5.0
+    
+    # 10. MemoryAgent Decisions
+    from agents.memory.memory_agent import MemoryAgent
+    mem_agent = MemoryAgent()
+    res_mem = mem_agent.remember("Tớ thích dùng vscode để code")
+    assert "user.preference.editor" in res_mem["extracted_facts"]
 test("V8 Stubs — Belief, Gesture, Wiki, StreamParser, PromptBuilder, DependencyGraph, ContentModerator, StreamTTS", t_new_v8_stubs)
 
 

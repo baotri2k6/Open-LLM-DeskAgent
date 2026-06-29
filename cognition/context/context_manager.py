@@ -26,6 +26,37 @@ class ContextManager:
         """Get the current context packet history."""
         return self._history
 
+    def get_aggregated_context(self) -> Dict[str, Any]:
+        """Aggregate history packets to construct a unified view of recent activities."""
+        if not self._history:
+            return {
+                "active_window": "Unknown",
+                "total_idle_seconds": 0.0,
+                "recent_activities": [],
+                "recent_user_messages": []
+            }
+            
+        latest = self._history[-1]
+        
+        # Aggregate active windows and user messages
+        activities = []
+        user_messages = []
+        total_idle = 0.0
+        
+        for p in self._history:
+            if p.activity and p.activity not in activities:
+                activities.append(p.activity)
+            if p.user_message:
+                user_messages.append(p.user_message)
+            total_idle += p.idle_seconds
+            
+        return {
+            "active_window": latest.active_window or "Unknown",
+            "total_idle_seconds": round(total_idle, 2),
+            "recent_activities": activities,
+            "recent_user_messages": user_messages
+        }
+
     def clear(self) -> None:
         """Clear context packet history."""
         self._history.clear()
