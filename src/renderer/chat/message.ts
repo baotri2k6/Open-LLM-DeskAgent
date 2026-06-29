@@ -1,17 +1,22 @@
-export function renderMessage({ role, text }) {
+export interface MessageOptions {
+  role: string;
+  text: string;
+}
+
+export function renderMessage({ role, text }: MessageOptions): HTMLDivElement {
   const wrap = document.createElement('div');
   wrap.className = `msg msg-${role}`;
 
   const label = document.createElement('div');
   label.className = 'msg-label';
-  label.textContent = role === 'user' ? 'Ban' : (role === 'system' ? 'Hệ thống' : 'IceGirl');
+  label.textContent = role === 'user' ? 'Bạn' : (role === 'system' ? 'Hệ thống' : 'IceGirl');
 
   const body = document.createElement('div');
   body.className = 'msg-body';
 
   // Parse simple markdown image: ![image](data:image/...)
   const imgRegex = /!\[.*?\]\((data:image\/.*?;base64,.*?)\)/g;
-  let match;
+  let match: RegExpExecArray | null;
   let lastIndex = 0;
   let hasImage = false;
 
@@ -46,7 +51,7 @@ export function renderMessage({ role, text }) {
   return wrap;
 }
 
-export function renderChunk() {
+export function renderChunk(): HTMLDivElement {
   const wrap = document.createElement('div');
   wrap.className = 'msg msg-assistant';
 
@@ -61,7 +66,7 @@ export function renderChunk() {
   return wrap;
 }
 
-export function renderApprovalCard(req_id, action, details) {
+export function renderApprovalCard(req_id: string, action: string, details: any): HTMLDivElement {
   const wrap = document.createElement('div');
   wrap.className = 'msg msg-assistant msg-approval';
 
@@ -92,7 +97,7 @@ export function renderApprovalCard(req_id, action, details) {
   if (action === 'execute_command') {
     detailBox.textContent = `Lệnh: ${details.command}`;
   } else if (action === 'write_to_file') {
-    detailBox.textContent = `File: ${details.path}\nNội dung (một phần):\n${details.content.slice(0, 400)}`;
+    detailBox.textContent = `File: ${details.path}\nNội dung (một phần):\n${details.content?.slice(0, 400)}`;
   } else {
     detailBox.textContent = JSON.stringify(details, null, 2);
   }
@@ -127,25 +132,25 @@ export function renderApprovalCard(req_id, action, details) {
   btnRow.append(btnAllow, btnDeny);
   body.appendChild(btnRow);
 
-  const handleChoice = async (approved) => {
+  const handleChoice = async (approved: boolean): Promise<void> => {
     btnAllow.disabled = true;
     btnDeny.disabled = true;
-    btnAllow.style.opacity = 0.5;
-    btnDeny.style.opacity = 0.5;
+    btnAllow.style.opacity = '0.5';
+    btnDeny.style.opacity = '0.5';
     btnAllow.style.cursor = 'default';
     btnDeny.style.cursor = 'default';
     
     if (approved) {
-      btnAllow.style.opacity = 1;
+      btnAllow.style.opacity = '1';
       btnAllow.textContent = 'Đã cho phép';
       btnDeny.style.display = 'none';
     } else {
-      btnDeny.style.opacity = 1;
+      btnDeny.style.opacity = '1';
       btnDeny.textContent = 'Đã từ chối';
       btnAllow.style.display = 'none';
     }
     
-    await window.companion.invoke('ai:submit-approval', { req_id, approved });
+    await (window as any).companion.invoke('ai:submit-approval', { req_id, approved });
   };
 
   btnAllow.addEventListener('click', () => handleChoice(true));
@@ -154,4 +159,3 @@ export function renderApprovalCard(req_id, action, details) {
   wrap.append(label, body);
   return wrap;
 }
-
