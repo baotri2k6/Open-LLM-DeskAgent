@@ -1,28 +1,87 @@
 export class ChatUI {
-  constructor({ log, form, input }) {
+  constructor({ log, form, input, attachBtn, fileInput, previewArea, previewThumb }) {
     this.log = log;
     this.form = form;
     this.input = input;
+    this.attachBtn = attachBtn;
+    this.fileInput = fileInput;
+    this.previewArea = previewArea;
+    this.previewThumb = previewThumb;
+    this._attachedImageBase64 = null;
+    this._initEvents();
+  }
+
+  _initEvents() {
+    this.attachBtn?.addEventListener("click", () => {
+      this.fileInput?.click();
+    });
+
+    this.fileInput?.addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this._attachedImageBase64 = e.target?.result;
+        if (this.previewThumb) this.previewThumb.src = this._attachedImageBase64;
+        if (this.previewArea) this.previewArea.style.display = "flex";
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  clearAttachedImage() {
+    this._attachedImageBase64 = null;
+    if (this.fileInput) this.fileInput.value = "";
+    if (this.previewArea) this.previewArea.style.display = "none";
+    if (this.previewThumb) this.previewThumb.src = "";
+  }
+
+  getAttachedImage() {
+    return this._attachedImageBase64;
   }
 
   onSubmit(callback) {
     this.form.addEventListener('submit', async (event) => {
       event.preventDefault();
       const text = this.input.value.trim();
-      if (!text) return;
+      if (!text && !this._attachedImageBase64) return;
+      
+      const imageToSend = this._attachedImageBase64;
       this.input.value = '';
-      this.input.disabled = true;
+      this.clearAttachedImage();
+      
+      this.setDisabled(true);
       try {
-        await callback(text);
+        await callback(text, imageToSend);
       } finally {
-        this.input.disabled = false;
+        this.setDisabled(false);
         this.input.focus();
       }
     });
   }
 
-  append(element) {
-    this.log.appendChild(element);
+  setDisabled(disabled) {
+    this.input.disabled = disabled;
+    const submitBtn = this.form.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.disabled = disabled;
+  }
+
+  appendMessage(role, text) {
+    const el = document.createElement("div");
+    el.className = `msg ${role}-msg`;
+    
+    const header = document.createElement("div");
+    header.className = "msg-header";
+    header.textContent = role === "user" ? "Bạn" : "IceGirl";
+    el.appendChild(header);
+
+    const body = document.createElement("div");
+    body.className = "msg-body";
+    body.textContent = text;
+    el.appendChild(body);
+
+    this.log.appendChild(el);
     this.log.scrollTop = this.log.scrollHeight;
+    return el;
   }
 }
