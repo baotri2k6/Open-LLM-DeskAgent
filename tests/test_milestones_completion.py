@@ -410,6 +410,16 @@ async def t_new_v8_stubs():
     planner_agent = PlannerAgent()
     res = await planner_agent.handle_message("mấy giờ rồi")
     assert "Bây giờ là" in res["text"]
+
+    # 16. ScreenUnderstander Layout Analysis
+    from vision.screen_understanding.screen_understander import screen_understander
+    analysis = screen_understander.analyze_screen()
+    assert "success" in analysis
+
+    # 17. GroundingEngine Coordinates Mapping
+    from vision.grounding.grounding_engine import grounding_engine
+    # Call ground (it handles mock or real and should return coords/None but not crash)
+    grounding_engine.ground("nút Start")
 test("V8 Stubs — Belief, Gesture, Wiki, StreamParser, PromptBuilder, DependencyGraph, ContentModerator, StreamTTS", t_new_v8_stubs)
 
 
