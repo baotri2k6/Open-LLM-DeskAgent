@@ -420,6 +420,27 @@ async def t_new_v8_stubs():
     from vision.grounding.grounding_engine import grounding_engine
     # Call ground (it handles mock or real and should return coords/None but not crash)
     grounding_engine.ground("nút Start")
+
+    # 18. AgentRegistry capabilities auto-registration
+    from agents.registry.agent_registry import agent_registry
+    all_caps = agent_registry.get_all_capabilities()
+    assert "open_url" in all_caps
+    assert "screenshot" in all_caps
+
+    # 19. ContextManager dynamic pipeline injection check
+    from cognition.context.context_manager import context_manager
+    from runtime.context.context_packet import ContextPacket
+    context_manager.clear()
+    context_packet = ContextPacket(user_message="Hello!", active_window="Visual Studio Code", idle_seconds=12.5, activity="coding")
+    context_manager.add_packet(context_packet)
+    
+    from cognition.reasoning.cognition import CognitionEngine
+    engine = CognitionEngine()
+    test_ctx = {}
+    async for _ in engine.reason_stream("Hello", test_ctx):
+        pass
+    assert "recent_context" in test_ctx
+    assert test_ctx["recent_context"]["active_window"] == "Visual Studio Code"
 test("V8 Stubs — Belief, Gesture, Wiki, StreamParser, PromptBuilder, DependencyGraph, ContentModerator, StreamTTS", t_new_v8_stubs)
 
 

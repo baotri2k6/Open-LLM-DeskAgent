@@ -57,6 +57,9 @@ class CognitionEngine:
 
         # ── Step 3: Inject Dynamic Companion State into Context ──────
         try:
+            from cognition.context.context_manager import context_manager
+            context["recent_context"] = context_manager.get_aggregated_context()
+
             mood_state = mood_engine.state
             context["companion"] = {
                 "rel_level": relationship_tracker.level,

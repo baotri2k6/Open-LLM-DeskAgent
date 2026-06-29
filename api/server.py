@@ -1051,12 +1051,17 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
 
         # Tầng 1: PerceptionFusion
         from perception.fusion.perception_fusion import PerceptionFusion
-        context["perception"] = PerceptionFusion.fuse(
+        from cognition.context.context_manager import context_manager
+        from dataclasses import asdict
+        
+        context_packet = PerceptionFusion.fuse(
             user_message=text,
             screen_text=screen_watcher.get_current_context() if screen_watcher else "",
             last_interaction_time=_last_interaction_time,
             activity=screen_watcher.get_current_activity() if screen_watcher else "unknown"
         )
+        context_manager.add_packet(context_packet)
+        context["perception"] = asdict(context_packet)
 
         # Intent detection
         intent = planner.detect_intent(text)
