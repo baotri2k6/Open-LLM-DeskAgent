@@ -375,6 +375,24 @@ async def t_new_v8_stubs():
     mem_agent = MemoryAgent()
     res_mem = mem_agent.remember("Tớ thích dùng vscode để code")
     assert "user.preference.editor" in res_mem["extracted_facts"]
+    
+    # 11. PerceptionFusion Active Window Inference
+    from perception.fusion.perception_fusion import PerceptionFusion
+    packet = PerceptionFusion.fuse(screen_text="Visual Studio Code - main.py")
+    assert packet.active_window == "VS Code editor"
+    assert packet.activity == "coding"
+    
+    # 12. VisionService Coordinate Lookup
+    from vision.vision_service import vision_service
+    # Should not raise exception
+    vision_service.describe_element_at(100, 200)
+    
+    # 13. ActivityTimeline Productivity Summary
+    from world.timeline.activity_timeline import activity_timeline
+    activity_timeline.record_activity("coding")
+    activity_timeline.record_activity("browsing")
+    summary = activity_timeline.get_productivity_summary()
+    assert "coding" in summary
 test("V8 Stubs — Belief, Gesture, Wiki, StreamParser, PromptBuilder, DependencyGraph, ContentModerator, StreamTTS", t_new_v8_stubs)
 
 
