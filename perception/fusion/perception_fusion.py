@@ -54,7 +54,7 @@ class PerceptionFusion:
             from world.timeline.activity_timeline import activity_timeline
             last_events = activity_timeline.get_recent_events(limit=1)
             if not last_events or last_events[-1].activity != resolved_activity:
-                activity_timeline.record_activity(resolved_activity)
+                activity_timeline.log_event(resolved_activity)
         except Exception as e:
             logger.warning("PerceptionFusion failed to record activity to timeline: %s", e)
 

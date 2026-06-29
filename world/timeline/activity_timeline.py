@@ -82,6 +82,10 @@ class ActivityTimeline:
         logger.info("ActivityTimeline: Recorded new activity '%s'", activity)
         self._save()
 
+    def log_event(self, activity: str) -> None:
+        """Alias for record_activity to log user activity events."""
+        self.record_activity(activity)
+
     def get_recent_events(self, limit: int = 10) -> List[TimelineEvent]:
         """Get the most recent timeline events."""
         return self._events[-limit:]

@@ -94,6 +94,13 @@ class LifeLoop:
                     energy  = mood_state.energy,
                 )
 
+                # Log the observed activity to the ActivityTimeline
+                try:
+                    from world.timeline.activity_timeline import activity_timeline
+                    activity_timeline.log_event(context.last_user_activity)
+                except Exception as tl_err:
+                    logger.warning("LifeLoop: Failed to log observed activity to timeline: %s", tl_err)
+
                 # ── Evolve Persona ─────────────────────────────────────────
                 from persona.persona_manager import persona_manager
                 persona_manager.evolve_personality()
