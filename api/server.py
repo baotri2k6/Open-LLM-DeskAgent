@@ -1506,6 +1506,26 @@ def main() -> None:
             except Exception as ll_err:
                 logger.warning("LifeLoop startup failed (non-critical): %s", ll_err)
 
+            # Wire IdleAnimator and ReactionLibrary to notify UI
+            try:
+                from persona.behavior.idle.idle_animator import idle_animator
+                from persona.behavior.reactions.reaction_library import reaction_library
+                from persona.behavior.expression.expression_controller import expression_controller
+                from persona.behavior.attention.attention_controller import attention_controller
+                from persona.behavior.greeting.greeting_behavior import greeting_behavior
+
+                idle_animator.set_send_callback(trigger_notification)
+                reaction_library.set_send_callback(trigger_notification)
+                expression_controller.set_send_callback(trigger_notification)
+                attention_controller.set_send_callback(trigger_notification)
+                greeting_behavior.set_send_callback(trigger_notification)
+
+                # Start idle animator loop
+                asyncio.run_coroutine_threadsafe(idle_animator.start(), _background_loop)
+                logger.info("IdleAnimator: Wired and scheduled for startup ✓")
+            except Exception as anim_err:
+                logger.warning("Failed to wire or start animator services: %s", anim_err)
+
             # Khởi động Twitch Client nếu được cấu hình sẵn
             sync_twitch_reader()
 
