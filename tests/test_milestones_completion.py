@@ -414,4 +414,5 @@ if FAIL == 0:
     print("ALL TESTS PASSED! Milestones stubs and empties filled successfully.")
 else:
     print(f"WARNING: {FAIL} tests failed. Review above.")
+    sys.exit(1)
 
