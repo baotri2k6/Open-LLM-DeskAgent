@@ -393,6 +393,17 @@ async def t_new_v8_stubs():
     activity_timeline.record_activity("browsing")
     summary = activity_timeline.get_productivity_summary()
     assert "coding" in summary
+    
+    # 14. LifeLearner Dynamic Habit Learning
+    from life.learn.life_learner import life_learner
+    from belief.user_model import user_model
+    # Simulate observing reading activity 3 times
+    class MockContext:
+        last_user_activity = "reading"
+    life_learner.learn_cycle_lessons(MockContext(), None, True)
+    life_learner.learn_cycle_lessons(MockContext(), None, True)
+    life_learner.learn_cycle_lessons(MockContext(), None, True)
+    assert user_model.get_preference("favorite_activity") == "reading"
 test("V8 Stubs — Belief, Gesture, Wiki, StreamParser, PromptBuilder, DependencyGraph, ContentModerator, StreamTTS", t_new_v8_stubs)
 
 

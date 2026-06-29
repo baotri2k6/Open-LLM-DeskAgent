@@ -35,19 +35,31 @@ class KnowledgeExtractor:
         editor_match = re.search(r"thích dùng\s+([a-zA-Z0-9_\-\s]+)\s+để\s+code", text, re.IGNORECASE)
         if editor_match:
             editor = editor_match.group(1).strip()
-            belief_store.set_belief("user.preference.editor", editor, confidence=0.9, source="direct_feedback")
+            try:
+                from belief.belief_updater import belief_updater
+                belief_updater.register_evidence("user.preference.editor", editor, confidence=0.9, source="direct_feedback")
+            except Exception:
+                belief_store.set_belief("user.preference.editor", editor, confidence=0.9, source="direct_feedback")
             extracted["user.preference.editor"] = editor
 
         # Regex tìm sở thích theme màu
         theme_match = re.search(r"giao diện\s+([a-zA-Z0-9_\-\s]+)", text, re.IGNORECASE)
         if theme_match:
             theme = theme_match.group(1).strip()
-            belief_store.set_belief("user.preference.theme", theme, confidence=0.8, source="direct_feedback")
+            try:
+                from belief.belief_updater import belief_updater
+                belief_updater.register_evidence("user.preference.theme", theme, confidence=0.8, source="direct_feedback")
+            except Exception:
+                belief_store.set_belief("user.preference.theme", theme, confidence=0.8, source="direct_feedback")
             extracted["user.preference.theme"] = theme
 
         # Regex tìm đặc điểm cú đêm
         if any(k in text.lower() for k in ["code muộn", "ngủ muộn", "thức đêm"]):
-            belief_store.set_belief("user.trait.night_owl", "true", confidence=0.7, source="deduction")
+            try:
+                from belief.belief_updater import belief_updater
+                belief_updater.register_evidence("user.trait.night_owl", "true", confidence=0.7, source="deduction")
+            except Exception:
+                belief_store.set_belief("user.trait.night_owl", "true", confidence=0.7, source="deduction")
             extracted["user.trait.night_owl"] = "true"
 
         if extracted:
