@@ -81,6 +81,17 @@ class WorkflowRunner:
                     correlation_id=correlation_id
                 ))
                 
+            # Trigger learning_manager on task completion
+            try:
+                from learning.learning_manager import learning_manager
+                learning_manager.process_task_outcome(
+                    task_id=task.id,
+                    success=success,
+                    feedback=result.get("error") or "Task completed successfully"
+                )
+            except Exception as le:
+                logger.warning("WorkflowRunner failed to trigger learning_manager: %s", le)
+                
         except Exception as e:
             # 5. Exception xảy ra
             logger.error("Exception executing tool %s: %s", task.tool_name, e)
@@ -94,6 +105,17 @@ class WorkflowRunner:
                 payload={"tool_name": task.tool_name, "error": str(e), "retry_count": 0},
                 correlation_id=correlation_id
             ))
+            
+            # Trigger learning_manager on exception failure
+            try:
+                from learning.learning_manager import learning_manager
+                learning_manager.process_task_outcome(
+                    task_id=task.id,
+                    success=False,
+                    feedback=str(e)
+                )
+            except Exception as le:
+                logger.warning("WorkflowRunner failed to trigger learning_manager on error: %s", le)
 
         return result
 
