@@ -307,6 +307,61 @@ def t_new_v7_stubs():
     assert not ontology.is_subclass_of("python", "game")
 test("V7 Stubs — ContextPacket, Pipeline, RuntimeManager, InterruptionHandler, PromptLibrary, ActivityTimeline, StreamHandler, StreamSTT, KnowledgeGraph, Ontology", t_new_v7_stubs)
 
+async def t_new_v8_stubs():
+    # 1. BeliefQuery & BeliefUpdater
+    from belief.belief_store import belief_store
+    from belief.belief_query import belief_query
+    from belief.belief_updater import belief_updater
+    belief_store.set_belief("user.name", "Nguyen Tri", confidence=0.8)
+    assert belief_query.get_value("user.name") == "Nguyen Tri"
+    belief_updater.register_evidence("user.name", "Nguyen Tri", confidence=0.5)
+    
+    # 2. GestureHandler
+    from interaction.gesture.gesture_handler import gesture_handler
+    reaction = gesture_handler.handle_tap("head")
+    assert reaction["emotion"] == "smile"
+    
+    # 3. WikiLoader (mocked or offline safety)
+    from knowledge.wiki.wiki_loader import wiki_loader
+    # Should not raise exception even if offline
+    try:
+        wiki_loader.fetch_summary("Python")
+    except Exception:
+        pass
+        
+    # 4. StreamParser
+    from llm.parser.stream_parser import StreamParser
+    parser = StreamParser()
+    chunk1 = parser.feed("<think>")
+    assert chunk1["type"] == "mode_change"
+    assert parser.in_thought
+    
+    # 5. PromptBuilder
+    from llm.prompts.prompt_builder import prompt_builder
+    msgs = prompt_builder.build_messages("You are helpful", [], "Hello")
+    assert len(msgs) == 2
+    assert msgs[0]["role"] == "system"
+    
+    # 6. DependencyGraph
+    from runtime.dependency.dependency_graph import dependency_graph
+    dependency_graph.add_module("B", ["A"])
+    dependency_graph.add_module("C", ["B"])
+    order = dependency_graph.resolve_order()
+    assert order.index("A") < order.index("B")
+    
+    # 7. ContentModerator
+    from social.moderation.content_moderator import content_moderator
+    res = content_moderator.evaluate("user1", "fck this toxicity")
+    assert res["is_flagged"]
+    
+    # 8. StreamTTS
+    from speech.tts.streaming.stream_tts import stream_tts
+    chunks = []
+    async for chunk in stream_tts.stream_audio("Test audio stream"):
+        chunks.append(chunk)
+    assert len(chunks) > 0
+test("V8 Stubs — Belief, Gesture, Wiki, StreamParser, PromptBuilder, DependencyGraph, ContentModerator, StreamTTS", t_new_v8_stubs)
+
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 print(f"\n{'='*50}")
