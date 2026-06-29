@@ -84,111 +84,137 @@ class PlannerAgent:
     ) -> dict[str, Any]:
         context = context or {}
         intent = self.detect_intent(text)
+        intent_name = intent["name"]
+        
+        response_dict = None
 
         # ── Thời gian ─────────────────────────────────────────────────────────
         if intent["name"] == "time":
             now = datetime.now()
-            return self._response(
+            response_dict = self._response(
                 f"Bây giờ là {now:%H:%M}, ngày {now:%d/%m/%Y}.",
                 emotion="friendly", motion="nod",
             )
 
         # ── Ghi nhớ ──────────────────────────────────────────────────────────
-        if intent["name"] == "remember":
+        elif intent["name"] == "remember":
             fact = self.memory.remember(intent["value"])
-            return self._response(
+            response_dict = self._response(
                 f"Mình đã ghi nhớ: {fact['text']}",
                 emotion="friendly", motion="nod",
                 memory={"stored": [fact]},
             )
 
         # ── Nhớ lại ──────────────────────────────────────────────────────────
-        if intent["name"] == "recall":
+        elif intent["name"] == "recall":
             facts = self.memory.recall(intent.get("query", ""))
             if not facts:
-                return self._response("Mình chưa có ghi nhớ nào phù hợp.", emotion="thinking")
-            lines = "; ".join(item["text"] for item in facts[-5:])
-            return self._response(f"Mình nhớ được: {lines}", emotion="friendly")
+                response_dict = self._response("Mình chưa có ghi nhớ nào phù hợp.", emotion="thinking")
+            else:
+                lines = "; ".join(item["text"] for item in facts[-5:])
+                response_dict = self._response(f"Mình nhớ được: {lines}", emotion="friendly")
 
         # ── Mở app ────────────────────────────────────────────────────────────
-        if intent["name"] == "open_app":
+        elif intent["name"] == "open_app":
             result = await self.system.open_app(intent["app"])
             if result.get("success"):
-                return self._response(
+                response_dict = self._response(
                     result.get("message", f"Mình đã mở {intent['app']}."),
                     emotion="excited", motion="nod",
                     actions=[{"type": "desktop.open_app", "status": "completed", "target": intent["app"]}],
                 )
-            return self._response(
-                result.get("error", f"Mình chưa mở được {intent['app']}."),
-                emotion="sad", motion="shake",
-                actions=[{"type": "desktop.open_app", "status": "failed", "target": intent["app"]}],
-            )
+            else:
+                response_dict = self._response(
+                    result.get("error", f"Mình chưa mở được {intent['app']}."),
+                    emotion="sad", motion="shake",
+                    actions=[{"type": "desktop.open_app", "status": "failed", "target": intent["app"]}],
+                )
 
         # ── Mở URL ───────────────────────────────────────────────────────────
-        if intent["name"] == "open_url":
+        elif intent["name"] == "open_url":
             result = await self.browser.open_url(intent["url"])
             if result.get("success"):
-                return self._response(f"Đã mở {intent['url']} trên trình duyệt.", emotion="friendly", motion="nod")
-            return self._response(result.get("message", "Không mở được URL."), emotion="sad")
+                response_dict = self._response(f"Đã mở {intent['url']} trên trình duyệt.", emotion="friendly", motion="nod")
+            else:
+                response_dict = self._response(result.get("message", "Không mở được URL."), emotion="sad")
 
         # ── Tìm web ──────────────────────────────────────────────────────────
-        if intent["name"] == "web_search":
+        elif intent["name"] == "web_search":
             result = await self.browser.search(intent["query"])
-            return self._response(
+            response_dict = self._response(
                 result.get("message", "Không tìm được kết quả."),
                 emotion="friendly" if result.get("success") else "sad",
             )
 
         # ── Clipboard ────────────────────────────────────────────────────────
-        if intent["name"] == "clipboard_read":
+        elif intent["name"] == "clipboard_read":
             result = read_clipboard()
             if result.get("success"):
                 preview = result["text"][:300]
-                return self._response(f"Clipboard đang chứa:\n{preview}", emotion="friendly")
-            return self._response("Không đọc được clipboard.", emotion="sad")
+                response_dict = self._response(f"Clipboard đang chứa:\n{preview}", emotion="friendly")
+            else:
+                response_dict = self._response("Không đọc được clipboard.", emotion="sad")
 
         # ── Đọc file ─────────────────────────────────────────────────────────
-        if intent["name"] == "read_file":
+        elif intent["name"] == "read_file":
             result = read_file(intent["path"])
             if result.get("success"):
                 preview = result["text"][:500]
                 trunc = " (đã cắt bớt)" if result.get("truncated") else ""
-                return self._response(f"Nội dung file{trunc}:\n{preview}", emotion="focused")
-            return self._response(result.get("error", "Không đọc được file."), emotion="sad")
+                response_dict = self._response(f"Nội dung file{trunc}:\n{preview}", emotion="focused")
+            else:
+                response_dict = self._response(result.get("error", "Không đọc được file."), emotion="sad")
 
         # ── Screen ───────────────────────────────────────────────────────────
-        if intent["name"] == "screen_read":
+        elif intent["name"] == "screen_read":
             result = await self.vision.describe_screen()
-            return self._response(
+            response_dict = self._response(
                 result.get("message", "Không chụp được màn hình."),
                 emotion="focused" if result.get("success") else "sad",
             )
 
         # ── System info ───────────────────────────────────────────────────────
-        if intent["name"] == "system_info":
+        elif intent["name"] == "system_info":
             result = await self.system.system_info()
             parts = [f"OS: {result.get('os')} {result.get('osVersion', '')}"]
             if "cpuPercent" in result:
                 parts.append(f"CPU: {result['cpuPercent']}%")
             if "memoryPercent" in result:
                 parts.append(f"RAM: {result['memoryPercent']}%")
-            return self._response("\n".join(parts), emotion="friendly")
+            response_dict = self._response("\n".join(parts), emotion="friendly")
 
         # ── RAG query ─────────────────────────────────────────────────────────
-        if intent["name"] == "rag_query":
+        elif intent["name"] == "rag_query":
             # RAG context đã được inject vào context["rag_context"] bởi main_server
             rag_context = context.get("rag_context", "")
             if not rag_context:
                 # Không có tài liệu nào import → fallback LLM
                 reply = await self.llm.chat(text, context)
-                return self._response(reply, emotion="friendly")
-            reply = await self.llm.chat(text, context)
-            return self._response(reply, emotion="focused", motion="nod")
+                response_dict = self._response(reply, emotion="friendly")
+            else:
+                reply = await self.llm.chat(text, context)
+                response_dict = self._response(reply, emotion="focused", motion="nod")
 
         # ── LLM fallback ─────────────────────────────────────────────────────
-        reply = await self.llm.chat(text, context)
-        return self._response(reply, emotion="friendly")
+        else:
+            reply = await self.llm.chat(text, context)
+            response_dict = self._response(reply, emotion="friendly")
+
+        # Wire learning_manager trigger on planner_agent task completion
+        try:
+            from learning.learning_manager import learning_manager
+            success = True
+            if response_dict.get("emotion") == "sad" or "failed" in response_dict.get("text", "").lower() or "không" in response_dict.get("text", "").lower():
+                success = False
+            learning_manager.process_task_outcome(
+                task_id=f"planner_task_{intent_name}",
+                success=success,
+                feedback=response_dict.get("text", "Processed successfully")
+            )
+        except Exception:
+            pass
+
+        return response_dict
 
     # ─── Response builder ────────────────────────────────────────────────────
 
