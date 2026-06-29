@@ -5,7 +5,7 @@
   "main": "desktop/main.js",
   "private": true,
   "scripts": {
-    "build-ts": "tsc && node scripts/build-renderer.js",
+    "build-ts": "tsc -p tsconfig.json && node scripts/build-renderer.js",
     "start": "npm run build-ts && node scripts/start-electron.js",
     "dev": "npm run build-ts && node scripts/start-electron.js",
     "python": "python api/server.py",
