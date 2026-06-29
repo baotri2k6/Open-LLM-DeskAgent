@@ -179,6 +179,11 @@ if (form) {
     ttsQueue = [];
     ttsPlaying = false;
     chatDone = false;
+    audioPlayer.stop();
+    avatar.stopLipSync();
+    window.companion.invoke("ai:cancel-chat").catch((err) => {
+      console.warn("Failed to cancel active generation:", err);
+    });
     let memoryContext = [];
     try {
       const memories = await LocalDB.searchMemories(text);
@@ -301,6 +306,14 @@ clearImageButton?.addEventListener("click", () => {
 });
 voiceButton.addEventListener("click", async () => {
   if (!isRecording) {
+    ttsQueue = [];
+    ttsPlaying = false;
+    chatDone = true;
+    audioPlayer.stop();
+    avatar.stopLipSync();
+    window.companion.invoke("ai:cancel-chat").catch((err) => {
+      console.warn("Failed to cancel active generation:", err);
+    });
     isRecording = true;
     voiceButton.classList.add("active");
     voiceButton.textContent = "Stop";

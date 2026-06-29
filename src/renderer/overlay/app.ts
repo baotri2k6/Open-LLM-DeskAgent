@@ -203,9 +203,15 @@ if (form) {
     addMessage("user", displayMsg);
     setBusy(true);
 
+    // Barge-in: Clear queue, stop active speech playback, and cancel backend LLM stream
     ttsQueue = [];
     ttsPlaying = false;
     chatDone = false;
+    audioPlayer.stop();
+    avatar.stopLipSync();
+    (window as any).companion.invoke("ai:cancel-chat").catch((err: any) => {
+      console.warn("Failed to cancel active generation:", err);
+    });
 
     let memoryContext: any[] = [];
     try {
@@ -354,6 +360,16 @@ clearImageButton?.addEventListener("click", () => {
 
 voiceButton.addEventListener("click", async () => {
   if (!isRecording) {
+    // Barge-in: Stop active speech and cancel current generation on mic activation
+    ttsQueue = [];
+    ttsPlaying = false;
+    chatDone = true;
+    audioPlayer.stop();
+    avatar.stopLipSync();
+    (window as any).companion.invoke("ai:cancel-chat").catch((err: any) => {
+      console.warn("Failed to cancel active generation:", err);
+    });
+
     isRecording = true;
     voiceButton.classList.add("active");
     voiceButton.textContent = "Stop";

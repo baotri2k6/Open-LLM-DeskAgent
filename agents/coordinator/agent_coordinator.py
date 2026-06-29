@@ -46,7 +46,12 @@ class AgentCoordinator:
 
         try:
             # 3. Gọi method xử lý của agent tùy thuộc vào interface của nó
-            if hasattr(agent, "handle_message"):
+            if hasattr(agent, "execute_task"):
+                # Gói payload thích hợp cho các tác vụ chuyên dụng
+                payload = {"query": task_text, "text": task_text, "snippets": [task_text]}
+                result = await agent.execute_task(capability, payload)
+                return {"success": True, "result": result}
+            elif hasattr(agent, "handle_message"):
                 result = await agent.handle_message(task_text, context)
                 return {"success": True, "result": result}
             elif hasattr(agent, "execute"):

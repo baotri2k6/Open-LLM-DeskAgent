@@ -291,3 +291,30 @@ async def test_planner_agent_beliefs_blocking(tmp_path) -> None:
     finally:
         bs_mod.belief_store = original_store
 
+
+def test_interruption_handler_barge_in() -> None:
+    from persona.behavior.interruption.interruption_handler import InterruptionHandler
+    handler = InterruptionHandler()
+
+    # Default states
+    assert not handler.should_barge_in(user_active=True)
+
+    # Active speaking state should trigger barge-in
+    handler.set_companion_states(is_speaking=True, is_generating=False)
+    assert handler.should_barge_in(user_active=True)
+
+    # Active generating state should trigger barge-in
+    handler.set_companion_states(is_speaking=False, is_generating=True)
+    assert handler.should_barge_in(user_active=True)
+
+    # Inactive state should not barge-in
+    handler.set_companion_states(is_speaking=False, is_generating=False)
+    assert not handler.should_barge_in(user_active=True)
+    
+    # Check trigger_interruption clears active states
+    handler.set_companion_states(is_speaking=True, is_generating=True)
+    handler.trigger_interruption()
+    assert not handler._is_speaking
+    assert not handler._is_generating
+
+

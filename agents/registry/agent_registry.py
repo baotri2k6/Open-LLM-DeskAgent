@@ -59,6 +59,20 @@ class AgentRegistry:
                 agent_instance=None,
                 capabilities=["research_web", "literature_search", "synthesize_report"]
             )
+        # 6. Register Workspace Agent representation
+        try:
+            from agents.workspace.workspace_agent import workspace_agent
+            self.register(
+                name="workspace",
+                agent_instance=workspace_agent,
+                capabilities=["workspace_snapshot", "project_context", "workspace_describe"]
+            )
+        except Exception:
+            self.register(
+                name="workspace",
+                agent_instance=None,
+                capabilities=["workspace_snapshot", "project_context", "workspace_describe"]
+            )
 
     def register(self, name: str, agent_instance: Any, capabilities: List[str]) -> None:
         """Đăng ký một agent mới hoặc ghi đè agent hiện tại.
