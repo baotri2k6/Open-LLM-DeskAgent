@@ -120,6 +120,14 @@ class LifeLoop:
                 from life.reflect.reflect_engine import reflect_engine
                 reflect_engine.reflect_cycle(context, decision, action_taken)
 
+                # ── Belief Decay ───────────────────────────────────────────
+                try:
+                    from belief.belief_updater import belief_updater
+                    belief_updater.decay_all(amount=0.02)
+                    logger.info("LifeLoop: Triggered periodic belief confidence decay")
+                except Exception as bde:
+                    logger.warning("LifeLoop failed to decay beliefs: %s", bde)
+
                 # ── Sleep until next check ─────────────────────────────────
                 await asyncio.sleep(decision.next_check_seconds)
 

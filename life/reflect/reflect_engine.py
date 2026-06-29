@@ -49,13 +49,6 @@ class ReflectEngine:
         except Exception as le:
             logger.warning("ReflectEngine failed to trigger LifeLearner: %s", le)
 
-        # Decay beliefs slightly over time (fade memory confidence)
-        try:
-            from belief.belief_updater import belief_updater
-            belief_updater.decay_all(amount=0.01)
-        except Exception as be:
-            logger.warning("ReflectEngine failed to decay beliefs: %s", be)
-
 
 # Global singleton
 reflect_engine = ReflectEngine()
