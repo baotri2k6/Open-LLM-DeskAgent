@@ -441,6 +441,19 @@ async def t_new_v8_stubs():
         pass
     assert "recent_context" in test_ctx
     assert test_ctx["recent_context"]["active_window"] == "Visual Studio Code"
+
+    # 20. ActivityTimeline recording via PerceptionFusion
+    from world.timeline.activity_timeline import activity_timeline
+    activity_timeline._events.clear()
+    from perception.fusion.perception_fusion import PerceptionFusion
+    packet = PerceptionFusion.fuse(screen_text="Visual Studio Code editor open")
+    assert len(activity_timeline.get_recent_events()) > 0
+    assert activity_timeline.get_recent_events()[-1].activity == "coding"
+
+    # 21. BrowserExecutor opening URL
+    from execution.browser.browser_executor import browser_executor
+    res_b = browser_executor.open_url("https://www.google.com")
+    assert res_b is True
 test("V8 Stubs — Belief, Gesture, Wiki, StreamParser, PromptBuilder, DependencyGraph, ContentModerator, StreamTTS", t_new_v8_stubs)
 
 

@@ -8,41 +8,21 @@ from tools.screen_reader import capture_screenshot, ocr_screenshot
 class VisionAgent:
     async def describe_screen(self) -> dict:
         """Chụp màn hình và mô tả nội dung bằng mô hình đa phương thức (nếu có) hoặc OCR."""
-        from tools.screen_reader import capture_screenshot
-        shot = capture_screenshot()
-        if not shot.get("success"):
-            return {"success": False, "message": f"Không chụp được màn hình: {shot.get('error')}"}
-            
-        b64_data = shot.get("png_base64")
-        
-        # Kiểm tra xem mô hình hiện tại có hỗ trợ đa phương thức không
-        from llm.manager import LLMService, _get_llm_credentials, _is_multimodal_model
         try:
-            provider, api_key, model, base_url = _get_llm_credentials()
-            if _is_multimodal_model(provider, model):
-                llm = LLMService()
-                prompt = [
-                    {
-                        "type": "text", 
-                        "text": "Hãy nhìn vào bức ảnh chụp màn hình này và mô tả ngắn gọn, súc tích bằng tiếng Việt những gì đang hiển thị trên màn hình của người dùng (ví dụ: đang mở ứng dụng gì, có nội dung/cửa sổ nào nổi bật)."
-                    },
-                    {
-                        "type": "image_url", 
-                        "image_url": {"url": f"data:image/png;base64,{b64_data}"}
-                    }
-                ]
-                response = await llm.chat(prompt)
-                if response and response.strip():
-                    return {
-                        "success": True,
-                        "message": f"Trên màn hình mình thấy:\n{response.strip()}",
-                        "screenshot_available": True
-                    }
-        except Exception as e:
-            # Fallback to OCR if multimodal call fails
+            from vision.screen_understanding.screen_understander import screen_understander
+            res = screen_understander.analyze_screen()
+            if res.get("success"):
+                return {
+                    "success": True,
+                    "message": res.get("summary", ""),
+                    "app_in_focus": res.get("app_in_focus", "unknown"),
+                    "interactive_elements": res.get("interactive_elements", []),
+                    "screenshot_available": True
+                }
+        except Exception:
             pass
             
-        # Chạy OCR làm fallback
+        # Fallback to old OCR if screen_understander fails
         from tools.screen_reader import ocr_screenshot
         result = ocr_screenshot()
         if not result.get("success"):

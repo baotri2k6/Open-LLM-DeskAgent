@@ -48,11 +48,21 @@ class PerceptionFusion:
             active_window = "Terminal"
             activity = activity or "commanding"
 
+        # Record activity into ActivityTimeline if recognized
+        resolved_activity = activity or "idle"
+        try:
+            from world.timeline.activity_timeline import activity_timeline
+            last_events = activity_timeline.get_recent_events(limit=1)
+            if not last_events or last_events[-1].activity != resolved_activity:
+                activity_timeline.record_activity(resolved_activity)
+        except Exception as e:
+            logger.warning("PerceptionFusion failed to record activity to timeline: %s", e)
+
         # Trả về ContextPacket dataclass instance
         return ContextPacket(
             user_message=user_message or "",
             ocr_text=screen_text or "",
             idle_seconds=idle_time_seconds,
-            activity=activity or "unknown",
+            activity=resolved_activity,
             active_window=active_window
         )
