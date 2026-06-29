@@ -67,6 +67,11 @@ def trigger_notification(data: dict):
         _pending_notifications.append(data)
 
 
+def ws_broadcast(data: dict):
+    """Broadcast helper alias to trigger notification to websocket and polling clients."""
+    trigger_notification(data)
+
+
 # ─── Twitch IRC Reader Client ──────────────────────────────────────────────────
 
 class TwitchChatReader:
@@ -1519,11 +1524,11 @@ def main() -> None:
                 from persona.behavior.attention.attention_controller import attention_controller
                 from persona.behavior.greeting.greeting_behavior import greeting_behavior
 
-                idle_animator.set_send_callback(trigger_notification)
-                reaction_library.set_send_callback(trigger_notification)
-                expression_controller.set_send_callback(trigger_notification)
-                attention_controller.set_send_callback(trigger_notification)
-                greeting_behavior.set_send_callback(trigger_notification)
+                idle_animator.set_send_callback(ws_broadcast)
+                reaction_library.set_send_callback(ws_broadcast)
+                expression_controller.set_send_callback(ws_broadcast)
+                attention_controller.set_send_callback(ws_broadcast)
+                greeting_behavior.set_send_callback(ws_broadcast)
 
                 # Start idle animator loop
                 asyncio.run_coroutine_threadsafe(idle_animator.start(), _background_loop)
