@@ -23,7 +23,6 @@ class LifeLoop:
         self._ws_clients  = ws_clients or set()
         self._running     = False
         self._task: Optional[asyncio.Task] = None
-        self._decay_task: Optional[asyncio.Task] = None
 
     def start(self, ws_clients: Optional[set] = None) -> None:
         """Start the life loop as an asyncio background task."""
@@ -35,7 +34,6 @@ class LifeLoop:
         try:
             loop = asyncio.get_event_loop()
             self._task = loop.create_task(self._run())
-            self._decay_task = loop.create_task(self._run_periodic_decay())
             logger.info("LifeLoop: Started ✓")
         except RuntimeError:
             logger.warning("LifeLoop: No running event loop — will start on next await")
@@ -45,8 +43,6 @@ class LifeLoop:
         self._running = False
         if self._task:
             self._task.cancel()
-        if self._decay_task:
-            self._decay_task.cancel()
         logger.info("LifeLoop: Stopped")
 
     async def start_async(self, ws_clients: Optional[set] = None) -> None:
@@ -57,7 +53,6 @@ class LifeLoop:
             return
         self._running = True
         self._task = asyncio.create_task(self._run())
-        self._decay_task = asyncio.create_task(self._run_periodic_decay())
         logger.info("LifeLoop: Started (async) ✓")
 
     # ── Main loop ──────────────────────────────────────────────────────────
@@ -84,8 +79,10 @@ class LifeLoop:
 
         logger.info("LifeLoop: Entering main loop")
 
+        cycle_count = 0
         while self._running:
             try:
+                cycle_count += 1
                 # ── Observe ────────────────────────────────────────────────
                 mood_state = mood_engine.state
                 context = life_observer.observe(
@@ -133,12 +130,13 @@ class LifeLoop:
                 reflect_engine.reflect_cycle(context, decision, action_taken)
 
                 # ── Belief Decay ───────────────────────────────────────────
-                try:
-                    from belief.belief_updater import belief_updater
-                    belief_updater.decay_all(amount=0.02)
-                    logger.info("LifeLoop: Triggered periodic belief confidence decay")
-                except Exception as bde:
-                    logger.warning("LifeLoop failed to decay beliefs: %s", bde)
+                if cycle_count % 10 == 0:
+                    try:
+                        from belief.belief_updater import belief_updater
+                        belief_updater.decay_all(amount=0.02)
+                        logger.info("LifeLoop: Triggered periodic belief confidence decay (cycle %d)", cycle_count)
+                    except Exception as bde:
+                        logger.warning("LifeLoop failed to decay beliefs: %s", bde)
 
                 # ── Sleep until next check ─────────────────────────────────
                 await asyncio.sleep(decision.next_check_seconds)
@@ -151,20 +149,6 @@ class LifeLoop:
                 await asyncio.sleep(60)   # backoff on error
 
         logger.info("LifeLoop: Exited")
-
-    async def _run_periodic_decay(self) -> None:
-        """Run belief decay periodically (e.g. every 60 seconds) in the background."""
-        logger.info("LifeLoop: Starting periodic belief decay worker")
-        while self._running:
-            try:
-                await asyncio.sleep(60)
-                from belief.belief_updater import belief_updater
-                belief_updater.decay_all(amount=0.01)
-                logger.info("LifeLoop: Triggered background periodic belief decay")
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                logger.warning("LifeLoop periodic decay worker failed: %s", e)
 
 
 # ── Global singleton ───────────────────────────────────────────────────────────

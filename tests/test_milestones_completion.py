@@ -460,11 +460,10 @@ async def t_new_v8_stubs():
     obs_context = life_observer.observe()
     assert obs_context.last_user_activity == "coding"
 
-    # 23. LifeLoop periodic decay worker test
+    # 23. LifeLoop periodic decay integration test
     from life.life_loop import LifeLoop
     loop_inst = LifeLoop()
-    # Check that loop fields initialization is correct
-    assert loop_inst._decay_task is None
+    assert loop_inst._task is None
 test("V8 Stubs — Belief, Gesture, Wiki, StreamParser, PromptBuilder, DependencyGraph, ContentModerator, StreamTTS", t_new_v8_stubs)
 
 
