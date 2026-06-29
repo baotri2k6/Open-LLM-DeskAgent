@@ -25,6 +25,15 @@ class LearningManager:
         evaluation = self.evaluator.evaluate(task_id, success, feedback)
         logger.info("LearningManager: Task evaluation: %s", evaluation)
 
+        # Wire KnowledgeExtractor to extract new beliefs/rules from task outcome/feedback
+        try:
+            from learning.knowledge.knowledge_extractor import knowledge_extractor
+            extracted = knowledge_extractor.extract_from_text(feedback)
+            if extracted:
+                logger.info("LearningManager: Extracted knowledge facts: %s", extracted)
+        except Exception as e:
+            logger.warning("LearningManager failed to run KnowledgeExtractor: %s", e)
+
 
 # Global singleton
 learning_manager = LearningManager()
