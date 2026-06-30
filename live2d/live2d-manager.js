@@ -566,7 +566,7 @@ export class AvatarController {
     });
     if (this._img) this._img.style.display = "none"; // Hide image during model loading
 
-    this._modelPath = "../../../" + newModelPath;
+    this._modelPath = "../../" + newModelPath;
     await this._loadBackend();
   }
 
