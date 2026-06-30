@@ -74,6 +74,10 @@ class PromptBuilder:
         if memory_snippets:
             sections.append(self._build_memory(memory_snippets))
 
+        distilled_section = self._build_distilled_knowledge()
+        if distilled_section:
+            sections.append(distilled_section)
+
         # ── Layer 5: World Context ─────────────────────────────────────────
         world_section = self._build_world()
         if world_section:
@@ -83,6 +87,10 @@ class PromptBuilder:
         motivation_section = self._build_motivation()
         if motivation_section:
             sections.append(motivation_section)
+
+        pattern_section = self._build_patterns()
+        if pattern_section:
+            sections.append(pattern_section)
 
         # ── Layer 7: Conversation Context ─────────────────────────────────
         conversation_section = self._build_conversation()
@@ -147,6 +155,14 @@ class PromptBuilder:
         formatted = "\n".join(f"- {s}" for s in snippets[:5])
         return f"[Relevant Memories]\n{formatted}"
 
+    def _build_distilled_knowledge(self) -> str:
+        """Durable lessons distilled from prior sessions."""
+        try:
+            from learning.distillation.knowledge_distiller import knowledge_distiller
+            return knowledge_distiller.describe_for_prompt()
+        except Exception:
+            return ""
+
     def _build_world(self) -> str:
         """Layer 5: World context (time, apps, activity)."""
         import time
@@ -166,6 +182,14 @@ class PromptBuilder:
         try:
             from motivation.motivation_manager import motivation_manager
             return f"[Motivation]\n{motivation_manager.describe_for_prompt()}"
+        except Exception:
+            return ""
+
+    def _build_patterns(self) -> str:
+        """Learned behavior/tool-use prediction."""
+        try:
+            from learning.patterns.pattern_learner import pattern_learner
+            return pattern_learner.describe_for_prompt()
         except Exception:
             return ""
 

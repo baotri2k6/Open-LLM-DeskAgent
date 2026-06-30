@@ -133,6 +133,100 @@ def t_experience_replay():
     assert "Yêu cầu phân quyền" in rep["recommendation"]
 test("ExperienceReplay — analyze failure logs and generate recommendations", t_experience_replay)
 
+def t_knowledge_distiller():
+    from pathlib import Path
+    import tempfile
+    from learning.experience.experience_store import Experience
+    from learning.distillation.knowledge_distiller import KnowledgeDistiller
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        distiller = KnowledgeDistiller(facts_path=Path(tmpdir) / "facts.json")
+        experiences = [
+            Experience(
+                goal_id="g_perm",
+                goal_desc="Build project on Windows",
+                is_successful=False,
+                lessons_learned="Task failed because permission denied while running build script.",
+                metadata={"tool": "terminal_executor"},
+            ),
+            Experience(
+                goal_id="g_net",
+                goal_desc="Use memory vector store",
+                is_successful=False,
+                lessons_learned="ChromaDB embedding failed because network offline.",
+            ),
+        ]
+        facts = distiller.distill_from_experiences(experiences)
+        keys = {fact.key for fact in facts}
+        assert "system.permission" in keys
+        assert "system.network" in keys
+        assert "tool.terminal_executor" in keys
+        prompt_block = distiller.describe_for_prompt()
+        assert "[Distilled Knowledge]" in prompt_block
+        assert "permission" in prompt_block.lower()
+test("KnowledgeDistiller — distill facts from ExperienceStore-style records", t_knowledge_distiller)
+
+def t_pattern_learner():
+    from pathlib import Path
+    import tempfile
+    import time
+    from learning.patterns.pattern_learner import PatternLearner
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        learner = PatternLearner(patterns_path=Path(tmpdir) / "patterns.json")
+        ts = time.mktime((2026, 6, 30, 22, 0, 0, 0, 0, -1))
+        learner.record_event(activity="coding", tool="terminal_executor", timestamp=ts)
+        learner.record_event(activity="testing", tool="pytest", timestamp=ts)
+        learner.record_event(activity="coding", tool="terminal_executor", timestamp=ts)
+        learner.record_event(activity="testing", tool="pytest", timestamp=ts)
+
+        pred = learner.predict_next(current_activity="coding", hour=22)
+        assert pred.activity == "testing"
+        assert pred.tool in {"terminal_executor", "pytest"}
+        assert pred.confidence > 0
+
+        learner2 = PatternLearner(patterns_path=Path(tmpdir) / "patterns.json")
+        assert learner2.predict_next(current_activity="coding", hour=22).activity == "testing"
+        assert "[Predicted User Patterns]" in learner2.describe_for_prompt()
+test("PatternLearner — learn time/tool patterns and predict next behavior", t_pattern_learner)
+
+def t_prompt_includes_learning_blocks():
+    from pathlib import Path
+    import tempfile
+    import importlib
+    pb_mod = importlib.import_module("cognition.prompts.prompt_builder")
+    from learning.distillation.knowledge_distiller import KnowledgeDistiller
+    from learning.patterns.pattern_learner import PatternLearner
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        distiller = KnowledgeDistiller(facts_path=Path(tmpdir) / "facts.json")
+        distiller._upsert_fact(
+            "system.permission",
+            "Ask for approval when permission errors happen.",
+            "system",
+            success=False,
+        )
+        distiller.save()
+
+        learner = PatternLearner(patterns_path=Path(tmpdir) / "patterns.json")
+        learner.record_event(activity="coding", tool="pytest")
+
+        # Patch imported singletons through their source modules.
+        kd_mod = importlib.import_module("learning.distillation.knowledge_distiller")
+        pl_mod = importlib.import_module("learning.patterns.pattern_learner")
+        old_kd = kd_mod.knowledge_distiller
+        old_pl = pl_mod.pattern_learner
+        kd_mod.knowledge_distiller = distiller
+        pl_mod.pattern_learner = learner
+        try:
+            prompt = pb_mod.PromptBuilder().build(include_tools=False)
+            assert "[Distilled Knowledge]" in prompt
+            assert "[Predicted User Patterns]" in prompt
+        finally:
+            kd_mod.knowledge_distiller = old_kd
+            pl_mod.pattern_learner = old_pl
+test("PromptBuilder — inject distilled knowledge and learned patterns", t_prompt_includes_learning_blocks)
+
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 print(f"\n{'='*50}")
