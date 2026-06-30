@@ -34,18 +34,20 @@ async def test_computer_use_end_to_end_flow() -> None:
     ]
     chat_call_index = 0
     
-    def mock_chat_fn(prompt, context=None):
+    async def mock_chat_fn(prompt, context=None):
         nonlocal chat_call_index
         resp = mock_chat_responses[chat_call_index]
         chat_call_index += 1
         return resp
 
     # Patch modules
+    from llm.manager import llm_service
     with patch("pyautogui.moveTo") as mock_move, \
          patch("pyautogui.click") as mock_click, \
          patch("pyautogui.screenshot") as mock_shot, \
          patch("tools.screen_reader.capture_screenshot", return_value=fake_screenshot), \
-         patch("llm.manager.llm_service.chat", side_effect=mock_chat_fn):
+         patch("vision.grounding.grounding_engine.capture_screenshot", return_value=fake_screenshot), \
+         patch.object(llm_service, "chat", side_effect=mock_chat_fn):
          
         # Execute the computer use visual click flow
         res = await click_element_by_vision(description="Nút Đăng nhập màu xanh", action_type="click")
