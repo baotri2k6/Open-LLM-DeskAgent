@@ -1447,10 +1447,11 @@ def main() -> None:
 
     # 3. TTS check
     def check_tts():
+        global _tts_service
         tts_ok = False
         tts_backend = config.get("tts.api", "edge")
         try:
-            tts_svc = get_tts()
+            tts_svc = _tts_service
             tts_ok = tts_svc is not None and tts_svc.available
         except Exception:
             pass
@@ -1460,10 +1461,11 @@ def main() -> None:
 
     # 4. STT check
     def check_stt():
+        global _stt_service
         stt_ok = False
         stt_model = config.get("stt.model", "base")
         try:
-            stt_svc = get_stt()
+            stt_svc = _stt_service
             stt_ok = stt_svc is not None and stt_svc.available
         except Exception:
             pass
@@ -1473,9 +1475,10 @@ def main() -> None:
 
     # 5. Memory check
     def check_memory():
+        global _rag_retriever
         memory_ok = False
         try:
-            rag_svc = get_rag()
+            rag_svc = _rag_retriever
             memory_ok = rag_svc is not None
         except Exception:
             pass

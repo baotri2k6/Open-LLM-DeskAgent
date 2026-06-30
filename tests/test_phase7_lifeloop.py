@@ -85,6 +85,84 @@ def t_decision_with_silence_policy():
     assert not dec.should_act  # Phải im lặng
 test("DecisionEngine — override proactive action during busy periods", t_decision_with_silence_policy)
 
+def t_focus_index_silence_policy():
+    from decision.policy_engine import policy_engine
+    
+    focus = policy_engine.compute_focus_index(
+        user_activity="coding",
+        idle_seconds=45,
+        active_window="main.py - Visual Studio Code",
+        screen_text="def run():\n    pytest tests/",
+    )
+    assert focus >= 0.65
+    assert not policy_engine.check_silence_policy(
+        "coding",
+        45,
+        focus_index=focus,
+        active_window="main.py - Visual Studio Code",
+        screen_text="def run(): pass",
+    )
+    
+    relaxed = policy_engine.compute_focus_index(
+        user_activity="idle",
+        idle_seconds=1200,
+        active_window="Desktop",
+        screen_text="",
+    )
+    assert relaxed < 0.65
+    assert policy_engine.check_silence_policy("idle", 1200, focus_index=relaxed)
+test("PolicyEngine — continuous User Focus Index controls silence", t_focus_index_silence_policy)
+
+def t_life_context_focus_snapshot():
+    from life.observe.observer import LifeContext
+    
+    ctx = LifeContext(
+        user_idle_seconds=30,
+        last_user_activity="coding",
+        focus_index=0.82,
+        active_app="VS Code",
+        active_window="server.py - Code",
+        screen_text="Traceback error",
+    )
+    data = ctx.to_dict()
+    assert data["focus_index"] == 0.82
+    assert data["active_app"] == "VS Code"
+    assert data["active_window"] == "server.py - Code"
+test("LifeContext — carries focus index and active app/window", t_life_context_focus_snapshot)
+
+def t_energy_drain_and_tired_expression():
+    from life.observe.observer import LifeContext
+    from life.feel.feel_engine import feel_engine
+    from persona.mood.mood_engine import mood_engine
+    from persona.behavior.expression.expression_controller import expression_controller
+    
+    dispatched = []
+    old_callback = expression_controller._send_callback
+    expression_controller.set_send_callback(lambda command: dispatched.append(command))
+    
+    try:
+        with mood_engine._lock:
+            mood_engine._state.energy = 0.22
+            mood_engine._state.mood = "mệt mỏi"
+        
+        ctx = LifeContext(
+            user_idle_seconds=30,
+            last_user_activity="coding",
+            screen_activity="coding",
+            hour_of_day=14,
+            energy=0.22,
+        )
+        before = mood_engine.state.energy
+        feel_engine.feel(ctx)
+        after = mood_engine.state.energy
+        
+        assert after < before
+        assert expression_controller.current_expression == "tired"
+        assert any(cmd.get("expression") == "tired" for cmd in dispatched)
+    finally:
+        expression_controller.set_send_callback(old_callback)
+test("FeelEngine — screen scans drain energy and low energy reaches expression", t_energy_drain_and_tired_expression)
+
 def t_persona_evolution():
     from persona.persona_manager import persona_manager
     from persona.relationship.relationship_tracker import relationship_tracker
@@ -99,8 +177,6 @@ def t_persona_evolution():
     persona_manager.evolve_personality()
     
     profile = persona_manager.get_character_profile(persona_manager.active_character)
-    print("DEBUG SPEECH STYLE:", profile.speech_style)
-    print("DEBUG FAVORITE TOPICS:", profile.favorite_topics)
     
     assert "teasing" in profile.speech_style or "intimate" in profile.speech_style or "casual" in profile.speech_style, f"Speech styles: {profile.speech_style}"
     assert "night owl hacks" in profile.favorite_topics, f"Topics: {profile.favorite_topics}"

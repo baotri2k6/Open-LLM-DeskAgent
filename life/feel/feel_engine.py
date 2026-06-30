@@ -23,6 +23,12 @@ class FeelEngine:
         energy = context.energy
         activity = context.last_user_activity
         hour = context.hour_of_day
+        screen_activity = getattr(context, "screen_activity", activity)
+
+        # 0. Autonomous observation has a small energy cost, especially when
+        # watching focus-heavy workflows. This makes "life" scans visible in
+        # the companion's internal state instead of leaving energy static.
+        mood_engine.consume_energy_for_screen_scan(screen_activity or activity, changed=True)
         
         # 1. Get relationship level to affect emotional sensitivity
         rel_level = relationship_tracker.level
@@ -84,6 +90,15 @@ class FeelEngine:
             with mood_engine._lock:
                 mood_engine.state.mood = "suy nghĩ"
                 mood_engine.state.focus = min(1.0, mood_engine.state.focus + 0.08)
+
+        # 5. Low energy should reach the avatar layer, not only internal text.
+        current_energy = mood_engine.state.energy
+        if current_energy < 0.25:
+            try:
+                from persona.behavior.expression.expression_controller import expression_controller
+                expression_controller.apply_emotion("tired", intensity=max(0.4, 1.0 - current_energy))
+            except Exception as exc:
+                logger.debug("FeelEngine: tired expression dispatch skipped: %s", exc)
 
         logger.info("FeelEngine: current emotion is %s, mood is %s, energy=%.2f", 
                     emotion_engine.emotion, mood_engine.state.mood, mood_engine.state.energy)

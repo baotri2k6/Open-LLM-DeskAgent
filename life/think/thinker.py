@@ -35,8 +35,22 @@ class Thinker:
         # 1. Đọc hoạt động người dùng và kiểm tra chính sách im lặng
         user_act = context.last_user_activity
         idle_time = context.user_idle_seconds
+        focus_index = getattr(context, "focus_index", None)
         
-        stay_silent = not policy_engine.check_silence_policy(user_act, idle_time)
+        stay_silent = not policy_engine.check_silence_policy(
+            user_act,
+            idle_time,
+            focus_index=focus_index,
+            active_window=getattr(context, "active_window", ""),
+            screen_text=getattr(context, "screen_text", ""),
+        )
+        if focus_index is None:
+            focus_index = policy_engine.compute_focus_index(
+                user_act,
+                idle_time,
+                getattr(context, "active_window", ""),
+                getattr(context, "screen_text", ""),
+            )
         
         # 2. Suy nghĩ dựa trên nhu cầu (Motivation/Needs) và Trạng thái năng lượng
         thoughts = []
@@ -50,7 +64,7 @@ class Thinker:
             category = "proactive"
             priority = 5
         elif stay_silent:
-            thoughts.append(f"Người dùng đang tập trung làm việc ({user_act}). Mình nên im lặng giữ trật tự.")
+            thoughts.append(f"Người dùng đang tập trung làm việc ({user_act}, focus={focus_index:.2f}). Mình nên im lặng giữ trật tự.")
             proposed_intent = "observe_silently"
             category = "proactive"
             priority = 3
@@ -84,7 +98,8 @@ class Thinker:
         return {
             "thought": thought_str,
             "proposed_intention": proposed_intent,
-            "stay_silent": stay_silent
+            "stay_silent": stay_silent,
+            "focus_index": focus_index,
         }
 
 

@@ -135,6 +135,27 @@ class MoodEngine:
                 cur = getattr(s, attr, 0.5)
                 setattr(s, attr, round(max(0.0, min(1.0, cur + delta)), 3))
 
+    def consume_energy_for_screen_scan(self, activity: str = "unknown", changed: bool = True) -> MoodState:
+        """Drain a tiny amount of energy for autonomous screen/world scans.
+
+        This wires LifeLoop perception cost into the mood model. Focus-heavy
+        activities cost slightly more; passive/unknown scans cost less.
+        """
+        drain = 0.01 if changed else 0.004
+        if activity in {"coding", "terminal_work", "working_document"}:
+            drain += 0.004
+        elif activity in {"watching_video", "idle", "unknown"}:
+            drain *= 0.6
+
+        with self._lock:
+            s = self._state
+            s.energy = round(max(0.0, s.energy - drain), 3)
+            if s.energy < 0.25:
+                s.mood = "mệt mỏi"
+            s.last_updated = time.monotonic()
+        self._save()
+        return self._state
+
     # ── Prompt injection ───────────────────────────────────────────────────
 
     def to_prompt_block(self) -> str:

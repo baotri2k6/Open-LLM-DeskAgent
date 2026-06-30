@@ -1,5 +1,6 @@
 """Phase 2 Integration Tests — kiểm tra toàn bộ Companion Intelligence stack."""
 
+import asyncio
 import sys
 from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent.parent
