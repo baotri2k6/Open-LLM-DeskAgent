@@ -55,15 +55,58 @@ class PersonalityEvolution:
 
         if relationship is not None:
             level = getattr(relationship, "level", "")
+            if not isinstance(level, str):
+                level = "Người lạ"
+                
             shared = 0
             try:
                 shared = relationship.get_shared_experiences()
             except Exception:
+                pass
+            if not isinstance(shared, (int, float)):
                 shared = 0
+                
+            points = 0
+            try:
+                points = relationship.get_relationship_points()
+            except Exception:
+                points = getattr(relationship, "score", 0)
+            if not isinstance(points, (int, float)):
+                points = 0
+                
+            # Evolve friendliness and shyness based on closeness and shared experiences
+            experience_factor = 1.0 + (shared * 0.1)
+            if points > 150:
+                self.identity.update_trait("friendly", 0.05 * experience_factor)
+                self.identity.update_trait("shy", -0.05 * experience_factor)
+            elif points < 20:
+                self.identity.update_trait("friendly", -0.02)
+                self.identity.update_trait("shy", 0.02)
+
+            # Feed shared experiences into specific traits (trusting, cheerful)
+            if shared > 0:
+                if "trusting" not in self.identity.personality:
+                    self.identity.personality["trusting"] = 0.5
+                self.identity.update_trait("trusting", 0.02 * shared)
+                self.identity.update_trait("cheerful", 0.01 * shared)
+                
             if level:
                 note = f"Relationship level with user: {level}"
                 self.identity.remember_note(note)
                 notes.append(note)
+                
+                # Unlock speech styles and topics persistently based on level transitions
+                if level == "Người quen":
+                    self._add_style(profile, "casual", added_styles)
+                    self.identity.remember_topic("Sở thích cá nhân")
+                elif level == "Bạn thân":
+                    self._add_style(profile, "teasing", added_styles)
+                    self._add_style(profile, "supportive", added_styles)
+                    self.identity.remember_topic("Kỷ niệm vui vẻ")
+                elif level == "Tri kỷ":
+                    self._add_style(profile, "intimate", added_styles)
+                    self.identity.remember_topic("Ước mơ cuộc sống")
+
             if shared >= 3:
                 self._add_topic(profile, "shared project memories", added_topics)
 

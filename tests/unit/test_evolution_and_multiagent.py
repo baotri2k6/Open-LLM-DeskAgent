@@ -55,6 +55,8 @@ def test_personality_evolution_sweep(tmp_path) -> None:
     original_rt = rt_mod.relationship_tracker
     mock_rt = MagicMock()
     mock_rt.get_relationship_points.return_value = 200
+    mock_rt.get_shared_experiences.return_value = 0
+    mock_rt.level = "Người quen"
     rt_mod.relationship_tracker = mock_rt
     
     # Mock Belief Store
@@ -135,3 +137,34 @@ def test_agent_registry_research_registration() -> None:
     all_caps = reg.get_all_capabilities()
     assert "research_web" in all_caps
     assert "literature_search" in all_caps
+
+
+@pytest.mark.anyio
+async def test_subagent_service_spawning() -> None:
+    from agents.subagent_service import run_subagent, run_parallel_subagents
+    from unittest.mock import patch, MagicMock
+
+    mock_llm_service = MagicMock()
+    
+    async def mock_chat_stream(*args, **kwargs):
+        yield "Chunk 1"
+        yield {"type": "text", "text": " Chunk 2"}
+
+    mock_llm_service.chat_stream = mock_chat_stream
+
+    with patch("llm.manager.LLMService", return_value=mock_llm_service):
+        # 1. Test single subagent execution
+        res = await run_subagent(task="Write a python script", focus_files=["main.py"])
+        assert res["success"] is True
+        assert res["summary"] == "Chunk 1 Chunk 2"
+
+        # 2. Test parallel subagents execution
+        results = await run_parallel_subagents(
+            tasks=["Task A", "Task B"],
+            focus_files_list=[["a.py"], ["b.py"]]
+        )
+        assert len(results) == 2
+        assert results[0]["success"] is True
+        assert results[0]["summary"] == "Chunk 1 Chunk 2"
+        assert results[1]["success"] is True
+        assert results[1]["summary"] == "Chunk 1 Chunk 2"
