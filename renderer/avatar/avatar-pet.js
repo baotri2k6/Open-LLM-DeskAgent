@@ -22,14 +22,20 @@ let WebGPUEngine = {
     LocalDB = mod.LocalDB;
     console.log("[avatar-pet] LocalDB module loaded");
   } catch (err) {
-    console.warn("[avatar-pet] LocalDB module failed to load (offline?):", err.message);
+    console.warn(
+      "[avatar-pet] LocalDB module failed to load (offline?):",
+      err.message,
+    );
   }
   try {
     const mod = await import("../shared/webgpu-engine.js");
     WebGPUEngine = mod.WebGPUEngine;
     console.log("[avatar-pet] WebGPUEngine module loaded");
   } catch (err) {
-    console.warn("[avatar-pet] WebGPUEngine module failed to load:", err.message);
+    console.warn(
+      "[avatar-pet] WebGPUEngine module failed to load:",
+      err.message,
+    );
   }
 })();
 
@@ -309,7 +315,6 @@ let draftInterval = null;
 let voiceSequence = 0;
 let sttProcessing = false;
 
-
 function setVoiceState(state) {
   currentVoiceState = state;
   setStatus(state);
@@ -376,7 +381,7 @@ async function ask(text) {
   let memoryContext = [];
   try {
     const memories = await LocalDB.searchMemories(clean);
-    memoryContext = memories.map(m => ({ text: m.text }));
+    memoryContext = memories.map((m) => ({ text: m.text }));
   } catch (err) {
     console.warn("Failed to query LocalDB:", err);
   }
@@ -384,7 +389,7 @@ async function ask(text) {
   // Get current LLM provider config
   let provider = "ollama";
   try {
-    const config = await window.companion.invoke('ai:get-config');
+    const config = await window.companion.invoke("ai:get-config");
     if (config && !config.error) {
       provider = config.llm_provider || "ollama";
     }
@@ -392,12 +397,14 @@ async function ask(text) {
     console.warn("Failed to get config:", err);
   }
 
-  if (provider === 'webgpu') {
+  if (provider === "webgpu") {
     // ----------------------------------------------------
     // Run Local WebGPU Inference in Pet Window
     // ----------------------------------------------------
     if (!WebGPUEngine.isInitialized()) {
-      setCaption("Mô hình WebGPU chưa được tải. Vui lòng mở bảng Chat và chọn bộ não WebGPU để tải mô hình.");
+      setCaption(
+        "Mô hình WebGPU chưa được tải. Vui lòng mở bảng Chat và chọn bộ não WebGPU để tải mô hình.",
+      );
       setStatus("error");
       avatar.setState({ expression: "sad", motion: "shake", lipsync: false });
       busy = false;
@@ -405,25 +412,33 @@ async function ask(text) {
       return;
     }
 
-    const systemPrompt = "Bạn là IceGirl, trợ lý ảo cá nhân 2.5D cực kỳ đáng yêu, thân thiện và thông minh. Hãy trả lời người dùng một cách tự nhiên, ngắn gọn và thêm các thẻ cảm xúc như [smile], [happy], [excited], [thinking], [sad] phù hợp.\n" +
-      (memoryContext.length > 0 ? "Thông tin đã ghi nhớ về người dùng: " + memoryContext.map(m => m.text).join("; ") : "");
+    const systemPrompt =
+      "Bạn là IceGirl, trợ lý ảo cá nhân 2.5D cực kỳ đáng yêu, thân thiện và thông minh. Hãy trả lời người dùng một cách tự nhiên, ngắn gọn và thêm các thẻ cảm xúc như [smile], [happy], [excited], [thinking], [sad] phù hợp.\n" +
+      (memoryContext.length > 0
+        ? "Thông tin đã ghi nhớ về người dùng: " +
+          memoryContext.map((m) => m.text).join("; ")
+        : "");
 
     const messages = [
       { role: "system", content: systemPrompt },
-      { role: "user", content: clean }
+      { role: "user", content: clean },
     ];
 
     let parserBuffer = "";
-    const EMOTION_REGEX = /\[(normal|neutral|smile|friendly|happy|excited|focused|thinking|sad|angry|surprised|wink|tongue|money)\]/i;
+    const EMOTION_REGEX =
+      /\[(normal|neutral|smile|friendly|happy|excited|focused|thinking|sad|angry|surprised|wink|tongue|money)\]/i;
 
     try {
       setStatus("speaking");
-      window.companion.broadcast('start', { emotion: 'normal', motion: 'thinking' });
+      window.companion.broadcast("start", {
+        emotion: "normal",
+        motion: "thinking",
+      });
       window.companion.setLipsync(true);
 
       const onChunk = (token) => {
         parserBuffer += token;
-        
+
         const match = parserBuffer.match(EMOTION_REGEX);
         if (match) {
           const tag = match[0];
@@ -432,54 +447,62 @@ async function ask(text) {
           avatar.setState({ expression: emotion });
           window.companion.setEmotion(emotion);
         }
-        
-        const idx = parserBuffer.indexOf('[');
-        const idxAngle = parserBuffer.indexOf('<');
-        
+
+        const idx = parserBuffer.indexOf("[");
+        const idxAngle = parserBuffer.indexOf("<");
+
         let textToYield = "";
         if (idx === -1 && idxAngle === -1) {
           textToYield = parserBuffer;
           parserBuffer = "";
         } else {
-          const indices = [idx, idxAngle].filter(i => i !== -1);
+          const indices = [idx, idxAngle].filter((i) => i !== -1);
           const firstIdx = Math.min(...indices);
           if (firstIdx > 0) {
             textToYield = parserBuffer.substring(0, firstIdx);
             parserBuffer = parserBuffer.substring(firstIdx);
           }
         }
-        
+
         if (textToYield) {
           currentReply += textToYield;
           setCaption(currentReply);
-          window.companion.broadcast('chat_chunk', textToYield);
+          window.companion.broadcast("chat_chunk", textToYield);
         }
       };
 
       await WebGPUEngine.chat(messages, onChunk);
-      
+
       if (parserBuffer) {
         currentReply += parserBuffer;
         setCaption(currentReply);
-        window.companion.broadcast('chat_chunk', parserBuffer);
+        window.companion.broadcast("chat_chunk", parserBuffer);
       }
 
-      window.companion.broadcast('chat_done', currentReply);
+      window.companion.broadcast("chat_done", currentReply);
       await LocalDB.addMemory(clean);
 
       // Synthesize TTS
-      const ttsRes = await window.companion.invoke("ai:tts", { text: currentReply });
+      const ttsRes = await window.companion.invoke("ai:tts", {
+        text: currentReply,
+      });
       if (ttsRes && ttsRes.ok && ttsRes.response.audio_url) {
-        ttsQueue.push({ url: ttsRes.response.audio_url, durationMs: ttsRes.response.duration_ms });
+        ttsQueue.push({
+          url: ttsRes.response.audio_url,
+          durationMs: ttsRes.response.duration_ms,
+        });
         processTtsQueue();
       } else {
-        avatar.setState({ expression: "smile", motion: "idle", lipsync: false });
+        avatar.setState({
+          expression: "smile",
+          motion: "idle",
+          lipsync: false,
+        });
         window.companion.setLipsync(false);
         busy = false;
         setControlsDisabled(false);
       }
       chatDone = true;
-
     } catch (err) {
       console.error("WebGPU Chat Generation Error (Pet):", err);
       setCaption("Lỗi suy luận WebGPU: " + err.message);
@@ -487,7 +510,6 @@ async function ask(text) {
       busy = false;
       setControlsDisabled(false);
     }
-
   } else {
     // ----------------------------------------------------
     // Run normal HTTP Chat over Python Server
@@ -495,7 +517,7 @@ async function ask(text) {
     const context = {
       locale: "vi-VN",
       mode: "voice",
-      memory: memoryContext
+      memory: memoryContext,
     };
 
     const res = await window.companion.chat(clean, context);
@@ -743,7 +765,8 @@ window.companion.on("python:ready", () => {
 window.companion.on("set:emotion", (emotion) => {
   avatar.setState({
     expression: emotion,
-    motion: emotion === "excited" ? "excited" : "idle",
+    emotion,
+    motion: emotion,
   });
 });
 
@@ -939,7 +962,6 @@ window.companion.on("config:updated", ({ key, value }) => {
     currentModelPath = value;
     rebuildAccessoryButtons(value);
     setCaption(`Đã đổi nhân vật thành công!`);
-
   }
 });
 
@@ -1116,7 +1138,7 @@ let isDragging = false;
 function trackClickForMicroInteraction() {
   clickCount++;
   if (clickTimer) clearTimeout(clickTimer);
-  
+
   clickTimer = setTimeout(() => {
     clickCount = 0;
   }, 2000);
@@ -1135,27 +1157,28 @@ async function triggerMultiClickReaction() {
     const name = (profile.name || "IceGirl").toLowerCase();
     const rel = profile.relationship || { score: 15, level: "Người quen" };
     const level = rel.level || "Người quen";
-    
+
     let reactionText = "";
     let emotion = "angry";
-    
+
     if (name.includes("hiyori")) {
       if (level === "Bạn thân") {
         const quotes = [
           "Hì hì, nhột tớ quá nè! Cậu nghịch ghê á! [smile]",
           "Ơ kìa cậu! Trêu tớ là tớ nhột đó nha! [excited]",
-          "Hí hí! Đừng chọc tớ mà, buồn cười quá! [happy]"
+          "Hí hí! Đừng chọc tớ mà, buồn cười quá! [happy]",
         ];
         reactionText = quotes[Math.floor(Math.random() * quotes.length)];
         emotion = "happy";
       } else if (level === "Người lạ") {
-        reactionText = "Ủa... cậu đừng nhấp liên tục vào người tớ như vậy chứ, tớ hơi ngại á... [sad]";
+        reactionText =
+          "Ủa... cậu đừng nhấp liên tục vào người tớ như vậy chứ, tớ hơi ngại á... [sad]";
         emotion = "sad";
       } else {
         const quotes = [
           "A! Cậu làm gì thế? Tớ nhột đó nha! [surprised]",
           "Nè nha, chọc tớ là tớ chọc lại đó hihi! [wink]",
-          "Đừng bấm lung tung vào tớ mà, tập trung học đi nào! [focused]"
+          "Đừng bấm lung tung vào tớ mà, tập trung học đi nào! [focused]",
         ];
         reactionText = quotes[Math.floor(Math.random() * quotes.length)];
         emotion = "surprised";
@@ -1165,18 +1188,19 @@ async function triggerMultiClickReaction() {
         const quotes = [
           "Nè, chọc tôi vui lắm hả? Đồ ngốc này! [tongue]",
           "Tay cậu ngứa ngáy à? Muốn tôi phạt không? [angry]",
-          "Hừm, nghịch tóc tôi là tôi bắt đền cafe đó nhé! [wink]"
+          "Hừm, nghịch tóc tôi là tôi bắt đền cafe đó nhé! [wink]",
         ];
         reactionText = quotes[Math.floor(Math.random() * quotes.length)];
         emotion = "wink";
       } else if (level === "Người lạ") {
-        reactionText = "Hạn chế đụng vào tôi đi nhé, chúng ta chưa thân thiết đâu. [angry]";
+        reactionText =
+          "Hạn chế đụng vào tôi đi nhé, chúng ta chưa thân thiết đâu. [angry]";
         emotion = "angry";
       } else {
         const quotes = [
           "Cậu rảnh quá hả? Không có việc gì làm à? [focused]",
           "Đừng có nhấp chuột bừa bãi vào tôi nữa coi! [angry]",
-          "Nhột đó! Tránh xa tôi ra một chút xem nào. [sad]"
+          "Nhột đó! Tránh xa tôi ra một chút xem nào. [sad]",
         ];
         reactionText = quotes[Math.floor(Math.random() * quotes.length)];
         emotion = "angry";
@@ -1186,18 +1210,19 @@ async function triggerMultiClickReaction() {
         const quotes = [
           "Oa... cậu đừng làm thế, Anh Đuôi sẽ giận mắng cậu đó! [sad]",
           "Dạ... nhột quá à... cậu đừng chọc em nữa mà... [happy]",
-          "Ơ... cậu cứ nghịch thế này làm em sợ ghê... [surprised]"
+          "Ơ... cậu cứ nghịch thế này làm em sợ ghê... [surprised]",
         ];
         reactionText = quotes[Math.floor(Math.random() * quotes.length)];
         emotion = "sad";
       } else if (level === "Người lạ") {
-        reactionText = "Á! Ma cứu... ơ, hoá ra là cậu... Đừng hù em sợ mà... [surprised]";
+        reactionText =
+          "Á! Ma cứu... ơ, hoá ra là cậu... Đừng hù em sợ mà... [surprised]";
         emotion = "surprised";
       } else {
         const quotes = [
           "Dạ... cậu đừng bấm liên tục vào em thế, em xin lỗi mà... [sad]",
           "Ơ kìa... có chuyện gì gấp hả cậu? Em đang nghe đây... [focused]",
-          "Hu hu, đừng bắt nạt phán quan tập sự mà cậu... [sad]"
+          "Hu hu, đừng bắt nạt phán quan tập sự mà cậu... [sad]",
         ];
         reactionText = quotes[Math.floor(Math.random() * quotes.length)];
         emotion = "sad";
@@ -1207,18 +1232,19 @@ async function triggerMultiClickReaction() {
         const quotes = [
           "Nè! Chọc tớ nhột lắm đó nha! Đồ nghịch ngợm! [tongue]",
           "Tay cậu nhanh hơn não rồi đấy à? [wink]",
-          "Hihi! Nhột quá đi mất, dừng lại mau! [happy]"
+          "Hihi! Nhột quá đi mất, dừng lại mau! [happy]",
         ];
         reactionText = quotes[Math.floor(Math.random() * quotes.length)];
         emotion = "happy";
       } else if (level === "Người lạ") {
-        reactionText = "Cậu làm gì vậy? Đừng có gõ liên tục vào tớ chứ! [angry]";
+        reactionText =
+          "Cậu làm gì vậy? Đừng có gõ liên tục vào tớ chứ! [angry]";
         emotion = "angry";
       } else {
         const quotes = [
           "Nè nha! Đừng có nghịch chuột lung tung vào tớ chứ! [angry]",
           "Ui da! Cậu nhấn mạnh tay thế, đau tớ đấy! [sad]",
-          "Bấm nữa là tớ cắn cho một miếng bây giờ! [tongue]"
+          "Bấm nữa là tớ cắn cho một miếng bây giờ! [tongue]",
         ];
         reactionText = quotes[Math.floor(Math.random() * quotes.length)];
         emotion = "angry";
@@ -1250,7 +1276,10 @@ async function speakQuickReaction(text, emotion) {
     setVoiceState(VoiceState.SPEAKING);
     const ttsRes = await window.companion.invoke("ai:tts", { text: text });
     if (ttsRes && ttsRes.ok && ttsRes.response.audio_url) {
-      ttsQueue.push({ url: ttsRes.response.audio_url, durationMs: ttsRes.response.duration_ms });
+      ttsQueue.push({
+        url: ttsRes.response.audio_url,
+        durationMs: ttsRes.response.duration_ms,
+      });
       processTtsQueue();
     } else {
       busy = false;

@@ -9,8 +9,15 @@
  *  3. Fallback ảnh PNG + CSS animation (không cần SDK)
  */
 
-import { normalizeExpression, EXPRESSION_MAPPINGS } from "./expressions/expression.js";
-import { normalizeMotion, MOTION_MAPPINGS } from "./motions/motion.js";
+import {
+  normalizeExpression,
+  EXPRESSION_MAPPINGS,
+} from "./expressions/expression.js";
+import {
+  normalizeMotion,
+  MOTION_MAPPINGS,
+  getMotionForEmotion,
+} from "./motions/motion.js";
 import { SpineBackend } from "./runtime/spine-manager.js";
 
 // Helper to identify character model from path
@@ -22,7 +29,6 @@ function getModelKey(modelPath) {
   if (pathLower.includes("huohuo")) return "huohuo";
   return "icegirl";
 }
-
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -113,7 +119,9 @@ class PixiLive2DBackend {
       "position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity 0.3s ease;";
 
     try {
-      this._model = await Live2DModel.from(this._modelPath, { autoInteract: false });
+      this._model = await Live2DModel.from(this._modelPath, {
+        autoInteract: false,
+      });
       this._origWidth = this._model.width;
       this._origHeight = this._model.height;
     } catch (err) {
@@ -129,7 +137,7 @@ class PixiLive2DBackend {
       const self = this;
       motionManager.update = function (model, now) {
         const res = originalUpdate.call(this, model, now);
-        
+
         // Param58: waving motion (-1 to 1)
         // Param59: waving opacity (0 to 1)
         // Param60: heart trail (0 to 1)
@@ -148,7 +156,6 @@ class PixiLive2DBackend {
     } catch (err) {
       console.warn("[Live2D] Failed to override motionManager.update:", err);
     }
-
 
     this._app.stage.addChild(this._model);
     this._fitModel(w, h);
@@ -174,21 +181,24 @@ class PixiLive2DBackend {
 
   _fitModel(w, h) {
     if (!this._model) return;
-    
+
     // Scale slightly down to leave space for floating elements, accessories, or motions
     let scaleMultiplier = 0.85;
     const pathLower = this._modelPath.toLowerCase();
     if (pathLower.includes("huohuo")) {
       scaleMultiplier = 0.75; // Huohuo needs more space at the top/sides for her floating ghost and tail
     }
-    
+
     // Get true original size from Live2D core model canvas size to prevent scaling accumulation bugs
     const coreModel = this._model.internalModel?.coreModel;
-    const origW = coreModel?.canvasWidth || this._model.internalModel?.originalWidth || 400;
-    const origH = coreModel?.canvasHeight || this._model.internalModel?.originalHeight || 500;
-    
-    const scale =
-      Math.min(w / origW, h / origH) * scaleMultiplier;
+    const origW =
+      coreModel?.canvasWidth || this._model.internalModel?.originalWidth || 400;
+    const origH =
+      coreModel?.canvasHeight ||
+      this._model.internalModel?.originalHeight ||
+      500;
+
+    const scale = Math.min(w / origW, h / origH) * scaleMultiplier;
     this._model.scale.set(scale);
     this._model.position.set(w / 2, h * 0.98);
     this._model.anchor.set(0.5, 1.0);
@@ -199,7 +209,7 @@ class PixiLive2DBackend {
       this._activeAccessories = {};
     }
     if (Array.isArray(paramId)) {
-      paramId.forEach(pid => {
+      paramId.forEach((pid) => {
         this._activeAccessories[pid] = value;
       });
     } else {
@@ -217,7 +227,10 @@ class PixiLive2DBackend {
       try {
         this._model?.expression(live2dName);
       } catch (err) {
-        console.warn(`[Live2D] Failed to set expression ${expressionName} for ${modelKey}:`, err);
+        console.warn(
+          `[Live2D] Failed to set expression ${expressionName} for ${modelKey}:`,
+          err,
+        );
       }
     } else if (modelKey === "hiyori") {
       // Hiyori has no expressions, fall back to equivalent motion
@@ -256,7 +269,10 @@ class PixiLive2DBackend {
         }
       }
     } catch (err) {
-      console.warn(`[Live2D] Failed to play motion ${motionName} for ${modelKey}:`, err);
+      console.warn(
+        `[Live2D] Failed to play motion ${motionName} for ${modelKey}:`,
+        err,
+      );
     }
   }
 
@@ -280,14 +296,20 @@ class PixiLive2DBackend {
   containsPoint(x, y) {
     if (!this._model) return false;
     const bounds = this._model.getBounds();
-    const isInsideBounds = x >= bounds.x && x <= (bounds.x + bounds.width) &&
-                           y >= bounds.y && y <= (bounds.y + bounds.height);
+    const isInsideBounds =
+      x >= bounds.x &&
+      x <= bounds.x + bounds.width &&
+      y >= bounds.y &&
+      y <= bounds.y + bounds.height;
     if (!isInsideBounds) return false;
 
     // Inside bounds, now check pixel alpha channel
     try {
       const canvas = this._app.view;
-      const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      const gl =
+        canvas.getContext("webgl2") ||
+        canvas.getContext("webgl") ||
+        canvas.getContext("experimental-webgl");
       if (!gl) return true; // Fallback if no WebGL context found
 
       const rect = canvas.getBoundingClientRect();
@@ -295,9 +317,17 @@ class PixiLive2DBackend {
       const canvasY = y - rect.top;
 
       const glX = Math.floor(canvasX * (gl.drawingBufferWidth / rect.width));
-      const glY = Math.floor(gl.drawingBufferHeight - (canvasY * (gl.drawingBufferHeight / rect.height)));
+      const glY = Math.floor(
+        gl.drawingBufferHeight -
+          canvasY * (gl.drawingBufferHeight / rect.height),
+      );
 
-      if (glX < 0 || glX >= gl.drawingBufferWidth || glY < 0 || glY >= gl.drawingBufferHeight) {
+      if (
+        glX < 0 ||
+        glX >= gl.drawingBufferWidth ||
+        glY < 0 ||
+        glY >= gl.drawingBufferHeight
+      ) {
         return false;
       }
 
@@ -330,16 +360,16 @@ class PixiLive2DBackend {
     if (modelKey === "icegirl") {
       if (hitAreas.includes("HitAreaHead")) {
         const headReactions = [
-          { expression: "angry", motion: "shake" },      // 生气 + HuiShou (shake head)
+          { expression: "angry", motion: "shake" }, // 生气 + HuiShou (shake head)
           { expression: "thinking", motion: "thinking" }, // 疑惑 + DaiJi
-          { expression: "surprised", motion: "nod" }      // 惊讶 + MeiYan
+          { expression: "surprised", motion: "nod" }, // 惊讶 + MeiYan
         ];
         return headReactions[Math.floor(Math.random() * headReactions.length)];
       } else if (hitAreas.includes("HitAreaBody")) {
         const bodyReactions = [
-          { expression: "smile", motion: "nod" },       // 脸红 + MeiYan
-          { expression: "happy", motion: "excited" },   // 爱心眼 + MeiYan
-          { expression: "wink", motion: "nod" }         // 歪嘴→ + MeiYan
+          { expression: "smile", motion: "nod" }, // 脸红 + MeiYan
+          { expression: "happy", motion: "excited" }, // 爱心眼 + MeiYan
+          { expression: "wink", motion: "nod" }, // 歪嘴→ + MeiYan
         ];
         return bodyReactions[Math.floor(Math.random() * bodyReactions.length)];
       }
@@ -348,14 +378,14 @@ class PixiLive2DBackend {
         const headReactions = [
           { expression: "angry", motion: "shake" },
           { expression: "focused", motion: "thinking" },
-          { expression: "surprised", motion: "thinking" }
+          { expression: "surprised", motion: "thinking" },
         ];
         return headReactions[Math.floor(Math.random() * headReactions.length)];
       } else if (hitAreas.includes("HitAreaBody")) {
         const bodyReactions = [
           { expression: "smile", motion: "nod" },
           { expression: "happy", motion: "excited" },
-          { expression: "smile", motion: "look_side" }
+          { expression: "smile", motion: "look_side" },
         ];
         return bodyReactions[Math.floor(Math.random() * bodyReactions.length)];
       }
@@ -364,7 +394,7 @@ class PixiLive2DBackend {
         const bodyReactions = [
           { expression: "smile", motion: "nod" },
           { expression: "happy", motion: "excited" },
-          { expression: "thinking", motion: "thinking" }
+          { expression: "thinking", motion: "thinking" },
         ];
         return bodyReactions[Math.floor(Math.random() * bodyReactions.length)];
       }
@@ -372,14 +402,14 @@ class PixiLive2DBackend {
       if (hitAreas.includes("HitAreaHead")) {
         const headReactions = [
           { expression: "surprised", motion: "excited" }, // white eyes + linghun (soul leaving)
-          { expression: "sad", motion: "shake" },         // cry + yaotou
-          { expression: "angry", motion: "shake" }        // angry + yaotou
+          { expression: "sad", motion: "shake" }, // cry + yaotou
+          { expression: "angry", motion: "shake" }, // angry + yaotou
         ];
         return headReactions[Math.floor(Math.random() * headReactions.length)];
       } else if (hitAreas.includes("HitAreaBody")) {
         const bodyReactions = [
-          { expression: "smile", motion: "nod" },         // baozhen + haoqi
-          { expression: "happy", motion: "zhentou" }      // baozhen + zhentou
+          { expression: "smile", motion: "nod" }, // baozhen + haoqi
+          { expression: "happy", motion: "zhentou" }, // baozhen + zhentou
         ];
         return bodyReactions[Math.floor(Math.random() * bodyReactions.length)];
       }
@@ -497,12 +527,17 @@ export class AvatarController {
     // Try to get model from config
     try {
       if (window.companion) {
-        const res = await window.companion.invoke('ai:get-config');
+        const res = await window.companion.invoke("ai:get-config");
         if (res && res.avatar_model && !res.error) {
           let path = res.avatar_model;
           if (path.endsWith(".vrm")) {
             path = "assets/live2d/IceGirl/IceGirl.model3.json";
-            window.companion.invoke("ai:update-config", { key: "app.avatarModel", value: path }).catch(() => null);
+            window.companion
+              .invoke("ai:update-config", {
+                key: "app.avatarModel",
+                value: path,
+              })
+              .catch(() => null);
           }
           this._modelPath = "../../" + path;
         }
@@ -519,13 +554,18 @@ export class AvatarController {
 
   async _loadBackend() {
     const pathLower = this._modelPath.toLowerCase();
-    const isSpine = pathLower.endsWith('.json') && !pathLower.endsWith('.model3.json');
+    const isSpine =
+      pathLower.endsWith(".json") && !pathLower.endsWith(".model3.json");
 
     if (isSpine) {
       if (this._spineCanvas) {
         this._spineCanvas.style.display = "block";
       }
-      const spineBackend = new SpineBackend(this._wrap, this._spineCanvas, this._modelPath);
+      const spineBackend = new SpineBackend(
+        this._wrap,
+        this._spineCanvas,
+        this._modelPath,
+      );
       const spineOk = await spineBackend.init().catch(() => false);
       if (spineOk) {
         this._backend = spineBackend;
@@ -561,7 +601,7 @@ export class AvatarController {
 
     // Clear any residual canvas elements from wrapper EXCEPT spineCanvas
     const canvases = this._wrap.querySelectorAll("canvas");
-    canvases.forEach(c => {
+    canvases.forEach((c) => {
       if (c !== this._spineCanvas) c.remove();
     });
     if (this._img) this._img.style.display = "none"; // Hide image during model loading
@@ -576,7 +616,9 @@ export class AvatarController {
 
   setState({ expression, emotion, motion, lipsync } = {}) {
     const expr = normalizeExpression(expression ?? emotion ?? "normal");
-    const mot = normalizeMotion(motion ?? "idle");
+    const requestedMotion =
+      motion ?? (emotion ? getMotionForEmotion(emotion) : undefined) ?? "idle";
+    const mot = normalizeMotion(requestedMotion);
 
     if (expr !== this._state.expression) {
       this._state.expression = expr;
@@ -625,9 +667,10 @@ export class AvatarController {
       { expression: "happy", motion: "excited" },
       { expression: "wink", motion: "nod" },
       { expression: "surprised", motion: "nod" },
-      { expression: "smile", motion: "look_side" }
+      { expression: "smile", motion: "look_side" },
     ];
-    const reaction = defaultReactions[Math.floor(Math.random() * defaultReactions.length)];
+    const reaction =
+      defaultReactions[Math.floor(Math.random() * defaultReactions.length)];
     this.setState(reaction);
   }
 
@@ -662,7 +705,6 @@ export class AvatarController {
     };
     scheduleNext();
   }
-
 
   destroy() {
     this.stopLipSync();

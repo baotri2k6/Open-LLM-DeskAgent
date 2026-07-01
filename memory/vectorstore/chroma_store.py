@@ -26,11 +26,28 @@ class ChromaMemoryStore:
         self._client = chromadb.PersistentClient(path=str(persist_dir))
         self._embed_fn = get_default_embedding_function()
 
-        self._col = self._client.get_or_create_collection(
-            name=collection_name,
-            embedding_function=self._embed_fn,
-            metadata={"hnsw:space": "cosine"},
-        )
+        try:
+            self._col = self._client.get_or_create_collection(
+                name=collection_name,
+                embedding_function=self._embed_fn,
+                metadata={"hnsw:space": "cosine"},
+            )
+        except Exception as exc:
+            embed_name = getattr(self._embed_fn, "name", lambda: "embedding")()
+            safe_embed_name = "".join(ch if ch.isalnum() else "_" for ch in embed_name).strip("_")
+            fallback_collection = f"{collection_name}_{safe_embed_name}"[:63]
+            logger.warning(
+                "Chroma collection '%s' is incompatible with embedding '%s'; using '%s': %s",
+                collection_name,
+                embed_name,
+                fallback_collection,
+                exc,
+            )
+            self._col = self._client.get_or_create_collection(
+                name=fallback_collection,
+                embedding_function=self._embed_fn,
+                metadata={"hnsw:space": "cosine"},
+            )
 
     def add_memories(self, ids: List[str], documents: List[str], metadatas: List[dict]) -> None:
         """Add memories/facts to Chroma collection."""

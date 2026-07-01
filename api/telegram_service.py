@@ -1,9 +1,10 @@
-"""Telegram Remote Bridge Service — Cho phép trò chuyện, ra lệnh và chụp ảnh màn hình từ xa."""
+﻿"""Telegram Remote Bridge Service â€” Cho phÃ©p trÃ² chuyá»‡n, ra lá»‡nh vÃ  chá»¥p áº£nh mÃ n hÃ¬nh tá»« xa."""
 
 from __future__ import annotations
 
 import asyncio
 import io
+import sys
 import time
 import logging
 from pathlib import Path
@@ -25,44 +26,49 @@ _current_token: str | None = None
 
 
 def sync_telegram_service() -> None:
-    """Đồng bộ hóa trạng thái của Telegram Service dựa trên cấu hình (Start/Stop/Restart).
+    """Sync Telegram task state from HTTP thread into the background event loop."""
+    background_loop = None
+    main_module = sys.modules.get("__main__")
+    if main_module is not None:
+        background_loop = getattr(main_module, "_background_loop", None)
+    if background_loop is None:
+        server_module = sys.modules.get("api.server") or sys.modules.get("server")
+        if server_module is not None:
+            background_loop = getattr(server_module, "_background_loop", None)
 
-    Gọi từ luồng ngoài (HTTP server) sang event loop chạy ngầm.
-    """
-    from server import _background_loop
-    if not _background_loop:
-        logger.warning("Event loop chạy nền chưa khởi động, không thể đồng bộ Telegram service.")
+    if not background_loop:
+        logger.warning("Background event loop is not ready; Telegram service sync skipped.")
         return
 
-    _background_loop.call_soon_threadsafe(_sync_telegram_service_async)
+    background_loop.call_soon_threadsafe(_sync_telegram_service_async)
 
 
 def _sync_telegram_service_async() -> None:
-    """Chạy trực tiếp trong event loop ngầm để khởi động/hủy tác vụ Telegram Bot."""
+    """Cháº¡y trá»±c tiáº¿p trong event loop ngáº§m Ä‘á»ƒ khá»Ÿi Ä‘á»™ng/há»§y tÃ¡c vá»¥ Telegram Bot."""
     global _telegram_task, _current_token
     bot_token = config.get("telegram.bot_token", "").strip()
 
     if bot_token != _current_token:
-        # Nếu token thay đổi, hủy bot cũ đang chạy
+        # Náº¿u token thay Ä‘á»•i, há»§y bot cÅ© Ä‘ang cháº¡y
         if _telegram_task:
-            logger.info("Telegram Bot: Token thay đổi. Đang đóng bot cũ...")
+            logger.info("Telegram Bot: Token thay Ä‘á»•i. Äang Ä‘Ã³ng bot cÅ©...")
             _telegram_task.cancel()
             _telegram_task = None
 
         _current_token = bot_token
         if bot_token:
-            logger.info("Telegram Bot: Đang khởi động bot với token mới...")
+            logger.info("Telegram Bot: Äang khá»Ÿi Ä‘á»™ng bot vá»›i token má»›i...")
             _telegram_task = asyncio.create_task(telegram_bot_loop(bot_token))
     
     elif not bot_token and _telegram_task:
-        logger.info("Telegram Bot: Token trống. Đang dừng bot...")
+        logger.info("Telegram Bot: Token trá»‘ng. Äang dá»«ng bot...")
         _telegram_task.cancel()
         _telegram_task = None
         _current_token = None
 
 
 async def send_telegram_message(session: aiohttp.ClientSession, url: str, chat_id: str, text: str) -> None:
-    """Gửi tin nhắn văn bản đến người dùng qua Telegram Bot API."""
+    """Gá»­i tin nháº¯n vÄƒn báº£n Ä‘áº¿n ngÆ°á»i dÃ¹ng qua Telegram Bot API."""
     send_url = f"{url}/sendMessage"
     payload = {
         "chat_id": chat_id,
@@ -71,14 +77,14 @@ async def send_telegram_message(session: aiohttp.ClientSession, url: str, chat_i
     try:
         async with session.post(send_url, json=payload, timeout=10) as resp:
             if resp.status != 200:
-                logger.error(f"Gửi tin nhắn Telegram thất bại: status {resp.status}, response: {await resp.text()}")
+                logger.error(f"Gá»­i tin nháº¯n Telegram tháº¥t báº¡i: status {resp.status}, response: {await resp.text()}")
     except Exception as e:
-        logger.error(f"Lỗi khi gửi tin nhắn Telegram: {e}")
+        logger.error(f"Lá»—i khi gá»­i tin nháº¯n Telegram: {e}")
 
 
 async def handle_telegram_screenshot(session: aiohttp.ClientSession, url: str, chat_id: str) -> None:
-    """Chụp ảnh màn hình máy tính hiện tại và gửi về điện thoại người dùng qua Telegram."""
-    # Hiển thị trạng thái đang gửi ảnh (Chat Action)
+    """Chá»¥p áº£nh mÃ n hÃ¬nh mÃ¡y tÃ­nh hiá»‡n táº¡i vÃ  gá»­i vá» Ä‘iá»‡n thoáº¡i ngÆ°á»i dÃ¹ng qua Telegram."""
+    # Hiá»ƒn thá»‹ tráº¡ng thÃ¡i Ä‘ang gá»­i áº£nh (Chat Action)
     try:
         action_url = f"{url}/sendChatAction"
         await session.post(action_url, json={"chat_id": chat_id, "action": "upload_photo"}, timeout=5)
@@ -88,10 +94,10 @@ async def handle_telegram_screenshot(session: aiohttp.ClientSession, url: str, c
     try:
         screenshot = None
         try:
-            # Chạy hàm chụp hình đồng bộ của pyautogui trong Thread để không block event loop
+            # Cháº¡y hÃ m chá»¥p hÃ¬nh Ä‘á»“ng bá»™ cá»§a pyautogui trong Thread Ä‘á»ƒ khÃ´ng block event loop
             screenshot = await asyncio.to_thread(pyautogui.screenshot)
         except Exception as py_err:
-            logger.warning(f"pyautogui.screenshot thất bại: {py_err}. Đang dùng mss fallback...")
+            logger.warning(f"pyautogui.screenshot tháº¥t báº¡i: {py_err}. Äang dÃ¹ng mss fallback...")
             try:
                 import mss
                 with mss.mss() as sct:
@@ -99,11 +105,11 @@ async def handle_telegram_screenshot(session: aiohttp.ClientSession, url: str, c
                     sct_img = sct.grab(monitor)
                     screenshot = Image.frombytes("RGB", sct_img.size, sct_img.bgra, "raw", "BGRX")
             except Exception as mss_err:
-                logger.error(f"mss screenshot fallback cũng thất bại: {mss_err}")
-                await send_telegram_message(session, url, chat_id, f"❌ Không thể chụp màn hình: {mss_err}")
+                logger.error(f"mss screenshot fallback cÅ©ng tháº¥t báº¡i: {mss_err}")
+                await send_telegram_message(session, url, chat_id, f"âŒ KhÃ´ng thá»ƒ chá»¥p mÃ n hÃ¬nh: {mss_err}")
                 return
 
-        # Resize ảnh để tối ưu dung lượng truyền tải
+        # Resize áº£nh Ä‘á»ƒ tá»‘i Æ°u dung lÆ°á»£ng truyá»n táº£i
         width, height = screenshot.size
         max_size = 1280
         if max(width, height) > max_size:
@@ -113,41 +119,41 @@ async def handle_telegram_screenshot(session: aiohttp.ClientSession, url: str, c
         screenshot.save(buffered, format="JPEG", quality=85)
         buffered.seek(0)
 
-        # Gửi file đa phần (multipart/form-data)
+        # Gá»­i file Ä‘a pháº§n (multipart/form-data)
         send_photo_url = f"{url}/sendPhoto"
         data = aiohttp.FormData()
         data.add_field("chat_id", chat_id)
-        data.add_field("caption", f"🖥️ Ảnh chụp màn hình máy tính lúc {time.strftime('%H:%M:%S ngày %d/%m/%Y')}")
+        data.add_field("caption", f"ðŸ–¥ï¸ áº¢nh chá»¥p mÃ n hÃ¬nh mÃ¡y tÃ­nh lÃºc {time.strftime('%H:%M:%S ngÃ y %d/%m/%Y')}")
         data.add_field("photo", buffered, filename="screenshot.jpg", content_type="image/jpeg")
 
         async with session.post(send_photo_url, data=data, timeout=20) as resp:
             if resp.status != 200:
                 err_text = await resp.text()
-                logger.error(f"Gửi ảnh Telegram thất bại: status {resp.status}, response: {err_text}")
-                await send_telegram_message(session, url, chat_id, f"❌ Gửi ảnh màn hình thất bại: {err_text}")
+                logger.error(f"Gá»­i áº£nh Telegram tháº¥t báº¡i: status {resp.status}, response: {err_text}")
+                await send_telegram_message(session, url, chat_id, f"âŒ Gá»­i áº£nh mÃ n hÃ¬nh tháº¥t báº¡i: {err_text}")
             else:
-                logger.info("Đã gửi ảnh chụp màn hình qua Telegram thành công.")
+                logger.info("ÄÃ£ gá»­i áº£nh chá»¥p mÃ n hÃ¬nh qua Telegram thÃ nh cÃ´ng.")
 
     except Exception as e:
-        logger.error(f"Lỗi xử lý chụp ảnh màn hình gửi Telegram: {e}", exc_info=True)
-        await send_telegram_message(session, url, chat_id, f"❌ Lỗi khi chụp màn hình máy tính: {e}")
+        logger.error(f"Lá»—i xá»­ lÃ½ chá»¥p áº£nh mÃ n hÃ¬nh gá»­i Telegram: {e}", exc_info=True)
+        await send_telegram_message(session, url, chat_id, f"âŒ Lá»—i khi chá»¥p mÃ n hÃ¬nh mÃ¡y tÃ­nh: {e}")
 
 
 async def process_telegram_message(text: str) -> str:
-    """Xử lý hội thoại hoặc ra lệnh nhận được từ Telegram gửi tới PlannerAgent."""
+    """Xá»­ lÃ½ há»™i thoáº¡i hoáº·c ra lá»‡nh nháº­n Ä‘Æ°á»£c tá»« Telegram gá»­i tá»›i PlannerAgent."""
     try:
         router = MessageRouter()
         planner = router.planner
         memory = planner.memory.service
 
-        # Ghi nhận tương tác & phân tích cảm xúc người dùng
+        # Ghi nháº­n tÆ°Æ¡ng tÃ¡c & phÃ¢n tÃ­ch cáº£m xÃºc ngÆ°á»i dÃ¹ng
         time_note = memory.record_interaction()
         memory.analyze_sentiment_and_update(text)
 
         rel_info = memory.get_relationship()
         mood = memory.get_mood()
 
-        # Tạo context bối cảnh cho Agent giống như giao diện GUI
+        # Táº¡o context bá»‘i cáº£nh cho Agent giá»‘ng nhÆ° giao diá»‡n GUI
         context: dict[str, Any] = {
             "companion": {
                 "rel_level": rel_info["level"],
@@ -158,13 +164,13 @@ async def process_telegram_message(text: str) -> str:
             "memory": memory.recall(text)
         }
 
-        # Import lazily từ server.py để tránh lỗi circular imports
+        # Import lazily tá»« server.py Ä‘á»ƒ trÃ¡nh lá»—i circular imports
         from server import screen_watcher, _last_interaction_time, get_rag
 
         screen_text = screen_watcher.get_current_context() if screen_watcher else ""
         activity = screen_watcher.get_current_activity() if screen_watcher else "unknown"
         
-        # Đồng bộ thời gian tương tác cuối cùng trên hệ thống
+        # Äá»“ng bá»™ thá»i gian tÆ°Æ¡ng tÃ¡c cuá»‘i cÃ¹ng trÃªn há»‡ thá»‘ng
         last_time = _last_interaction_time if isinstance(_last_interaction_time, (int, float)) else time.time()
 
         context["perception"] = PerceptionFusion.fuse(
@@ -183,37 +189,37 @@ async def process_telegram_message(text: str) -> str:
                     if rag_context:
                         context["rag_context"] = rag_context
                 except Exception as exc:
-                    logger.warning(f"RAG context query thất bại: {exc}")
+                    logger.warning(f"RAG context query tháº¥t báº¡i: {exc}")
 
-        # Gửi tin nhắn qua PlannerAgent xử lý các công cụ và sinh nội dung phản hồi (Không dùng stream)
+        # Gá»­i tin nháº¯n qua PlannerAgent xá»­ lÃ½ cÃ¡c cÃ´ng cá»¥ vÃ  sinh ná»™i dung pháº£n há»“i (KhÃ´ng dÃ¹ng stream)
         response = await planner.handle_message(text, context)
         reply_text = response.get("text", "")
 
-        # Cập nhật lịch sử hội thoại và tự động đúc kết phản chiếu ký ức (Reflection)
+        # Cáº­p nháº­t lá»‹ch sá»­ há»™i thoáº¡i vÃ  tá»± Ä‘á»™ng Ä‘Ãºc káº¿t pháº£n chiáº¿u kÃ½ á»©c (Reflection)
         try:
             memory.add_to_conversation_history("user", text)
             memory.add_to_conversation_history("assistant", reply_text)
             memory.write_back_memory(text, reply_text)
 
-            # Chạy bất đồng bộ phân tích cảm xúc & đúc kết nhật ký
+            # Cháº¡y báº¥t Ä‘á»“ng bá»™ phÃ¢n tÃ­ch cáº£m xÃºc & Ä‘Ãºc káº¿t nháº­t kÃ½
             memory.analyze_sentiment_async(text, reply_text)
             memory.write_diary_if_needed()
         except Exception as e:
-            logger.warning(f"Cập nhật Memory cho tin nhắn từ Telegram thất bại: {e}")
+            logger.warning(f"Cáº­p nháº­t Memory cho tin nháº¯n tá»« Telegram tháº¥t báº¡i: {e}")
 
         return reply_text
 
     except Exception as e:
-        logger.error(f"Lỗi khi xử lý tin nhắn Telegram qua PlannerAgent: {e}", exc_info=True)
-        return f"Có lỗi xảy ra trong hệ thống: {e}"
+        logger.error(f"Lá»—i khi xá»­ lÃ½ tin nháº¯n Telegram qua PlannerAgent: {e}", exc_info=True)
+        return f"CÃ³ lá»—i xáº£y ra trong há»‡ thá»‘ng: {e}"
 
 
 async def telegram_bot_loop(bot_token: str) -> None:
-    """Vòng lặp polling tin nhắn từ Telegram API."""
+    """VÃ²ng láº·p polling tin nháº¯n tá»« Telegram API."""
     offset = 0
     url = f"https://api.telegram.org/bot{bot_token}"
 
-    logger.info("Telegram Bot polling loop đã bắt đầu hoạt động.")
+    logger.info("Telegram Bot polling loop Ä‘Ã£ báº¯t Ä‘áº§u hoáº¡t Ä‘á»™ng.")
 
     async with aiohttp.ClientSession() as session:
         while True:
@@ -227,11 +233,11 @@ async def telegram_bot_loop(bot_token: str) -> None:
 
                 async with session.get(get_updates_url, params=params, timeout=35) as resp:
                     if resp.status == 401:
-                        logger.error("Token Telegram Bot bị từ chối (Unauthorized). Đang đóng vòng lặp...")
+                        logger.error("Token Telegram Bot bá»‹ tá»« chá»‘i (Unauthorized). Äang Ä‘Ã³ng vÃ²ng láº·p...")
                         break
                     
                     if resp.status != 200:
-                        logger.error(f"Telegram API trả về mã lỗi: {resp.status}")
+                        logger.error(f"Telegram API tráº£ vá» mÃ£ lá»—i: {resp.status}")
                         await asyncio.sleep(10)
                         continue
 
@@ -255,30 +261,30 @@ async def telegram_bot_loop(bot_token: str) -> None:
                         chat_id = str(chat.get("id"))
                         text = message.get("text", "").strip()
 
-                        # Đọc cấu hình allowed_chat_id động để có thể thay đổi bất cứ lúc nào
+                        # Äá»c cáº¥u hÃ¬nh allowed_chat_id Ä‘á»™ng Ä‘á»ƒ cÃ³ thá»ƒ thay Ä‘á»•i báº¥t cá»© lÃºc nÃ o
                         allowed_chat_id = config.get("telegram.allowed_chat_id", "").strip()
 
                         if not allowed_chat_id:
-                            # Hướng dẫn người dùng cấu hình đúng ID khi chat với Bot lần đầu
+                            # HÆ°á»›ng dáº«n ngÆ°á»i dÃ¹ng cáº¥u hÃ¬nh Ä‘Ãºng ID khi chat vá»›i Bot láº§n Ä‘áº§u
                             response_text = (
-                                f"👋 Chào bạn! ID cuộc trò chuyện (chat ID) của bạn là: `{chat_id}`.\n\n"
-                                f"Vui lòng thêm ID này vào mục `telegram.allowed_chat_id` trong file "
-                                f"`config/companion.config.json` để kích hoạt quyền điều khiển máy tính từ xa nhé!"
+                                f"ðŸ‘‹ ChÃ o báº¡n! ID cuá»™c trÃ² chuyá»‡n (chat ID) cá»§a báº¡n lÃ : `{chat_id}`.\n\n"
+                                f"Vui lÃ²ng thÃªm ID nÃ y vÃ o má»¥c `telegram.allowed_chat_id` trong file "
+                                f"`config/companion.config.json` Ä‘á»ƒ kÃ­ch hoáº¡t quyá»n Ä‘iá»u khiá»ƒn mÃ¡y tÃ­nh tá»« xa nhÃ©!"
                             )
                             await send_telegram_message(session, url, chat_id, response_text)
                             continue
 
                         if chat_id != allowed_chat_id:
-                            logger.warning(f"Cố gắng truy cập trái phép từ chat_id: {chat_id}")
-                            await send_telegram_message(session, url, chat_id, "🔒 Bạn không có quyền truy cập bot này!")
+                            logger.warning(f"Cá»‘ gáº¯ng truy cáº­p trÃ¡i phÃ©p tá»« chat_id: {chat_id}")
+                            await send_telegram_message(session, url, chat_id, "ðŸ”’ Báº¡n khÃ´ng cÃ³ quyá»n truy cáº­p bot nÃ y!")
                             continue
 
                         if not text:
                             continue
 
-                        logger.info(f"Telegram Bot nhận yêu cầu: '{text}' từ chat_id {chat_id}")
+                        logger.info(f"Telegram Bot nháº­n yÃªu cáº§u: '{text}' tá»« chat_id {chat_id}")
 
-                        # Xử lý các lệnh đặc biệt
+                        # Xá»­ lÃ½ cÃ¡c lá»‡nh Ä‘áº·c biá»‡t
                         if text.lower().strip() == "/screenshot":
                             await handle_telegram_screenshot(session, url, chat_id)
                         elif text.lower().strip() == "/start":
@@ -286,17 +292,18 @@ async def telegram_bot_loop(bot_token: str) -> None:
                                 session,
                                 url,
                                 chat_id,
-                                "👋 Chào mừng cậu quay trở lại! Tớ luôn sẵn sàng hỗ trợ.\n"
-                                "👉 Cậu có thể gửi tin nhắn trò chuyện, ra lệnh mở ứng dụng, hoặc dùng lệnh `/screenshot` để xem màn hình máy tính của cậu nhé."
+                                "ðŸ‘‹ ChÃ o má»«ng cáº­u quay trá»Ÿ láº¡i! Tá»› luÃ´n sáºµn sÃ ng há»— trá»£.\n"
+                                "ðŸ‘‰ Cáº­u cÃ³ thá»ƒ gá»­i tin nháº¯n trÃ² chuyá»‡n, ra lá»‡nh má»Ÿ á»©ng dá»¥ng, hoáº·c dÃ¹ng lá»‡nh `/screenshot` Ä‘á»ƒ xem mÃ n hÃ¬nh mÃ¡y tÃ­nh cá»§a cáº­u nhÃ©."
                             )
                         else:
-                            # Xử lý hội thoại qua AI
+                            # Xá»­ lÃ½ há»™i thoáº¡i qua AI
                             reply = await process_telegram_message(text)
                             await send_telegram_message(session, url, chat_id, reply)
 
             except asyncio.CancelledError:
-                logger.info("Vòng lặp Telegram Bot polling đã được yêu cầu dừng.")
+                logger.info("VÃ²ng láº·p Telegram Bot polling Ä‘Ã£ Ä‘Æ°á»£c yÃªu cáº§u dá»«ng.")
                 break
             except Exception as e:
-                logger.error(f"Lỗi xảy ra trong vòng lặp Telegram Bot: {e}", exc_info=True)
+                logger.error(f"Lá»—i xáº£y ra trong vÃ²ng láº·p Telegram Bot: {e}", exc_info=True)
                 await asyncio.sleep(5)
+

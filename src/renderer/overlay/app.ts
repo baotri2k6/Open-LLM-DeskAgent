@@ -1,6 +1,10 @@
 import { AvatarController } from "../../live2d/live2d-manager.js";
 import { ChatHistory } from "../chat/history.js";
-import { renderMessage, renderChunk, renderApprovalCard } from "../chat/message.js";
+import {
+  renderMessage,
+  renderChunk,
+  renderApprovalCard,
+} from "../chat/message.js";
 import { AudioPlayer } from "../voice/audio-player.js";
 import { VoiceRecorder } from "../voice/recoder.js";
 
@@ -22,7 +26,10 @@ let WebGPUEngine: any = {
     LocalDB = mod.LocalDB;
     console.log("[app] LocalDB module loaded");
   } catch (err: any) {
-    console.warn("[app] LocalDB module failed to load (offline?):", err.message);
+    console.warn(
+      "[app] LocalDB module failed to load (offline?):",
+      err.message,
+    );
   }
   try {
     const mod = await import("../shared/webgpu-engine.js");
@@ -41,16 +48,32 @@ const statusPill = document.getElementById("serviceStatus") as HTMLSpanElement;
 const llmSelect = document.getElementById("llmSelect") as HTMLSelectElement;
 const sttSelect = document.getElementById("sttSelect") as HTMLSelectElement;
 
-const attachButton = document.getElementById("attachButton") as HTMLButtonElement;
+const attachButton = document.getElementById(
+  "attachButton",
+) as HTMLButtonElement;
 const fileInput = document.getElementById("fileInput") as HTMLInputElement;
-const imagePreviewArea = document.getElementById("imagePreviewArea") as HTMLDivElement;
-const imagePreviewThumbnail = document.getElementById("imagePreviewThumbnail") as HTMLImageElement;
-const clearImageButton = document.getElementById("clearImageButton") as HTMLButtonElement;
+const imagePreviewArea = document.getElementById(
+  "imagePreviewArea",
+) as HTMLDivElement;
+const imagePreviewThumbnail = document.getElementById(
+  "imagePreviewThumbnail",
+) as HTMLImageElement;
+const clearImageButton = document.getElementById(
+  "clearImageButton",
+) as HTMLButtonElement;
 
-const webgpuProgressContainer = document.getElementById("webgpuProgressContainer") as HTMLDivElement;
-const webgpuProgressText = document.getElementById("webgpuProgressText") as HTMLDivElement;
-const webgpuProgressPercent = document.getElementById("webgpuProgressPercent") as HTMLSpanElement;
-const webgpuProgressBar = document.getElementById("webgpuProgressBar") as HTMLDivElement;
+const webgpuProgressContainer = document.getElementById(
+  "webgpuProgressContainer",
+) as HTMLDivElement;
+const webgpuProgressText = document.getElementById(
+  "webgpuProgressText",
+) as HTMLDivElement;
+const webgpuProgressPercent = document.getElementById(
+  "webgpuProgressPercent",
+) as HTMLSpanElement;
+const webgpuProgressBar = document.getElementById(
+  "webgpuProgressBar",
+) as HTMLDivElement;
 
 let attachedImageBase64: string | null = null;
 const avatar = new AvatarController({
@@ -96,10 +119,15 @@ function addMessage(role: string, text: string): void {
 function setBusy(active: boolean): void {
   if (input) input.disabled = active;
   if (form) {
-    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+    const submitBtn = form.querySelector(
+      'button[type="submit"]',
+    ) as HTMLButtonElement;
     if (submitBtn) submitBtn.disabled = active;
   }
-  avatar.setState({ expression: active ? "thinking" : "smile", motion: active ? "thinking" : "idle" });
+  avatar.setState({
+    expression: active ? "thinking" : "smile",
+    motion: active ? "thinking" : "idle",
+  });
 }
 
 checkStatus();
@@ -108,7 +136,7 @@ setInterval(checkStatus, 5000);
 (window as any).companion.on("python:ready", () => setServiceStatus(true));
 
 (window as any).companion.on("set:emotion", (emotion: string) => {
-  avatar.setState({ expression: emotion, motion: emotion === "excited" ? "excited" : "idle" });
+  avatar.setState({ expression: emotion, emotion, motion: emotion });
 });
 
 (window as any).companion.on("set:lipsync", (active: boolean) => {
@@ -146,7 +174,7 @@ async function processTtsQueue(): Promise<void> {
     const { url } = item;
     (window as any).companion.setLipsync(true);
     try {
-      await audioPlayer.play(url, amp => avatar.startLipSync(amp));
+      await audioPlayer.play(url, (amp) => avatar.startLipSync(amp));
     } catch (err) {
       console.warn("[tts] audio playback failed:", err);
     } finally {
@@ -183,7 +211,7 @@ async function processTtsQueue(): Promise<void> {
 });
 
 if (form) {
-  form.addEventListener("submit", async event => {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!input) return;
     const text = input.value.trim();
@@ -198,8 +226,10 @@ if (form) {
     if (imagePreviewThumbnail) imagePreviewThumbnail.src = "";
 
     streamEl = null;
-    
-    const displayMsg = imageToSend ? `${text ? text + " " : ""}![image](${imageToSend})` : text;
+
+    const displayMsg = imageToSend
+      ? `${text ? text + " " : ""}![image](${imageToSend})`
+      : text;
     addMessage("user", displayMsg);
     setBusy(true);
 
@@ -222,32 +252,40 @@ if (form) {
     }
 
     if (llmSelect && llmSelect.value === "webgpu") {
-      const systemPrompt = "Bạn là IceGirl, trợ lý ảo cá nhân 2.5D cực kỳ đáng yêu, thân thiện và thông minh. Hãy trả lời người dùng một cách tự nhiên, ngắn gọn và thêm các thẻ cảm xúc như [smile], [happy], [excited], [thinking], [sad] phù hợp.\n" +
-        (memoryContext.length > 0 ? "Thông tin đã ghi nhớ về người dùng: " + memoryContext.map((m: any) => m.text).join("; ") : "");
+      const systemPrompt =
+        "Bạn là IceGirl, trợ lý ảo cá nhân 2.5D cực kỳ đáng yêu, thân thiện và thông minh. Hãy trả lời người dùng một cách tự nhiên, ngắn gọn và thêm các thẻ cảm xúc như [smile], [happy], [excited], [thinking], [sad] phù hợp.\n" +
+        (memoryContext.length > 0
+          ? "Thông tin đã ghi nhớ về người dùng: " +
+            memoryContext.map((m: any) => m.text).join("; ")
+          : "");
 
-      const chatHistory = history.all().map(h => ({
+      const chatHistory = history.all().map((h) => ({
         role: h.role === "user" ? "user" : "assistant",
-        content: h.text
+        content: h.text,
       }));
       const messages = [
         { role: "system", content: systemPrompt },
-        ...chatHistory
+        ...chatHistory,
       ];
 
       let currentResponseText = "";
       let parserBuffer = "";
-      const EMOTION_REGEX = /\[(normal|neutral|smile|friendly|happy|excited|focused|thinking|sad|angry|surprised|wink|tongue|money)\]/i;
+      const EMOTION_REGEX =
+        /\[(normal|neutral|smile|friendly|happy|excited|focused|thinking|sad|angry|surprised|wink|tongue|money)\]/i;
 
       try {
         streamEl = renderChunk();
         if (log) log.appendChild(streamEl);
 
-        (window as any).companion.broadcast("start", { emotion: "normal", motion: "thinking" });
+        (window as any).companion.broadcast("start", {
+          emotion: "normal",
+          motion: "thinking",
+        });
         (window as any).companion.setLipsync(true);
 
         const onChunk = (token: string) => {
           parserBuffer += token;
-          
+
           const match = parserBuffer.match(EMOTION_REGEX);
           if (match) {
             const tag = match[0];
@@ -256,23 +294,23 @@ if (form) {
             avatar.setState({ expression: emotion });
             (window as any).companion.setEmotion(emotion);
           }
-          
+
           const idx = parserBuffer.indexOf("[");
           const idxAngle = parserBuffer.indexOf("<");
-          
+
           let textToYield = "";
           if (idx === -1 && idxAngle === -1) {
             textToYield = parserBuffer;
             parserBuffer = "";
           } else {
-            const indices = [idx, idxAngle].filter(i => i !== -1);
+            const indices = [idx, idxAngle].filter((i) => i !== -1);
             const firstIdx = Math.min(...indices);
             if (firstIdx > 0) {
               textToYield = parserBuffer.substring(0, firstIdx);
               parserBuffer = parserBuffer.substring(firstIdx);
             }
           }
-          
+
           if (textToYield && streamEl) {
             currentResponseText += textToYield;
             const body = streamEl.querySelector(".msg-body");
@@ -283,7 +321,7 @@ if (form) {
         };
 
         await WebGPUEngine.chat(messages, onChunk);
-        
+
         if (parserBuffer && streamEl) {
           const body = streamEl.querySelector(".msg-body");
           if (body) body.textContent += parserBuffer;
@@ -295,12 +333,21 @@ if (form) {
 
         await LocalDB.addMemory(text);
 
-        const ttsRes = await (window as any).companion.invoke("ai:tts", { text: currentResponseText });
+        const ttsRes = await (window as any).companion.invoke("ai:tts", {
+          text: currentResponseText,
+        });
         if (ttsRes && ttsRes.ok && ttsRes.response.audio_url) {
-          ttsQueue.push({ url: ttsRes.response.audio_url, durationMs: ttsRes.response.duration_ms });
+          ttsQueue.push({
+            url: ttsRes.response.audio_url,
+            durationMs: ttsRes.response.duration_ms,
+          });
           processTtsQueue();
         } else {
-          avatar.setState({ expression: "smile", motion: "idle", lipsync: false });
+          avatar.setState({
+            expression: "smile",
+            motion: "idle",
+            lipsync: false,
+          });
           (window as any).companion.setLipsync(false);
           setBusy(false);
           if (input) input.focus();
@@ -309,22 +356,27 @@ if (form) {
         history.add("assistant", currentResponseText);
         streamEl = null;
         chatDone = true;
-
       } catch (err: any) {
         console.error("WebGPU Chat Generation Error:", err);
         addMessage("assistant", "Lỗi suy luận WebGPU: " + err.message);
         setBusy(false);
       }
-
     } else {
       const context = {
         locale: "vi-VN",
-        memory: memoryContext
+        memory: memoryContext,
       };
 
-      const res = await (window as any).companion.chat(text, imageToSend, context);
+      const res = await (window as any).companion.chat(
+        text,
+        imageToSend,
+        context,
+      );
       if (!res?.ok) {
-        addMessage("assistant", "Backend đang offline. Bạn khởi động lại Python service giúp mình nhé.");
+        addMessage(
+          "assistant",
+          "Backend đang offline. Bạn khởi động lại Python service giúp mình nhé.",
+        );
         setBusy(false);
         setServiceStatus(false);
       } else {
@@ -343,7 +395,7 @@ fileInput?.addEventListener("change", (event: any) => {
   if (!file) return;
 
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = (e) => {
     attachedImageBase64 = e.target?.result as string;
     if (imagePreviewThumbnail) imagePreviewThumbnail.src = attachedImageBase64;
     if (imagePreviewArea) imagePreviewArea.style.display = "flex";
@@ -386,7 +438,10 @@ voiceButton.addEventListener("click", async () => {
   voiceButton.textContent = "Mic";
   setBusy(true);
   const b64 = await recorder.stop();
-  if (b64) await (window as any).companion.invoke("ai:voice-input", { audio_b64: b64 });
+  if (b64)
+    await (window as any).companion.invoke("ai:voice-input", {
+      audio_b64: b64,
+    });
 });
 
 (window as any).companion.on("stt:result", (text: string) => {
@@ -394,14 +449,17 @@ voiceButton.addEventListener("click", async () => {
   setBusy(false);
 });
 
-(window as any).companion.on("chat:request-approval", ({ req_id, action, details }: any) => {
-  avatar.setState({ expression: "focused", motion: "thinking" });
-  const approvalEl = renderApprovalCard(req_id, action, details);
-  if (log) {
-    log.appendChild(approvalEl);
-    log.scrollTop = log.scrollHeight;
-  }
-});
+(window as any).companion.on(
+  "chat:request-approval",
+  ({ req_id, action, details }: any) => {
+    avatar.setState({ expression: "focused", motion: "thinking" });
+    const approvalEl = renderApprovalCard(req_id, action, details);
+    if (log) {
+      log.appendChild(approvalEl);
+      log.scrollTop = log.scrollHeight;
+    }
+  },
+);
 
 (window as any).companion.on("tts:done", () => avatar.stopLipSync());
 
@@ -413,11 +471,16 @@ voiceButton.addEventListener("click", async () => {
   ttsPlaying = false;
   chatDone = false;
 
-  await (window as any).companion.invoke("ai:screenshot", { question: "Man hinh dang hien thi gi?" });
+  await (window as any).companion.invoke("ai:screenshot", {
+    question: "Man hinh dang hien thi gi?",
+  });
 });
 
 setTimeout(() => {
-  addMessage("assistant", "Chao ban! Minh la IceGirl. Ban can minh giup gi khong?");
+  addMessage(
+    "assistant",
+    "Chao ban! Minh la IceGirl. Ban can minh giup gi khong?",
+  );
   avatar.setState({ expression: "smile", motion: "idle" });
 }, 300);
 
@@ -450,43 +513,61 @@ async function loadConfig(): Promise<void> {
 if (llmSelect) {
   llmSelect.addEventListener("change", async () => {
     const provider = llmSelect.value;
-    
+
     if (provider === "webgpu") {
       if (!WebGPUEngine.isInitialized()) {
-        if (webgpuProgressContainer) webgpuProgressContainer.style.display = "flex";
-        if (webgpuProgressText) webgpuProgressText.textContent = "Đang khởi tạo WebGPU...";
+        if (webgpuProgressContainer)
+          webgpuProgressContainer.style.display = "flex";
+        if (webgpuProgressText)
+          webgpuProgressText.textContent = "Đang khởi tạo WebGPU...";
         if (webgpuProgressPercent) webgpuProgressPercent.textContent = "0%";
         if (webgpuProgressBar) webgpuProgressBar.style.width = "0%";
-        
+
         setBusy(true);
         llmSelect.disabled = true;
-        
+
         try {
-          addMessage("system", "Đang tải mô hình WebGPU Qwen2.5-1.5B (Lần đầu có thể mất vài phút)...");
+          addMessage(
+            "system",
+            "Đang tải mô hình WebGPU Qwen2.5-1.5B (Lần đầu có thể mất vài phút)...",
+          );
           await WebGPUEngine.init((text: string, progress: number) => {
             if (webgpuProgressText) webgpuProgressText.textContent = text;
             const percent = Math.round(progress * 100);
-            if (webgpuProgressPercent) webgpuProgressPercent.textContent = `${percent}%`;
-            if (webgpuProgressBar) webgpuProgressBar.style.width = `${percent}%`;
+            if (webgpuProgressPercent)
+              webgpuProgressPercent.textContent = `${percent}%`;
+            if (webgpuProgressBar)
+              webgpuProgressBar.style.width = `${percent}%`;
           });
-          
+
           addMessage("system", "Khởi tạo và tải thành công mô hình WebGPU!");
-          if (webgpuProgressContainer) webgpuProgressContainer.style.display = "none";
+          if (webgpuProgressContainer)
+            webgpuProgressContainer.style.display = "none";
         } catch (err: any) {
           console.error("WebGPU Init Error:", err);
           addMessage("system", "Lỗi khởi tạo WebGPU: " + err.message);
-          if (webgpuProgressContainer) webgpuProgressContainer.style.display = "none";
+          if (webgpuProgressContainer)
+            webgpuProgressContainer.style.display = "none";
           llmSelect.value = "ollama";
-          await (window as any).companion.invoke("ai:update-config", { key: "llm.provider", value: "ollama" });
+          await (window as any).companion.invoke("ai:update-config", {
+            key: "llm.provider",
+            value: "ollama",
+          });
         } finally {
           setBusy(false);
           llmSelect.disabled = false;
         }
       }
     } else {
-      const res = await (window as any).companion.invoke("ai:update-config", { key: "llm.provider", value: provider });
+      const res = await (window as any).companion.invoke("ai:update-config", {
+        key: "llm.provider",
+        value: provider,
+      });
       if (res && !res.error) {
-        addMessage("system", `Đã chuyển sang bộ não: ${llmSelect.options[llmSelect.selectedIndex].text}`);
+        addMessage(
+          "system",
+          `Đã chuyển sang bộ não: ${llmSelect.options[llmSelect.selectedIndex].text}`,
+        );
       }
     }
   });
@@ -495,9 +576,15 @@ if (llmSelect) {
 if (sttSelect) {
   sttSelect.addEventListener("change", async () => {
     const model = sttSelect.value;
-    const res = await (window as any).companion.invoke("ai:update-config", { key: "stt.model", value: model });
+    const res = await (window as any).companion.invoke("ai:update-config", {
+      key: "stt.model",
+      value: model,
+    });
     if (res && !res.error) {
-      addMessage("system", `Đang tải lại STT sang mô hình: ${sttSelect.options[sttSelect.selectedIndex].text}`);
+      addMessage(
+        "system",
+        `Đang tải lại STT sang mô hình: ${sttSelect.options[sttSelect.selectedIndex].text}`,
+      );
     }
   });
 }

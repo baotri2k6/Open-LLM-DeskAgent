@@ -15,8 +15,9 @@ class MCPClientManager:
 
     def __init__(self, registry: ServerRegistry) -> None:
         self.registry = registry
-        self.exit_stack = AsyncExitStack()
         self.active_sessions: Dict[str, ClientSession] = {}
+        self.session_stacks: Dict[str, AsyncExitStack] = {}
+        self.failed_servers: set[str] = set()
         self.tool_to_server: Dict[str, str] = {}  # maps prefixed_tool_name -> server_name
         self.original_tool_names: Dict[str, str] = {}  # maps prefixed_tool_name -> original_tool_name
 
@@ -24,6 +25,8 @@ class MCPClientManager:
         """Ensure the server is running and return its session."""
         if server_name in self.active_sessions:
             return self.active_sessions[server_name]
+        if server_name in self.failed_servers:
+            return None
 
         server = self.registry.servers.get(server_name)
         if not server:
@@ -39,21 +42,28 @@ class MCPClientManager:
         )
 
         try:
+            session_stack = AsyncExitStack()
             # Spawn the stdio sub-process
-            stdio_transport = await self.exit_stack.enter_async_context(
+            stdio_transport = await session_stack.enter_async_context(
                 stdio_client(server_params)
             )
             read, write = stdio_transport
             # Establish the MCP client session
-            session = await self.exit_stack.enter_async_context(
+            session = await session_stack.enter_async_context(
                 ClientSession(read, write, read_timeout_seconds=DEFAULT_TIMEOUT)
             )
             await session.initialize()
             self.active_sessions[server_name] = session
+            self.session_stacks[server_name] = session_stack
             logger.info(f"MCP: Session successfully established for server '{server_name}'")
             return session
         except Exception as e:
             logger.error(f"MCP: Failed to spawn and initialize server '{server_name}': {e}")
+            self.failed_servers.add(server_name)
+            try:
+                await session_stack.aclose()
+            except Exception as close_error:
+                logger.debug("MCP: Cleanup after failed server '%s' raised: %s", server_name, close_error)
             return None
 
     async def get_all_tools(self) -> List[dict]:
@@ -122,11 +132,14 @@ class MCPClientManager:
     async def aclose(self) -> None:
         """Close all active servers."""
         logger.info("MCP: Shutting down all active sessions...")
-        try:
-            await self.exit_stack.aclose()
-        except Exception as e:
-            logger.error(f"MCP: Error during exit stack shutdown: {e}")
+        for server_name, stack in list(self.session_stacks.items()):
+            try:
+                await stack.aclose()
+            except Exception as e:
+                logger.error(f"MCP: Error shutting down server '{server_name}': {e}")
         self.active_sessions.clear()
+        self.session_stacks.clear()
+        self.failed_servers.clear()
         self.tool_to_server.clear()
         self.original_tool_names.clear()
         logger.info("MCP: All sessions terminated.")

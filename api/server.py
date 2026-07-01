@@ -352,15 +352,16 @@ async def _autonomous_agent_loop():
                 # Phân loại prompt autonomous theo mood
                 AUTONOMOUS_PROMPTS = {
                     "vui vẻ": [
-                        "[BỘT PHÁT] Mày đang làm gì vậy? Nói chuyện với tớ đi nào! [wink]",
+                        "[BỘT PHÁT] cậu đang làm gì vậy? Nói chuyện với tớ đi nào! [wink]",
                         "[BỘT PHÁT] Hôm nay tớ thấy vui ghê, không biết tại sao. [happy]",
                     ],
                     "hơi dỗi": [
-                        "[BỘT PHÁT] Mày im lặng lâu quá, tớ ngồi một mình buồn lắm đó. [angry]",
+                        "[BỘT PHÁT] cậu im lặng lâu quá, tớ ngồi một mình buồn lắm đó. [angry]",
                         "[BỘT PHÁT] Thôi được rồi, không cần nói chuyện với tớ cũng được. [tongue]",
                     ],
                     "suy nghĩ": [
-                        "[BỘT PHÁT] Tớ đang nghĩ... không biết mày có biết rằng... thôi quên đi. [thinking]",
+                        "[BỘT PHÁT] Tớ đang nghĩ... không biết cậu nói gì. [thinking]",
+                        "[BỘT PHÁT] Tớ đang nghĩ có biết rằng... thôi quên đi. [thinking]",
                     ]
                 }
                 

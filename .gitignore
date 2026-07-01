@@ -14,3 +14,5 @@ reference/
 Neuro-master/
 main_server.spec
 config/companion.config.json
+data/user_config.json
+models/

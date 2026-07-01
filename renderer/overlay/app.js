@@ -1,6 +1,10 @@
 import { AvatarController } from "../../live2d/live2d-manager.js";
 import { ChatHistory } from "../chat/history.js";
-import { renderMessage, renderChunk, renderApprovalCard } from "../chat/message.js";
+import {
+  renderMessage,
+  renderChunk,
+  renderApprovalCard
+} from "../chat/message.js";
 import { AudioPlayer } from "../voice/audio-player.js";
 import { VoiceRecorder } from "../voice/recoder.js";
 let LocalDB = {
@@ -20,7 +24,10 @@ let WebGPUEngine = {
     LocalDB = mod.LocalDB;
     console.log("[app] LocalDB module loaded");
   } catch (err) {
-    console.warn("[app] LocalDB module failed to load (offline?):", err.message);
+    console.warn(
+      "[app] LocalDB module failed to load (offline?):",
+      err.message
+    );
   }
   try {
     const mod = await import("../shared/webgpu-engine.js");
@@ -37,15 +44,31 @@ const voiceButton = document.getElementById("voiceButton");
 const statusPill = document.getElementById("serviceStatus");
 const llmSelect = document.getElementById("llmSelect");
 const sttSelect = document.getElementById("sttSelect");
-const attachButton = document.getElementById("attachButton");
+const attachButton = document.getElementById(
+  "attachButton"
+);
 const fileInput = document.getElementById("fileInput");
-const imagePreviewArea = document.getElementById("imagePreviewArea");
-const imagePreviewThumbnail = document.getElementById("imagePreviewThumbnail");
-const clearImageButton = document.getElementById("clearImageButton");
-const webgpuProgressContainer = document.getElementById("webgpuProgressContainer");
-const webgpuProgressText = document.getElementById("webgpuProgressText");
-const webgpuProgressPercent = document.getElementById("webgpuProgressPercent");
-const webgpuProgressBar = document.getElementById("webgpuProgressBar");
+const imagePreviewArea = document.getElementById(
+  "imagePreviewArea"
+);
+const imagePreviewThumbnail = document.getElementById(
+  "imagePreviewThumbnail"
+);
+const clearImageButton = document.getElementById(
+  "clearImageButton"
+);
+const webgpuProgressContainer = document.getElementById(
+  "webgpuProgressContainer"
+);
+const webgpuProgressText = document.getElementById(
+  "webgpuProgressText"
+);
+const webgpuProgressPercent = document.getElementById(
+  "webgpuProgressPercent"
+);
+const webgpuProgressBar = document.getElementById(
+  "webgpuProgressBar"
+);
 let attachedImageBase64 = null;
 const avatar = new AvatarController({
   wrap: document.getElementById("avatarWrap"),
@@ -84,16 +107,21 @@ function addMessage(role, text) {
 function setBusy(active) {
   if (input) input.disabled = active;
   if (form) {
-    const submitBtn = form.querySelector('button[type="submit"]');
+    const submitBtn = form.querySelector(
+      'button[type="submit"]'
+    );
     if (submitBtn) submitBtn.disabled = active;
   }
-  avatar.setState({ expression: active ? "thinking" : "smile", motion: active ? "thinking" : "idle" });
+  avatar.setState({
+    expression: active ? "thinking" : "smile",
+    motion: active ? "thinking" : "idle"
+  });
 }
 checkStatus();
 setInterval(checkStatus, 5e3);
 window.companion.on("python:ready", () => setServiceStatus(true));
 window.companion.on("set:emotion", (emotion) => {
-  avatar.setState({ expression: emotion, motion: emotion === "excited" ? "excited" : "idle" });
+  avatar.setState({ expression: emotion, emotion, motion: emotion });
 });
 window.companion.on("set:lipsync", (active) => {
   if (!active && (ttsPlaying || ttsQueue.length > 0)) {
@@ -207,7 +235,10 @@ if (form) {
       try {
         streamEl = renderChunk();
         if (log) log.appendChild(streamEl);
-        window.companion.broadcast("start", { emotion: "normal", motion: "thinking" });
+        window.companion.broadcast("start", {
+          emotion: "normal",
+          motion: "thinking"
+        });
         window.companion.setLipsync(true);
         const onChunk = (token) => {
           parserBuffer += token;
@@ -250,12 +281,21 @@ if (form) {
         }
         window.companion.broadcast("chat_done", currentResponseText);
         await LocalDB.addMemory(text);
-        const ttsRes = await window.companion.invoke("ai:tts", { text: currentResponseText });
+        const ttsRes = await window.companion.invoke("ai:tts", {
+          text: currentResponseText
+        });
         if (ttsRes && ttsRes.ok && ttsRes.response.audio_url) {
-          ttsQueue.push({ url: ttsRes.response.audio_url, durationMs: ttsRes.response.duration_ms });
+          ttsQueue.push({
+            url: ttsRes.response.audio_url,
+            durationMs: ttsRes.response.duration_ms
+          });
           processTtsQueue();
         } else {
-          avatar.setState({ expression: "smile", motion: "idle", lipsync: false });
+          avatar.setState({
+            expression: "smile",
+            motion: "idle",
+            lipsync: false
+          });
           window.companion.setLipsync(false);
           setBusy(false);
           if (input) input.focus();
@@ -273,9 +313,16 @@ if (form) {
         locale: "vi-VN",
         memory: memoryContext
       };
-      const res = await window.companion.chat(text, imageToSend, context);
+      const res = await window.companion.chat(
+        text,
+        imageToSend,
+        context
+      );
       if (!res?.ok) {
-        addMessage("assistant", "Backend \u0111ang offline. B\u1EA1n kh\u1EDFi \u0111\u1ED9ng l\u1EA1i Python service gi\xFAp m\xECnh nh\xE9.");
+        addMessage(
+          "assistant",
+          "Backend \u0111ang offline. B\u1EA1n kh\u1EDFi \u0111\u1ED9ng l\u1EA1i Python service gi\xFAp m\xECnh nh\xE9."
+        );
         setBusy(false);
         setServiceStatus(false);
       } else {
@@ -328,20 +375,26 @@ voiceButton.addEventListener("click", async () => {
   voiceButton.textContent = "Mic";
   setBusy(true);
   const b64 = await recorder.stop();
-  if (b64) await window.companion.invoke("ai:voice-input", { audio_b64: b64 });
+  if (b64)
+    await window.companion.invoke("ai:voice-input", {
+      audio_b64: b64
+    });
 });
 window.companion.on("stt:result", (text) => {
   if (input) input.value = text;
   setBusy(false);
 });
-window.companion.on("chat:request-approval", ({ req_id, action, details }) => {
-  avatar.setState({ expression: "focused", motion: "thinking" });
-  const approvalEl = renderApprovalCard(req_id, action, details);
-  if (log) {
-    log.appendChild(approvalEl);
-    log.scrollTop = log.scrollHeight;
+window.companion.on(
+  "chat:request-approval",
+  ({ req_id, action, details }) => {
+    avatar.setState({ expression: "focused", motion: "thinking" });
+    const approvalEl = renderApprovalCard(req_id, action, details);
+    if (log) {
+      log.appendChild(approvalEl);
+      log.scrollTop = log.scrollHeight;
+    }
   }
-});
+);
 window.companion.on("tts:done", () => avatar.stopLipSync());
 window.companion.on("trigger:screenshot", async () => {
   addMessage("user", "[Nhin man hinh]");
@@ -349,10 +402,15 @@ window.companion.on("trigger:screenshot", async () => {
   ttsQueue = [];
   ttsPlaying = false;
   chatDone = false;
-  await window.companion.invoke("ai:screenshot", { question: "Man hinh dang hien thi gi?" });
+  await window.companion.invoke("ai:screenshot", {
+    question: "Man hinh dang hien thi gi?"
+  });
 });
 setTimeout(() => {
-  addMessage("assistant", "Chao ban! Minh la IceGirl. Ban can minh giup gi khong?");
+  addMessage(
+    "assistant",
+    "Chao ban! Minh la IceGirl. Ban can minh giup gi khong?"
+  );
   avatar.setState({ expression: "smile", motion: "idle" });
 }, 300);
 try {
@@ -384,37 +442,55 @@ if (llmSelect) {
     const provider = llmSelect.value;
     if (provider === "webgpu") {
       if (!WebGPUEngine.isInitialized()) {
-        if (webgpuProgressContainer) webgpuProgressContainer.style.display = "flex";
-        if (webgpuProgressText) webgpuProgressText.textContent = "\u0110ang kh\u1EDFi t\u1EA1o WebGPU...";
+        if (webgpuProgressContainer)
+          webgpuProgressContainer.style.display = "flex";
+        if (webgpuProgressText)
+          webgpuProgressText.textContent = "\u0110ang kh\u1EDFi t\u1EA1o WebGPU...";
         if (webgpuProgressPercent) webgpuProgressPercent.textContent = "0%";
         if (webgpuProgressBar) webgpuProgressBar.style.width = "0%";
         setBusy(true);
         llmSelect.disabled = true;
         try {
-          addMessage("system", "\u0110ang t\u1EA3i m\xF4 h\xECnh WebGPU Qwen2.5-1.5B (L\u1EA7n \u0111\u1EA7u c\xF3 th\u1EC3 m\u1EA5t v\xE0i ph\xFAt)...");
+          addMessage(
+            "system",
+            "\u0110ang t\u1EA3i m\xF4 h\xECnh WebGPU Qwen2.5-1.5B (L\u1EA7n \u0111\u1EA7u c\xF3 th\u1EC3 m\u1EA5t v\xE0i ph\xFAt)..."
+          );
           await WebGPUEngine.init((text, progress) => {
             if (webgpuProgressText) webgpuProgressText.textContent = text;
             const percent = Math.round(progress * 100);
-            if (webgpuProgressPercent) webgpuProgressPercent.textContent = `${percent}%`;
-            if (webgpuProgressBar) webgpuProgressBar.style.width = `${percent}%`;
+            if (webgpuProgressPercent)
+              webgpuProgressPercent.textContent = `${percent}%`;
+            if (webgpuProgressBar)
+              webgpuProgressBar.style.width = `${percent}%`;
           });
           addMessage("system", "Kh\u1EDFi t\u1EA1o v\xE0 t\u1EA3i th\xE0nh c\xF4ng m\xF4 h\xECnh WebGPU!");
-          if (webgpuProgressContainer) webgpuProgressContainer.style.display = "none";
+          if (webgpuProgressContainer)
+            webgpuProgressContainer.style.display = "none";
         } catch (err) {
           console.error("WebGPU Init Error:", err);
           addMessage("system", "L\u1ED7i kh\u1EDFi t\u1EA1o WebGPU: " + err.message);
-          if (webgpuProgressContainer) webgpuProgressContainer.style.display = "none";
+          if (webgpuProgressContainer)
+            webgpuProgressContainer.style.display = "none";
           llmSelect.value = "ollama";
-          await window.companion.invoke("ai:update-config", { key: "llm.provider", value: "ollama" });
+          await window.companion.invoke("ai:update-config", {
+            key: "llm.provider",
+            value: "ollama"
+          });
         } finally {
           setBusy(false);
           llmSelect.disabled = false;
         }
       }
     } else {
-      const res = await window.companion.invoke("ai:update-config", { key: "llm.provider", value: provider });
+      const res = await window.companion.invoke("ai:update-config", {
+        key: "llm.provider",
+        value: provider
+      });
       if (res && !res.error) {
-        addMessage("system", `\u0110\xE3 chuy\u1EC3n sang b\u1ED9 n\xE3o: ${llmSelect.options[llmSelect.selectedIndex].text}`);
+        addMessage(
+          "system",
+          `\u0110\xE3 chuy\u1EC3n sang b\u1ED9 n\xE3o: ${llmSelect.options[llmSelect.selectedIndex].text}`
+        );
       }
     }
   });
@@ -422,9 +498,15 @@ if (llmSelect) {
 if (sttSelect) {
   sttSelect.addEventListener("change", async () => {
     const model = sttSelect.value;
-    const res = await window.companion.invoke("ai:update-config", { key: "stt.model", value: model });
+    const res = await window.companion.invoke("ai:update-config", {
+      key: "stt.model",
+      value: model
+    });
     if (res && !res.error) {
-      addMessage("system", `\u0110ang t\u1EA3i l\u1EA1i STT sang m\xF4 h\xECnh: ${sttSelect.options[sttSelect.selectedIndex].text}`);
+      addMessage(
+        "system",
+        `\u0110ang t\u1EA3i l\u1EA1i STT sang m\xF4 h\xECnh: ${sttSelect.options[sttSelect.selectedIndex].text}`
+      );
     }
   });
 }

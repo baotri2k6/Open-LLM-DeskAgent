@@ -21,7 +21,23 @@ logger = get_logger("ai-companion.stt")
 
 WhisperModel = Literal["tiny", "base", "small", "medium", "large"]
 
+import asyncio
 
+class STTService:
+    def __init__(self):
+        self.model = None
+        self.status = "offline" # Trạng thái ban đầu
+
+    async def initialize_model_async(self):
+        """Hàm nạp model chạy ngầm không chặn luồng khởi động FastAPI"""
+        self.status = "loading"
+        try:
+            # Giả lập nạp mô hình FunASR / SenseVoiceSmall cục bộ
+            # self.model = AutoModel(model="iic/SenseVoiceSmall", ...)
+            await asyncio.sleep(2) # Giả lập thời gian load weights vào RAM
+            self.status = "ready"
+        except Exception:
+            self.status = "error"
 # ─── faster-whisper api ──────────────────────────────────────────────────
 
 class _FasterWhisperSTT:
