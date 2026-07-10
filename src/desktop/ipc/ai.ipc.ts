@@ -363,9 +363,9 @@ export function registerAiIpc(ipcMain: IpcMain, windows: any): void {
     }
   });
 
-  ipcMain.handle("ai:get-notifications", async () => {
+  ipcMain.handle("ai:get-notifications", async (_e: any, client = "avatar") => {
     try {
-      const response = await requestJSON("GET", "/notifications");
+      const response = await requestJSON("GET", `/notifications?client=${client}`);
       return response;
     } catch (err: any) {
       return { error: err.message };
@@ -435,5 +435,23 @@ export function registerAiIpc(ipcMain: IpcMain, windows: any): void {
 
   ipcMain.on("ai:broadcast", (_e: any, { event, data }: any) => {
     broadcast(event, data);
+  });
+
+  ipcMain.handle("avatar:import-zip", async (_e: any, { path }: { path: string }) => {
+    try {
+      const response = await requestJSON("POST", "/model/import", { file_path: path });
+      return response;
+    } catch (err: any) {
+      return { error: err.message };
+    }
+  });
+
+  ipcMain.handle("system:import-document", async (_e: any, { path }: { path: string }) => {
+    try {
+      const response = await requestJSON("POST", "/documents/import", { file_path: path });
+      return response;
+    } catch (err: any) {
+      return { error: err.message };
+    }
   });
 }

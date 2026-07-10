@@ -383,9 +383,9 @@ function registerAiIpc(ipcMain, windows) {
             return { error: err.message };
         }
     });
-    ipcMain.handle("ai:get-notifications", async () => {
+    ipcMain.handle("ai:get-notifications", async (_e, client = "avatar") => {
         try {
-            const response = await requestJSON("GET", "/notifications");
+            const response = await requestJSON("GET", `/notifications?client=${client}`);
             return response;
         }
         catch (err) {
@@ -452,5 +452,23 @@ function registerAiIpc(ipcMain, windows) {
     });
     ipcMain.on("ai:broadcast", (_e, { event, data }) => {
         (0, websocket_server_1.broadcast)(event, data);
+    });
+    ipcMain.handle("avatar:import-zip", async (_e, { path }) => {
+        try {
+            const response = await requestJSON("POST", "/model/import", { file_path: path });
+            return response;
+        }
+        catch (err) {
+            return { error: err.message };
+        }
+    });
+    ipcMain.handle("system:import-document", async (_e, { path }) => {
+        try {
+            const response = await requestJSON("POST", "/documents/import", { file_path: path });
+            return response;
+        }
+        catch (err) {
+            return { error: err.message };
+        }
     });
 }

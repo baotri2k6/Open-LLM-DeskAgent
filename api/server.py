@@ -65,6 +65,17 @@ _generation_interrupted = False
 _twitch_reader = None
 _twitch_messages_lock = threading.Lock()
 _recent_twitch_messages = deque(maxlen=50)
+_msg_timestamps = deque(maxlen=100)
+
+
+def _should_reply(messages_per_minute: float) -> bool:
+    """Không spam khi chat sôi — chỉ reply ngẫu nhiên khi rate cao."""
+    import random
+    if messages_per_minute > 10:
+        return random.random() < 0.3
+    return True
+
+
 _hotword_detector = None
 
 _background_loop = None
@@ -171,6 +182,7 @@ def handle_twitch_msg(username: str, text: str):
     logger.info(f"Twitch chat message (moderated): @{username}: {text}")
     with _twitch_messages_lock:
         _recent_twitch_messages.append((username, text))
+        _msg_timestamps.append(time.time())
 
 
 def sync_twitch_reader():
@@ -438,8 +450,8 @@ async def _twitch_commentator_loop():
             continue
             
         now = time.time()
-        # Cooldown: 45 seconds between comments
-        if now - last_comment_time < 45.0:
+        # Cooldown: 8 seconds minimum between comments to avoid self-interruption
+        if now - last_comment_time < 8.0:
             continue
             
         if _ai_busy:
@@ -450,9 +462,18 @@ async def _twitch_commentator_loop():
         with _twitch_messages_lock:
             if _recent_twitch_messages:
                 username, msg_text = _recent_twitch_messages.popleft()
-                _recent_twitch_messages.clear() # catch up by dropping old buffer
                 
         if not username or not msg_text:
+            continue
+            
+        # Clean up old timestamps (older than 60s) to calculate messages per minute rate
+        while _msg_timestamps and _msg_timestamps[0] < now - 60.0:
+            _msg_timestamps.popleft()
+        messages_per_minute = len(_msg_timestamps)
+        
+        # Decide if we should reply based on message density rate
+        if not _should_reply(messages_per_minute):
+            logger.info(f"Twitch Commentator: Skipping message from {username} due to high rate ({messages_per_minute} msg/min)")
             continue
             
         _ai_busy = True
@@ -502,6 +523,16 @@ async def _twitch_commentator_loop():
                 clean_reply_parts.append(leftover)
                 
             clean_reply = "".join(clean_reply_parts).strip()
+            
+            if clean_reply:
+                ws_broadcast({
+                    "type": "twitch_response",
+                    "text": clean_reply,
+                    "username": username,
+                    "emotion": final_emotion,
+                    "motion": "motion_talk",
+                })
+                logger.info(f"Twitch Commentator: Broadcast response to UI — {len(clean_reply)} chars")
             
             audio_url = None
             duration_ms = 0

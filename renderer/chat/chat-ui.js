@@ -80,6 +80,84 @@ class ChatUI {
     this.log.scrollTop = this.log.scrollHeight;
     return el;
   }
+  // Planning/task checklist management
+  checklistContainer = null;
+  pollInterval = null;
+  startPollingChecklist() {
+    if (this.pollInterval) return;
+    this.pollInterval = setInterval(async () => {
+      try {
+        const res = await window.companion.invoke("ai:get-notifications", "coding");
+        if (res && res.notifications && res.notifications.length > 0) {
+          for (const note of res.notifications) {
+            const type = note.event_type;
+            const payload = note.payload;
+            if (!type) continue;
+            if (type === "PlanCreated") {
+              const steps = payload?.steps ?? [];
+              this.renderTaskChecklist(steps);
+            } else if (type === "PlanStepStarted") {
+              const idx = payload?.step_index;
+              this.updateStepStatus(idx, "in_progress");
+            } else if (type === "PlanStepFinished") {
+              const idx = payload?.step_index;
+              const success = payload?.success;
+              this.updateStepStatus(idx, success ? "done" : "failed");
+            } else if (type === "PlanFinished") {
+              const items = this.checklistContainer?.querySelectorAll(".checklist-item");
+              items?.forEach((item) => {
+                item.className = "checklist-item done";
+              });
+            } else if (type === "PlanFailed") {
+              const items = this.checklistContainer?.querySelectorAll(".checklist-item");
+              items?.forEach((item) => {
+                if (!item.classList.contains("done")) {
+                  item.className = "checklist-item failed";
+                }
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("[notifications] ChatUI failed to fetch coding notifications:", err);
+      }
+    }, 2e3);
+  }
+  stopPollingChecklist() {
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
+    }
+  }
+  renderTaskChecklist(steps) {
+    if (!this.checklistContainer) {
+      this.checklistContainer = document.createElement("div");
+      this.checklistContainer.className = "checklist-container";
+      this.checklistContainer.innerHTML = `
+        <h4>K\u1EBF ho\u1EA1ch th\u1EF1c hi\u1EC7n:</h4>
+        <ul class="checklist-list"></ul>
+      `;
+      this.log.parentNode?.insertBefore(this.checklistContainer, this.form);
+    }
+    const ul = this.checklistContainer.querySelector("ul");
+    if (ul) {
+      ul.innerHTML = "";
+      steps.forEach((step, idx) => {
+        const li = document.createElement("li");
+        li.className = `checklist-item ${step.status || "pending"}`;
+        li.id = `chat-chk-step-${idx}`;
+        li.innerHTML = `<span class="chk-status"></span> <span class="chk-desc">${step.description}</span>`;
+        ul.appendChild(li);
+      });
+    }
+    this.log.scrollTop = this.log.scrollHeight;
+  }
+  updateStepStatus(idx, status) {
+    const item = document.getElementById(`chat-chk-step-${idx}`);
+    if (item) {
+      item.className = `checklist-item ${status}`;
+    }
+  }
 }
 export {
   ChatUI

@@ -452,6 +452,18 @@ function handlePlanEvent(type, payload) {
     if (item) {
       item.className = `checklist-item ${status}`;
     }
+  } else if (type === "PlanFinished") {
+    const items = planChecklist.querySelectorAll(".checklist-item");
+    items.forEach(item => {
+      item.className = "checklist-item done";
+    });
+  } else if (type === "PlanFailed") {
+    const items = planChecklist.querySelectorAll(".checklist-item");
+    items.forEach(item => {
+      if (!item.classList.contains("done")) {
+        item.className = "checklist-item failed";
+      }
+    });
   }
 }
 

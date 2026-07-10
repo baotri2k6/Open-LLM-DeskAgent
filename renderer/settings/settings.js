@@ -1,3 +1,4 @@
+import { AssetRegistry } from "../../live2d/asset-registry.js";
 console.log("[settings] settings.ts loaded.");
 const llmSelect = document.getElementById("llmSelect");
 const sttSelect = document.getElementById("sttSelect");
@@ -65,10 +66,38 @@ async function loadConfig() {
     if (txtTwitchChannel) txtTwitchChannel.value = res.twitch_channel || "";
     syncTwitchWrap(Boolean(res.twitch_mode));
     const avatarVal = res.avatar_model || "assets/live2d/IceGirl/IceGirl.model3.json";
-    const avatarRadios = document.querySelectorAll('input[name="avatarModel"]');
-    avatarRadios.forEach((r) => {
-      r.checked = r.value === avatarVal;
-    });
+    const avatarRadioList = document.querySelector(".avatar-radio-list");
+    if (avatarRadioList) {
+      await AssetRegistry.load(true);
+      const models = AssetRegistry.getAll();
+      const existingRadios = avatarRadioList.querySelectorAll('input[type="radio"]');
+      const needsRebuild = existingRadios.length !== models.length || Array.from(existingRadios).some((r, idx) => r.value !== models[idx]?.path);
+      if (needsRebuild) {
+        avatarRadioList.innerHTML = "";
+        models.forEach((m) => {
+          let emoji = "\u{1F9CA}";
+          if (m.id.includes("hiyori")) emoji = "\u{1F338}";
+          else if (m.id.includes("mao")) emoji = "\u{1F431}";
+          else if (m.id.includes("huohuo")) emoji = "\u{1F98B}";
+          else if (m.id !== "icegirl") emoji = "\u2728";
+          const label = document.createElement("label");
+          label.className = "avatar-option";
+          label.innerHTML = `
+            <input type="radio" name="avatarModel" value="${m.path}" ${m.path === avatarVal ? "checked" : ""} />
+            <span class="avatar-option-inner">
+              <span class="opt-emoji">${emoji}</span>
+              <span class="opt-name">${m.name}</span>
+            </span>
+          `;
+          avatarRadioList.appendChild(label);
+        });
+      } else {
+        existingRadios.forEach((radio) => {
+          radio.checked = radio.value === avatarVal;
+        });
+      }
+      updatePortrait(avatarVal);
+    }
     const avatarScaleSelect = document.getElementById("avatarScaleSelect");
     if (avatarScaleSelect) {
       avatarScaleSelect.value = res.avatar_scale || "1.0";
@@ -202,16 +231,19 @@ if (!window.companion) {
     });
     if (res && !res.error) showStatus();
   });
-  document.querySelectorAll('input[name="avatarModel"]').forEach((radio) => {
-    radio.addEventListener("change", async () => {
-      const r = radio;
-      if (!r.checked) return;
+  const avatarRadioList = document.querySelector(".avatar-radio-list");
+  avatarRadioList?.addEventListener("change", async (e) => {
+    if (e.target && e.target.name === "avatarModel") {
+      const value = e.target.value;
       const res = await window.companion.invoke("ai:update-config", {
         key: "app.avatarModel",
-        value: r.value
+        value
       });
-      if (res && !res.error) showStatus("\u0110\xE3 \u0111\u1ED5i nh\xE2n v\u1EADt");
-    });
+      if (res && !res.error) {
+        showStatus("\u0110\xE3 \u0111\u1ED5i nh\xE2n v\u1EADt");
+        updatePortrait(value);
+      }
+    }
   });
   const avatarScaleSelect = document.getElementById("avatarScaleSelect");
   avatarScaleSelect?.addEventListener("change", async () => {
@@ -335,7 +367,43 @@ if (!window.companion) {
     loadConfig();
     updateSystemStatus();
   });
+  window.companion.on("config:updated", ({ key }) => {
+    if (key === "app.avatarModel") {
+      loadConfig();
+    }
+  });
   loadConfig();
   updateSystemStatus();
   setInterval(updateSystemStatus, 4e3);
+}
+function updatePortrait(val) {
+  const portraitImg = document.getElementById("characterPortrait");
+  const lblActiveModel = document.getElementById("lblActiveModel");
+  const portraitPlaceholder = document.getElementById("portraitPlaceholder");
+  const models = AssetRegistry.getAll() || [];
+  const model = models.find((m) => m.path === val);
+  const name = model ? model.name : "IceGirl";
+  const thumbnail = model ? model.thumbnail : "";
+  if (lblActiveModel) {
+    lblActiveModel.textContent = name;
+  }
+  if (thumbnail) {
+    if (portraitPlaceholder) portraitPlaceholder.style.display = "none";
+    if (portraitImg) {
+      portraitImg.src = "../../" + thumbnail;
+      portraitImg.style.display = "block";
+    }
+  } else {
+    if (portraitImg) portraitImg.style.display = "none";
+    if (portraitPlaceholder) {
+      portraitPlaceholder.style.display = "flex";
+      portraitPlaceholder.className = "portrait-placeholder placeholder-" + (model ? model.id : "icegirl");
+      let emoji = "\u{1F9CA}";
+      if (name.includes("Mao")) emoji = "\u{1F431}";
+      else if (name.includes("Huohuo")) emoji = "\u{1F98B}";
+      else if (name.includes("Hiyori")) emoji = "\u{1F338}";
+      else if (name !== "IceGirl") emoji = "\u2728";
+      portraitPlaceholder.innerHTML = `<span class="placeholder-emoji">${emoji}</span><span class="placeholder-name">${name}</span>`;
+    }
+  }
 }

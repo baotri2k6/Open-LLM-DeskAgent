@@ -47,3 +47,21 @@ async def test_skills_manager_and_dynamic_injection():
             # Verify python-lint detail was NOT injected since the query had no match
             py_messages = [m for m in called_messages if m["role"] == "system" and "CHI TIẾT HƯỚNG DẪN KỸ NĂNG: python-lint" in m["content"]]
             assert len(py_messages) == 0
+
+
+def test_find_relevant_skills():
+    sm = SkillsManager()
+    
+    mock_skills = [
+        {"name": "systematic-debugging", "description": "Tìm kiếm lỗi, phân tích nguyên nhân bằng Blame/Log, viết test tái dựng lỗi và sửa chữa."},
+        {"name": "productivity-notion", "description": "Quản lý và cập nhật tiến độ công việc, dự án hoặc nhiệm vụ cá nhân thông qua cơ sở dữ liệu Notion."}
+    ]
+    
+    with patch.object(sm, "list_skills", return_value=mock_skills):
+        res = sm.find_relevant_skills("sửa lỗi test bị fail")
+        assert "systematic-debugging" in res
+        assert "productivity-notion" not in res
+        
+        res2 = sm.find_relevant_skills("cập nhật tiến độ dự án trên Notion")
+        assert "productivity-notion" in res2
+        assert "systematic-debugging" not in res2

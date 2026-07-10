@@ -160,6 +160,14 @@ class PixiLive2DBackend {
     };
     window.addEventListener("resize", this._onResize);
 
+    // Use ResizeObserver to reliably detect layout size stabilization on startup and toggling
+    this._resizeObserver = new ResizeObserver(() => {
+      if (this._onResize) {
+        this._onResize();
+      }
+    });
+    this._resizeObserver.observe(this._container);
+
     // Eye tracking: update model focus coordinates on cursor move
     this._pointerMoveHandler = (e) => {
       if (this._model) {
@@ -352,6 +360,10 @@ class PixiLive2DBackend {
   }
 
   destroy() {
+    if (this._resizeObserver) {
+      this._resizeObserver.disconnect();
+      this._resizeObserver = null;
+    }
     if (this._onResize) {
       window.removeEventListener("resize", this._onResize);
       this._onResize = null;

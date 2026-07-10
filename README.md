@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/icons/icon.png" alt="Open-LLM-DeskAgent Logo" width="120" />
+<img src="assets/icons/avatar.png" alt="Open-LLM-DeskAgent Logo"  />
 
 # ✦ Open-LLM-DeskAgent ✦
 

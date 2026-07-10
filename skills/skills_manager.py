@@ -56,6 +56,40 @@ class SkillsManager:
             
         return skills_list
 
+    def find_relevant_skills(self, task_description: str) -> list[str]:
+        """Trả về danh sách tên skill có liên quan tới task, dựa trên keyword overlap
+        giữa task_description và frontmatter `description:` hoặc `name:` của mỗi SKILL.md.
+        Không cần embedding — so khớp từ khóa đơn giản là đủ ở quy mô 7-10 skill."""
+        if not task_description:
+            return []
+        
+        task_words = set(re.findall(r'\w+', task_description.lower()))
+        
+        # Tiêu chí lọc bỏ các từ chung chung
+        stopwords = {
+            "và", "hoặc", "cho", "của", "để", "trong", "trên", "dưới", "các", "những", 
+            "một", "hai", "ba", "có", "là", "này", "với", "từ", "đến", "bằng", "về",
+            "the", "and", "or", "to", "of", "in", "on", "at", "by", "for", "with", "from",
+            "a", "an", "is", "are", "was", "were", "be", "been", "that", "this", "these", "those"
+        }
+        task_words = task_words - stopwords
+        
+        relevant = []
+        skills = self.list_skills()
+        for skill in skills:
+            name = skill.get("name", "")
+            desc = skill.get("description", "")
+            
+            # Chuẩn hóa tên skill và mô tả
+            skill_text = f"{name} {desc}".lower()
+            skill_words = set(re.findall(r'\w+', skill_text))
+            
+            # Nếu overlap từ khóa thực tế
+            if task_words & skill_words:
+                relevant.append(name)
+                
+        return relevant
+
     def read_skill_content(self, name: str) -> dict:
         """Đọc toàn bộ nội dung tệp SKILL.md của kỹ năng có tên tương ứng."""
         # Sanitization

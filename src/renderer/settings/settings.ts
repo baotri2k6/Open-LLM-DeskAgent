@@ -1,3 +1,5 @@
+// @ts-ignore
+import { AssetRegistry } from "../../live2d/asset-registry.js";
 console.log("[settings] settings.ts loaded.");
 
 // ─── Element refs ────────────────────────────────────────────
@@ -83,10 +85,42 @@ async function loadConfig(): Promise<void> {
 
     // Avatar radio
     const avatarVal = res.avatar_model || "assets/live2d/IceGirl/IceGirl.model3.json";
-    const avatarRadios = document.querySelectorAll('input[name="avatarModel"]');
-    avatarRadios.forEach((r) => {
-      (r as HTMLInputElement).checked = (r as HTMLInputElement).value === avatarVal;
-    });
+    const avatarRadioList = document.querySelector(".avatar-radio-list");
+    if (avatarRadioList) {
+      await AssetRegistry.load(true);
+      const models = AssetRegistry.getAll();
+      
+      const existingRadios = avatarRadioList.querySelectorAll('input[type="radio"]') as NodeListOf<HTMLInputElement>;
+      const needsRebuild = existingRadios.length !== models.length || 
+                           Array.from(existingRadios).some((r, idx) => r.value !== models[idx]?.path);
+                           
+      if (needsRebuild) {
+        avatarRadioList.innerHTML = "";
+        models.forEach((m: any) => {
+          let emoji = "🧊";
+          if (m.id.includes("hiyori")) emoji = "🌸";
+          else if (m.id.includes("mao")) emoji = "🐱";
+          else if (m.id.includes("huohuo")) emoji = "🦋";
+          else if (m.id !== "icegirl") emoji = "✨";
+          
+          const label = document.createElement("label");
+          label.className = "avatar-option";
+          label.innerHTML = `
+            <input type="radio" name="avatarModel" value="${m.path}" ${m.path === avatarVal ? "checked" : ""} />
+            <span class="avatar-option-inner">
+              <span class="opt-emoji">${emoji}</span>
+              <span class="opt-name">${m.name}</span>
+            </span>
+          `;
+          avatarRadioList.appendChild(label);
+        });
+      } else {
+        existingRadios.forEach((radio) => {
+          radio.checked = (radio.value === avatarVal);
+        });
+      }
+      updatePortrait(avatarVal);
+    }
 
     // Avatar scale
     const avatarScaleSelect = document.getElementById("avatarScaleSelect") as HTMLSelectElement;
@@ -242,16 +276,19 @@ if (!(window as any).companion) {
     if (res && !res.error) showStatus();
   });
 
-  document.querySelectorAll('input[name="avatarModel"]').forEach((radio) => {
-    radio.addEventListener("change", async () => {
-      const r = radio as HTMLInputElement;
-      if (!r.checked) return;
+  const avatarRadioList = document.querySelector(".avatar-radio-list");
+  avatarRadioList?.addEventListener("change", async (e: any) => {
+    if (e.target && e.target.name === "avatarModel") {
+      const value = e.target.value;
       const res = await (window as any).companion.invoke("ai:update-config", {
         key: "app.avatarModel",
-        value: r.value,
+        value: value,
       });
-      if (res && !res.error) showStatus("Đã đổi nhân vật");
-    });
+      if (res && !res.error) {
+        showStatus("Đã đổi nhân vật");
+        updatePortrait(value);
+      }
+    }
   });
 
   const avatarScaleSelect = document.getElementById("avatarScaleSelect") as HTMLSelectElement;
@@ -386,7 +423,50 @@ if (!(window as any).companion) {
     updateSystemStatus();
   });
   
+  (window as any).companion.on("config:updated", ({ key }: { key: string }) => {
+    if (key === "app.avatarModel") {
+      loadConfig();
+    }
+  });
+
   loadConfig();
   updateSystemStatus();
   setInterval(updateSystemStatus, 4000);
+}
+
+function updatePortrait(val: string): void {
+  const portraitImg = document.getElementById("characterPortrait") as HTMLImageElement;
+  const lblActiveModel = document.getElementById("lblActiveModel");
+  const portraitPlaceholder = document.getElementById("portraitPlaceholder");
+
+  const models = AssetRegistry.getAll() || [];
+  const model = models.find((m: any) => m.path === val);
+  const name = model ? model.name : "IceGirl";
+  const thumbnail = model ? model.thumbnail : "";
+
+  if (lblActiveModel) {
+    lblActiveModel.textContent = name;
+  }
+
+  if (thumbnail) {
+    if (portraitPlaceholder) portraitPlaceholder.style.display = "none";
+    if (portraitImg) {
+      portraitImg.src = "../../" + thumbnail;
+      portraitImg.style.display = "block";
+    }
+  } else {
+    if (portraitImg) portraitImg.style.display = "none";
+    if (portraitPlaceholder) {
+      portraitPlaceholder.style.display = "flex";
+      portraitPlaceholder.className = "portrait-placeholder placeholder-" + (model ? model.id : "icegirl");
+      
+      let emoji = "🧊";
+      if (name.includes("Mao")) emoji = "🐱";
+      else if (name.includes("Huohuo")) emoji = "🦋";
+      else if (name.includes("Hiyori")) emoji = "🌸";
+      else if (name !== "IceGirl") emoji = "✨";
+      
+      portraitPlaceholder.innerHTML = `<span class="placeholder-emoji">${emoji}</span><span class="placeholder-name">${name}</span>`;
+    }
+  }
 }

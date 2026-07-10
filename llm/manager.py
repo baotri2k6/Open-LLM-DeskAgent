@@ -859,23 +859,15 @@ class LLMService:
         # Tầng 0.6: Lọc động các skill liên quan đến yêu cầu của người dùng bằng keyword matching (progressive disclosure)
         if self.skills_manager and plain_text:
             try:
-                skills = self.skills_manager.list_skills()
-                query_lower = plain_text.lower()
+                relevant_skill_names = self.skills_manager.find_relevant_skills(plain_text)
                 matched_skills = []
-                for s in skills:
-                    name = s.get("name", "").lower()
-                    desc = s.get("description", "").lower()
-                    # Match if name or description keywords are in the query
-                    name_words = set(name.replace("_", "-").split("-"))
-                    query_words = set(re.findall(r"\w+", query_lower))
-                    
-                    if (name in query_lower) or (name_words & query_words) or any(w in query_lower for w in desc.split() if len(w) > 4):
-                        skill_content_res = self.skills_manager.read_skill_content(s.get("name"))
-                        if skill_content_res.get("success"):
-                            matched_skills.append({
-                                "name": s.get("name"),
-                                "content": skill_content_res.get("content")
-                            })
+                for name in relevant_skill_names:
+                    skill_content_res = self.skills_manager.read_skill_content(name)
+                    if skill_content_res.get("success"):
+                        matched_skills.append({
+                            "name": name,
+                            "content": skill_content_res.get("content")
+                        })
                 
                 if matched_skills:
                     for ms in matched_skills:

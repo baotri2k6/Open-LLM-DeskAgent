@@ -17,6 +17,7 @@ class LifeContext:
 
     # Time context
     timestamp: float        = field(default_factory=time.time)
+    has_screen: bool        = True    # False khi không đọc được màn hình
     hour_of_day: int        = 0       # 0–23
     day_of_week: str        = ""      # "Monday"…
 
@@ -76,6 +77,7 @@ class LifeContext:
             "cpu_usage":     self.cpu_usage,
             "ram_usage":     self.ram_usage,
             "disk_usage":    self.disk_usage,
+            "has_screen":    self.has_screen,
         }
 
 
@@ -145,8 +147,12 @@ class LifeObserver:
                 if watcher_activity and watcher_activity != "unknown":
                     resolved_activity = watcher_activity
                 screen_text = watcher.get_current_context() or ""
-        except Exception:
-            pass
+        except Exception as e:
+            import logging
+            logging.getLogger("ai-companion.life").debug(
+                "Observer: screen_watcher không khả dụng (headless?) — %s", e
+            )
+            screen_text = ""
 
         focus_index = self._compute_focus_index(
             activity=resolved_activity,
@@ -167,6 +173,7 @@ class LifeObserver:
         except Exception:
             pass
 
+        has_screen = bool(screen_text or active_window)
         return LifeContext(
             timestamp            = time.time(),
             hour_of_day          = now.hour,
@@ -186,6 +193,7 @@ class LifeObserver:
             cpu_usage            = cpu_val,
             ram_usage            = ram_val,
             disk_usage           = disk_val,
+            has_screen           = has_screen,
         )
 
     def _compute_focus_index(
