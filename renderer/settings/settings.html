@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Settings</title>
+    <link rel="stylesheet" href="./settings.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <main class="settings-shell">
+      
+      <!-- ==================== MAIN INDEX VIEW ==================== -->
+      <div id="settingsIndex" class="view-panel active">
+        <header class="index-header">
+          <h1>Settings</h1>
+          <span class="index-settings-icon">⚙️</span>
+        </header>
+
+        <section class="menu-list">
+          
+          <!-- Menu Item 1: Airi Card & Stage -->
+          <div class="menu-card" data-target="pageStage">
+            <div class="menu-card-left">
+              <h2>Airi Card & Stage</h2>
+              <p>Configure Live2D character scale, voice pitch, speed, and avatar model</p>
+            </div>
+            <div class="menu-card-right">
+              <span class="card-art-emoji">🎭</span>
+            </div>
+          </div>
+
+          <!-- Menu Item 2: AI Brain -->
+          <div class="menu-card" data-target="pageBrain">
+            <div class="menu-card-left">
+              <h2>AI Brain & Hearing</h2>
+              <p>Setup LLM providers (Gemini, OpenAI, Ollama), API Keys and Speech Recognition</p>
+            </div>
+            <div class="menu-card-right">
+              <span class="card-art-emoji">🧠</span>
+            </div>
+          </div>
+
+          <!-- Menu Item 3: Memory -->
+          <div class="menu-card" data-target="pageMemory">
+            <div class="menu-card-left">
+              <h2>Memory Base</h2>
+              <p>Manage episodic memories, auto-learn database and profile records</p>
+            </div>
+            <div class="menu-card-right">
+              <span class="card-art-emoji">💾</span>
+            </div>
+          </div>
+
+          <!-- Menu Item 4: Interaction & Twitch -->
+          <div class="menu-card" data-target="pageInteraction">
+            <div class="menu-card-left">
+              <h2>Interaction & Twitch</h2>
+              <p>Configure interaction mode (Streamer/Assistant) and Twitch live chat reader</p>
+            </div>
+            <div class="menu-card-right">
+              <span class="card-art-emoji">🎙️</span>
+            </div>
+          </div>
+
+          <!-- Menu Item 5: Diagnostics -->
+          <div class="menu-card" data-target="pageDiagnostics">
+            <div class="menu-card-left">
+              <h2>Diagnostics System</h2>
+              <p>Real-time status check for backend connection, STT, TTS and LLM nodes</p>
+            </div>
+            <div class="menu-card-right">
+              <span class="card-art-emoji">🖥️</span>
+            </div>
+          </div>
+
+        </section>
+      </div>
+
+      <!-- ==================== SUB-PAGE: STAGE (PORTRAIT & SLIDERS) ==================== -->
+      <div id="pageStage" class="view-panel">
+        <header class="sub-header">
+          <button class="back-button" type="button">
+            <span class="back-icon">&lt;</span> Settings
+          </button>
+          <h2>Stage</h2>
+        </header>
+
+        <section class="sub-content">
+          <!-- Character Card Portrait (Airi Style) -->
+          <div class="character-preview-card">
+            <div class="character-portrait-wrap">
+              <img id="characterPortrait" src="" alt="Airi Portrait" style="display: none;" />
+              <div id="portraitPlaceholder" class="portrait-placeholder"></div>
+            </div>
+            <div class="character-badges">
+              <span id="lblActiveModel" class="badge-tag">IceGirl</span>
+              <span class="badge-status">Active</span>
+            </div>
+          </div>
+
+          <div class="controls-group">
+            <!-- Avatar Model Select List (Radio Card Rows) -->
+            <div class="control-card">
+              <span class="field-group-title">Chọn nhân vật (Avatar)</span>
+              <div class="avatar-radio-list">
+                <label class="avatar-option">
+                  <input type="radio" name="avatarModel" value="assets/live2d/IceGirl/IceGirl.model3.json" checked />
+                  <span class="avatar-option-inner">
+                    <span class="opt-emoji">🧊</span>
+                    <span class="opt-name">IceGirl</span>
+                  </span>
+                </label>
+
+                <label class="avatar-option">
+                  <input type="radio" name="avatarModel" value="assets/live2d/hiyori_en/hiyori_pro/runtime/hiyori_pro_t11.model3.json" />
+                  <span class="avatar-option-inner">
+                    <span class="opt-emoji">🌸</span>
+                    <span class="opt-name">Hiyori</span>
+                  </span>
+                </label>
+
+                <label class="avatar-option">
+                  <input type="radio" name="avatarModel" value="assets/live2d/mao_en/runtime/mao_pro.model3.json" />
+                  <span class="avatar-option-inner">
+                    <span class="opt-emoji">🐱</span>
+                    <span class="opt-name">Mao</span>
+                  </span>
+                </label>
+
+                <label class="avatar-option">
+                  <input type="radio" name="avatarModel" value="assets/live2d/huohuo2/huohuo/huohuo.model3.json" />
+                  <span class="avatar-option-inner">
+                    <span class="opt-emoji">🦋</span>
+                    <span class="opt-name">Huohuo</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Slider: Live2D Model Scale -->
+            <div class="control-card">
+              <div class="control-label">
+                <span class="control-icon">📐</span>
+                <span>Live2D Model Scale</span>
+              </div>
+              <div class="control-field">
+                <div class="slider-container">
+                  <input type="range" id="sliderAvatarScale" min="75" max="175" value="100" step="25" />
+                  <span id="lblAvatarScaleVal" class="slider-bubble">1.0x</span>
+                </div>
+                <select id="avatarScaleSelect" style="display: none;">
+                  <option value="0.75">0.75</option>
+                  <option value="1.0" selected>1.0</option>
+                  <option value="1.25">1.25</option>
+                  <option value="1.5">1.5</option>
+                  <option value="1.75">1.75</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Slider: Voice Pitch -->
+            <div class="control-card">
+              <div class="control-label">
+                <span class="control-icon">🔊</span>
+                <span>Voice Pitch (Hz)</span>
+              </div>
+              <div class="control-field">
+                <div class="slider-container">
+                  <input type="range" id="sliderPitch" min="10" max="80" value="50" step="5" />
+                  <span id="lblPitchVal" class="slider-bubble">50Hz</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Slider: Speech Rate -->
+            <div class="control-card">
+              <div class="control-label">
+                <span class="control-icon">⚡</span>
+                <span>Speech Speed Rate (%)</span>
+              </div>
+              <div class="control-field">
+                <div class="slider-container">
+                  <input type="range" id="sliderRate" min="-50" max="50" value="10" step="5" />
+                  <span id="lblRateVal" class="slider-bubble">+10%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Select: Voice Generator -->
+            <div class="control-card">
+              <div class="control-label">
+                <span class="control-icon">🎙️</span>
+                <span>Select Voice Generator</span>
+              </div>
+              <div class="control-field">
+                <select id="ttsSelect" style="display: none;">
+                  <option value="edge" selected>Edge TTS</option>
+                </select>
+                <select id="dummyTtsSelect">
+                  <option value="edge">Microsoft Edge Neural TTS (en-US-AnaNeural)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ==================== SUB-PAGE: AI BRAIN ==================== -->
+      <div id="pageBrain" class="view-panel">
+        <header class="sub-header">
+          <button class="back-button" type="button">
+            <span class="back-icon">&lt;</span> Settings
+          </button>
+          <h2>AI Brain</h2>
+        </header>
+
+        <section class="sub-content">
+          <div class="controls-group">
+            <div class="control-card">
+              <div class="control-label">
+                <span class="control-icon">🧠</span>
+                <span>Select LLM Provider (Brain)</span>
+              </div>
+              <div class="control-field">
+                <select id="llmSelect">
+                  <option value="ollama">🏠 Ollama — Local Offline Model</option>
+                  <option value="gemini">✨ Gemini API — Google Cloud</option>
+                  <option value="openai">⚡ OpenAI API — GPT Service</option>
+                  <option value="deepseek">🐳 DeepSeek API — DeepSeek Cloud</option>
+                  <option value="glm">🔮 Zhipu GLM API — GLM Service</option>
+                  <option value="qwen">☁️ DashScope Qwen API — Aliyun</option>
+                  <option value="openai-compatible">🔌 OpenAI Compatible</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Dynamic LLM Config Sections -->
+            <div id="llmConfigSections" class="llm-config-container">
+              <!-- Gemini Config -->
+              <div id="config-gemini" class="llm-sub-config">
+                <div class="field">
+                  <span class="field-label">Gemini API Key</span>
+                  <input type="text" id="geminiKeyInput" placeholder="Nhập API Key..." />
+                </div>
+                <div class="field">
+                  <span class="field-label">Gemini Model</span>
+                  <input type="text" id="geminiModelInput" placeholder="Ví dụ: gemini-2.5-flash" />
+                </div>
+              </div>
+
+              <!-- OpenAI Config -->
+              <div id="config-openai" class="llm-sub-config">
+                <div class="field">
+                  <span class="field-label">OpenAI API Key</span>
+                  <input type="text" id="openaiKeyInput" placeholder="sk-..." />
+                </div>
+                <div class="field">
+                  <span class="field-label">OpenAI Model</span>
+                  <input type="text" id="openaiModelInput" placeholder="Ví dụ: gpt-4o-mini" />
+                </div>
+              </div>
+
+              <!-- DeepSeek Config -->
+              <div id="config-deepseek" class="llm-sub-config">
+                <div class="field">
+                  <span class="field-label">DeepSeek API Key</span>
+                  <input type="text" id="deepseekKeyInput" placeholder="sk-..." />
+                </div>
+                <div class="field">
+                  <span class="field-label">DeepSeek Model</span>
+                  <input type="text" id="deepseekModelInput" placeholder="Ví dụ: deepseek-chat" />
+                </div>
+              </div>
+
+              <!-- GLM Config -->
+              <div id="config-glm" class="llm-sub-config">
+                <div class="field">
+                  <span class="field-label">Zhipu GLM API Key</span>
+                  <input type="text" id="glmKeyInput" placeholder="Nhập GLM API Key..." />
+                </div>
+                <div class="field">
+                  <span class="field-label">GLM Model</span>
+                  <input type="text" id="glmModelInput" placeholder="Ví dụ: glm-4" />
+                </div>
+              </div>
+
+              <!-- Qwen Config -->
+              <div id="config-qwen" class="llm-sub-config">
+                <div class="field">
+                  <span class="field-label">Qwen API Key</span>
+                  <input type="text" id="qwenKeyInput" placeholder="Nhập DashScope API Key..." />
+                </div>
+                <div class="field">
+                  <span class="field-label">Qwen Model</span>
+                  <input type="text" id="qwenModelInput" placeholder="Ví dụ: qwen-plus" />
+                </div>
+              </div>
+
+              <!-- OpenAI Compatible Config -->
+              <div id="config-openai-compatible" class="llm-sub-config">
+                <div class="field">
+                  <span class="field-label">Custom API Base URL</span>
+                  <input type="text" id="openaiCompatibleBaseUrlInput" placeholder="Ví dụ: http://localhost:11434/v1" />
+                </div>
+                <div class="field">
+                  <span class="field-label">Custom API Key</span>
+                  <input type="text" id="openaiCompatibleKeyInput" placeholder="Nhập API Key..." />
+                </div>
+                <div class="field">
+                  <span class="field-label">Custom Model Name</span>
+                  <input type="text" id="openaiCompatibleModelInput" placeholder="Ví dụ: llama3" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Select: Speech to Text (STT) -->
+            <div class="control-card">
+              <div class="control-label">
+                <span class="control-icon">👂</span>
+                <span>Speech-to-Text Model (STT)</span>
+              </div>
+              <div class="control-field">
+                <select id="sttSelect">
+                  <option value="tiny"> Whisper Tiny — Fast</option>
+                  <option value="base"> Whisper Base — Accurate</option>
+                  <option value="funasr"> Alibaba FunASR — Local</option>
+                </select>
+              </div>
+              <div id="stt-funasr-config" class="field" style="display: none; margin-top: 8px;">
+                <span class="field-label">Tên mô hình FunASR</span>
+                <input type="text" id="sttFunasrModelInput" placeholder="Ví dụ: iic/SenseVoiceSmall" />
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ==================== SUB-PAGE: MEMORY ==================== -->
+      <div id="pageMemory" class="view-panel">
+        <header class="sub-header">
+          <button class="back-button" type="button">
+            <span class="back-icon">&lt;</span> Settings
+          </button>
+          <h2>Memory</h2>
+        </header>
+
+        <section class="sub-content">
+          <div class="controls-group">
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <span class="toggle-title">Ghi nhớ dài hạn</span>
+                <span class="toggle-desc">Tự động ghi nhớ kỷ niệm qua hội thoại</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="chkMemoryMode" checked />
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+
+            <div class="control-card">
+              <span class="field-group-title">Quản lý ký ức</span>
+              <div id="memoryList" class="memory-list-box">
+                <div style="text-align: center; color: var(--text-secondary); padding: 20px;">Đang tải ký ức...</div>
+              </div>
+              <div class="memory-add-wrap">
+                <input type="text" id="txtNewMemory" placeholder="Thêm ký ức thủ công..." />
+                <button id="btnAddMemory" type="button">Thêm</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ==================== SUB-PAGE: INTERACTION & TWITCH ==================== -->
+      <div id="pageInteraction" class="view-panel">
+        <header class="sub-header">
+          <button class="back-button" type="button">
+            <span class="back-icon">&lt;</span> Settings
+          </button>
+          <h2>Interaction</h2>
+        </header>
+
+        <section class="sub-content">
+          <div class="controls-group">
+            <div class="control-card">
+              <span class="field-group-title">Interaction Mode</span>
+              <div class="mode-select-grid">
+                <label class="mode-card">
+                  <input type="radio" name="interactionMode" value="streamer" id="radModeStreamer" />
+                  <span class="mode-card-inner">
+                    <span class="mode-icon">🎙️</span>
+                    <span class="mode-title">Streamer</span>
+                  </span>
+                </label>
+                <label class="mode-card">
+                  <input type="radio" name="interactionMode" value="assistant" id="radModeAssistant" />
+                  <span class="mode-card-inner">
+                    <span class="mode-icon">💬</span>
+                    <span class="mode-title">Trợ lý</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <span class="toggle-title">Đọc chat Twitch</span>
+                <span class="toggle-desc">AI tự bình luận livestream Twitch</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="chkTwitchMode" />
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+
+            <div class="twitch-channel-wrap" id="twitchChannelWrap">
+              <div class="field">
+                <span class="field-label">Tên kênh Twitch</span>
+                <input type="text" id="txtTwitchChannel" placeholder="Ví dụ: mixigaming" />
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ==================== SUB-PAGE: DIAGNOSTICS ==================== -->
+      <div id="pageDiagnostics" class="view-panel">
+        <header class="sub-header">
+          <button class="back-button" type="button">
+            <span class="back-icon">&lt;</span> Settings
+          </button>
+          <h2>Diagnostics</h2>
+        </header>
+
+        <section class="sub-content">
+          <div class="controls-group">
+            <div class="control-card">
+              <span class="field-group-title">Diagnostics System Status</span>
+              <div class="status-grid">
+                <div class="status-item">
+                  <span class="status-label">Backend Service</span>
+                  <span id="status-backend" class="status-val">Checking...</span>
+                </div>
+                <div class="status-item">
+                  <span class="status-label">AI Brain (LLM)</span>
+                  <span id="status-llm" class="status-val">Checking...</span>
+                </div>
+                <div class="status-item">
+                  <span class="status-label">Speech (TTS)</span>
+                  <span id="status-tts" class="status-val">Checking...</span>
+                </div>
+                <div class="status-item">
+                  <span class="status-label">Hearing (STT)</span>
+                  <span id="status-stt" class="status-val">Checking...</span>
+                </div>
+                <div class="status-item">
+                  <span class="status-label">Memory Engine</span>
+                  <span id="status-memory" class="status-val">Checking...</span>
+                </div>
+                <div class="status-item">
+                  <span class="status-label">Avatar Node</span>
+                  <span id="status-avatar" class="status-val online">Online</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+    </main>
+
+    <div class="save-status" id="saveStatus">Đã lưu cài đặt</div>
+    
+    <script type="module" src="./settings.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // Multi-page panel navigation (Slide transitions)
+        const menuCards = document.querySelectorAll(".menu-card");
+        const backBtns = document.querySelectorAll(".back-button");
+        const viewPanels = document.querySelectorAll(".view-panel");
+        const settingsIndex = document.getElementById("settingsIndex");
+
+        menuCards.forEach(card => {
+          card.addEventListener("click", () => {
+            const targetId = card.getAttribute("data-target");
+            const targetPanel = document.getElementById(targetId);
+            if (targetPanel) {
+              viewPanels.forEach(p => p.classList.remove("active"));
+              targetPanel.classList.add("active");
+            }
+          });
+        });
+
+        backBtns.forEach(btn => {
+          btn.addEventListener("click", () => {
+            viewPanels.forEach(p => p.classList.remove("active"));
+            settingsIndex?.classList.add("active");
+          });
+        });
+
+        // Dynamic Character Portrait Changer
+        const portraitImg = document.getElementById("characterPortrait");
+        const lblActiveModel = document.getElementById("lblActiveModel");
+        const portraitPlaceholder = document.getElementById("portraitPlaceholder");
+        
+        const characterPortraits = {
+          "assets/live2d/IceGirl/IceGirl.model3.json": "placeholder-icegirl",
+          "assets/live2d/hiyori_en/hiyori_pro/runtime/hiyori_pro_t11.model3.json": "../../assets/live2d/hiyori_en/preview.png",
+          "assets/live2d/mao_en/runtime/mao_pro.model3.json": "placeholder-mao",
+          "assets/live2d/huohuo2/huohuo/huohuo.model3.json": "placeholder-huohuo"
+        };
+        const characterNames = {
+          "assets/live2d/IceGirl/IceGirl.model3.json": "IceGirl",
+          "assets/live2d/hiyori_en/hiyori_pro/runtime/hiyori_pro_t11.model3.json": "Hiyori",
+          "assets/live2d/mao_en/runtime/mao_pro.model3.json": "Mao",
+          "assets/live2d/huohuo2/huohuo/huohuo.model3.json": "Huohuo"
+        };
+
+        const updatePortrait = (val) => {
+          const imgUrl = characterPortraits[val];
+          const name = characterNames[val] || "IceGirl";
+          
+          if (lblActiveModel) {
+            lblActiveModel.textContent = name;
+          }
+
+          if (imgUrl && imgUrl.startsWith("placeholder-")) {
+            // Hide image, show placeholder card
+            if (portraitImg) portraitImg.style.display = "none";
+            if (portraitPlaceholder) {
+              portraitPlaceholder.style.display = "flex";
+              portraitPlaceholder.className = "portrait-placeholder " + imgUrl;
+              
+              // Set background gradient & icon based on placeholder type
+              let emoji = "🧊";
+              if (name === "Mao") emoji = "🐱";
+              if (name === "Huohuo") emoji = "🦋";
+              
+              portraitPlaceholder.innerHTML = `<span class="placeholder-emoji">${emoji}</span><span class="placeholder-name">${name}</span>`;
+            }
+          } else if (imgUrl) {
+            // Show image, hide placeholder card
+            if (portraitPlaceholder) portraitPlaceholder.style.display = "none";
+            if (portraitImg) {
+              portraitImg.src = imgUrl;
+              portraitImg.style.display = "block";
+            }
+          }
+        };
+
+        const avatarRadios = document.querySelectorAll('input[name="avatarModel"]');
+        avatarRadios.forEach(radio => {
+          radio.addEventListener("change", () => {
+            if (radio.checked) {
+              updatePortrait(radio.value);
+            }
+          });
+        });
+
+        // Init portrait
+        setTimeout(() => {
+          const checkedRadio = document.querySelector('input[name="avatarModel"]:checked');
+          if (checkedRadio) {
+            updatePortrait(checkedRadio.value);
+          }
+        }, 100);
+
+        // TTS Pitch & Rate Slider UI Sync
+        const sliderPitch = document.getElementById("sliderPitch");
+        const lblPitchVal = document.getElementById("lblPitchVal");
+        const sliderRate = document.getElementById("sliderRate");
+        const lblRateVal = document.getElementById("lblRateVal");
+
+        if (sliderPitch && lblPitchVal) {
+          sliderPitch.addEventListener("input", async () => {
+            const val = sliderPitch.value;
+            lblPitchVal.textContent = val + "Hz";
+            if (window.companion) {
+              await window.companion.invoke("ai:update-config", {
+                key: "tts.pitch",
+                value: "+" + val + "Hz"
+              });
+            }
+          });
+        }
+
+        if (sliderRate && lblRateVal) {
+          sliderRate.addEventListener("input", async () => {
+            const val = sliderRate.value;
+            const sign = parseInt(val) >= 0 ? "+" : "";
+            lblRateVal.textContent = sign + val + "%";
+            if (window.companion) {
+              await window.companion.invoke("ai:update-config", {
+                key: "tts.rate",
+                value: sign + val + "%"
+              });
+            }
+          });
+        }
+
+        // Link styled range avatar scale to hidden avatarScaleSelect
+        const sliderAvatarScale = document.getElementById("sliderAvatarScale");
+        const lblAvatarScaleVal = document.getElementById("lblAvatarScaleVal");
+        const avatarScaleSelect = document.getElementById("avatarScaleSelect");
+
+        if (sliderAvatarScale && lblAvatarScaleVal && avatarScaleSelect) {
+          setTimeout(() => {
+            const val = avatarScaleSelect.value || "1.0";
+            sliderAvatarScale.value = Math.round(parseFloat(val) * 100);
+            lblAvatarScaleVal.textContent = val + "x";
+          }, 200);
+
+          sliderAvatarScale.addEventListener("input", async () => {
+            const pct = sliderAvatarScale.value;
+            const val = (parseInt(pct) / 100).toFixed(2);
+            lblAvatarScaleVal.textContent = val + "x";
+            avatarScaleSelect.value = val;
+            if (window.companion) {
+              await window.companion.invoke("ai:update-config", {
+                key: "app.avatarScale",
+                value: val
+              });
+            }
+          });
+        }
+      });
+    </script>
+  </body>
+</html>

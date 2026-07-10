@@ -1,0 +1,852 @@
+/* ─── Airi Options Light Mode Design System ─────────────────────────── */
+:root {
+  --bg-main: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-input: #f1f5f9;
+  --border: #e2e8f0;
+  --border-focus: #3b82f6;
+  --accent: #3b82f6;
+  --accent-light: rgba(59, 130, 246, 0.08);
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+
+  --success: #10b981;
+  --danger: #ef4444;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  --font-family: "Outfit", "Segoe UI", system-ui, -apple-system, sans-serif;
+  color-scheme: light;
+}
+
+/* ─── Reset & Base ─────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  font-family: var(--font-family);
+  background: var(--bg-main);
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* ─── Layout shell ──────────────────────────────────────────── */
+.settings-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background: var(--bg-main);
+  position: relative;
+}
+
+/* ─── View Panels (Multi-page controller) ──────────────────── */
+.view-panel {
+  display: none;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--bg-main);
+}
+
+.view-panel.active {
+  display: flex;
+  animation: slideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ─── Headers ───────────────────────────────────────────────── */
+.index-header {
+  padding: 24px 20px 14px;
+  background: var(--bg-main);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.index-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.index-settings-icon {
+  font-size: 20px;
+  color: var(--text-secondary);
+}
+
+.sub-header {
+  padding: 16px 20px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.sub-header h2 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.back-button {
+  background: transparent;
+  border: none;
+  font-family: var(--font-family);
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--accent);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  outline: none;
+}
+
+.back-button:hover {
+  opacity: 0.7;
+}
+
+.back-icon {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* ─── Scrollable Contents ────────────────────────────────────── */
+.menu-list {
+  flex: 1;
+  padding: 0 20px 30px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sub-content {
+  flex: 1;
+  padding: 16px 20px 30px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 99px;
+}
+
+/* ─── Menu Cards (Flat list shown in user's image) ──────────── */
+.menu-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.01);
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-card-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  padding-right: 12px;
+}
+
+.menu-card-left h2 {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.menu-card-left p {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.menu-card-right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.card-art-emoji {
+  font-size: 26px;
+  opacity: 0.8;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.05));
+  transition: transform 0.2s ease;
+}
+
+/* Hover effects (Aero-glass soft highlight) */
+.menu-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--border-focus);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.06);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.menu-card:hover .card-art-emoji {
+  transform: scale(1.1);
+}
+
+/* Specific Highlight for active-like items (e.g. Modules in the screenshot) */
+.menu-card[data-target="pageBrain"]:hover {
+  background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+}
+
+.card-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 10px 0;
+}
+
+/* ─── Character Preview Card (Airi Style Portrait) ──────────────── */
+.character-preview-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.015);
+}
+
+.character-portrait-wrap {
+  width: 100%;
+  height: 220px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.01);
+  position: relative;
+}
+
+.character-portrait-wrap img {
+  height: 95%;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.06));
+}
+
+/* ─── Portrait Placeholders (Vẽ bằng CSS cực kỳ bắt mắt) ───────── */
+.portrait-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border-radius: var(--radius-md);
+  transition: all 0.3s ease;
+}
+
+.placeholder-emoji {
+  font-size: 72px;
+  line-height: 1;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.1));
+  animation: floatEmoji 4s ease-in-out infinite;
+}
+
+.placeholder-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 4px 14px;
+  border-radius: 99px;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+@keyframes floatEmoji {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(3deg);
+  }
+}
+
+/* Themes for Placeholders */
+.placeholder-icegirl {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+}
+
+.placeholder-mao {
+  background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%);
+}
+
+.placeholder-huohuo {
+  background: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%);
+}
+
+.character-badges {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.badge-tag {
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 99px;
+  text-transform: uppercase;
+}
+
+.badge-status {
+  background: #d1fae5;
+  color: #065f46;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 99px;
+  text-transform: uppercase;
+}
+
+/* ─── Controls Group & Cards ────────────────────────────────── */
+.controls-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.control-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.01);
+}
+
+.control-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.control-icon {
+  font-size: 14px;
+}
+
+.control-field {
+  width: 100%;
+}
+
+/* Form Controls */
+select,
+input[type="text"] {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 13px;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+select:focus,
+input[type="text"]:focus {
+  border-color: var(--border-focus);
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+}
+
+/* ─── Custom Slider (Airi Blue Style) ────────────────────────── */
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 2px;
+}
+
+.slider-container input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--border);
+  outline: none;
+}
+
+/* Webkit track and thumb */
+.slider-container input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+  cursor: pointer;
+  background: var(--border);
+  border-radius: 99px;
+}
+
+.slider-container input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid var(--accent);
+  cursor: pointer;
+  margin-top: -6px;
+  box-shadow: 0 1.5px 4px rgba(59, 130, 246, 0.2);
+  transition: transform 0.1s ease;
+}
+
+.slider-container input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.slider-bubble {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-light);
+  padding: 2px 6px;
+  border-radius: 4px;
+  min-width: 44px;
+  text-align: center;
+}
+
+/* ─── Avatar Option List (Airi Radio Buttons) ────────────────── */
+.field-group-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.avatar-radio-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.avatar-option {
+  cursor: pointer;
+  position: relative;
+}
+
+.avatar-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.avatar-option-inner {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  background: var(--bg-input);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.opt-emoji {
+  font-size: 16px;
+}
+
+.opt-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* State Changes */
+.avatar-option:hover .avatar-option-inner {
+  background: var(--border);
+}
+
+.avatar-option input[type="radio"]:checked + .avatar-option-inner {
+  background: var(--accent-light);
+  border-color: var(--accent);
+}
+
+/* ─── System Tab Styling ─────────────────────────────────────── */
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.status-item {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-label {
+  color: var(--text-secondary);
+  font-size: 11.5px;
+}
+
+.status-val {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.status-val.online {
+  color: var(--success);
+}
+
+.llm-config-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.llm-sub-config {
+  display: none;
+  animation: tabFadeIn 0.2s ease;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  background: var(--bg-input);
+}
+
+.llm-sub-config .field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.llm-sub-config .field:last-child {
+  margin-bottom: 0;
+}
+
+.llm-sub-config .field-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.mode-select-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.mode-card {
+  cursor: pointer;
+  position: relative;
+}
+
+.mode-card input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.mode-card-inner {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  background: var(--bg-input);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.mode-icon {
+  font-size: 14px;
+}
+
+.mode-title {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.mode-card:hover .mode-card-inner {
+  background: var(--border);
+}
+
+.mode-card input[type="radio"]:checked + .mode-card-inner {
+  background: var(--accent-light);
+  border-color: var(--accent);
+}
+
+/* ─── Toggle Switch Row ─────────────────────────────────────── */
+.toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.01);
+}
+
+.toggle-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toggle-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.toggle-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border);
+  transition: .15s ease;
+  border-radius: 20px;
+}
+
+.toggle-track:before {
+  position: absolute;
+  content: "";
+  height: 12px;
+  width: 12px;
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--text-muted);
+  transition: .15s ease;
+  border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-track {
+  background-color: var(--accent-light);
+  border-color: var(--accent);
+}
+
+.toggle-switch input:checked + .toggle-track:before {
+  transform: translateX(16px);
+  background-color: var(--accent);
+}
+
+/* Twitch Panel Visible */
+.twitch-channel-wrap {
+  display: none;
+  animation: tabFadeIn 0.2s ease;
+  border: 1px solid var(--border);
+  padding: 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.01);
+}
+
+.twitch-channel-wrap.visible {
+  display: block;
+}
+
+.twitch-channel-wrap .field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.twitch-channel-wrap .field-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+/* ─── Memory Manager Area ───────────────────────────────────── */
+.memory-list-box {
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+}
+
+.memory-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px 6px;
+}
+
+.memory-text {
+  flex: 1;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--text-primary) !important;
+  padding: 1px 0 !important;
+  font-size: 12.5px !important;
+}
+
+.memory-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.memory-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s;
+}
+
+.memory-btn:hover {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.memory-add-wrap {
+  display: flex;
+  gap: 5px;
+}
+
+.memory-add-wrap input {
+  flex: 1;
+}
+
+.memory-add-wrap button {
+  height: 32px;
+  padding: 0 12px;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-family);
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+/* ─── Save Toast Indicator ─────────────────────────────────── */
+.save-status {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--text-primary);
+  color: var(--bg-card);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: all 0.15s ease;
+  z-index: 100;
+}
+
+.save-status.visible {
+  opacity: 1;
+  transform: translateY(0);
+}

@@ -1,0 +1,22 @@
+# DeskAgent Cursor rules
+
+You are an expert developer helping with the DeskAgent codebase. DeskAgent is a hybrid Electron (TypeScript/Node) and Python desktop companion app.
+
+## Project Structure
+- `desktop/`: Electron main process files (TypeScript compiled to JS)
+- `renderer/`: Electron renderer process files (HTML/CSS/JS interface)
+- `src/`: Shared TypeScript/JavaScript code for the desktop application
+- `agents/`: Core Python LLM agents (Desktop, Browser, Planner, Vision)
+- `api/`: FastAPI/WebSocket API server
+- `cognition/`: Cognitive processing (reasoning, context, prompts)
+- `life/`: Autonomous Loop (Observe -> Feel -> Think -> Decide -> Act -> Reflect)
+- `memory/`: Multilevel memory management (vector store, semantic, etc.)
+- `tools/`: System execution tools
+
+## Core Coding Rules
+1. **Strict Modular Separation**: Do NOT write UI logic in the backend, and do NOT run native OS commands from the renderer.
+2. **Safety**: Respect workspace boundaries. Do not modify user config files without consent.
+3. **Click-through Canvas**: WebGL canvases for Live2D/Spine must have `preserveDrawingBuffer: true` and `containsPoint` checking pixel alpha.
+4. **Efficiency**: Use lazy loading to keep startup under 5 seconds.
+5. **Data Contracts**: Always use `ContextPacket` when passing unified snapshots between layers.
+6. **Portability**: Do NOT use hardcoded absolute workspace paths. Always use relative/dynamic paths.

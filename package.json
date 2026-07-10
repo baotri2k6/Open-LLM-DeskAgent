@@ -1,0 +1,45 @@
+{
+  "name": "ai-companion-desktop-2d",
+  "version": "0.2.0",
+  "description": "AI Companion Desktop 2D",
+  "main": "desktop/main.js",
+  "private": true,
+  "scripts": {
+    "build-ts": "tsc -p tsconfig.json && node scripts/build-renderer.js",
+    "start": "pnpm run build-ts && node scripts/start-electron.js",
+    "dev": "pnpm run build-ts && node scripts/start-electron.js",
+    "python": "python api/server.py",
+    "build": "pnpm run build-ts && electron-builder"
+  },
+  "dependencies": {
+    "@esotericsoftware/spine-webgl": "^4.1.56",
+    "pixi-live2d-display": "^0.4.0",
+    "pixi.js": "^6.5.10",
+    "ws": "^8.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.1",
+    "@types/ws": "^8.18.1",
+    "electron": "^35.2.1",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.1",
+    "typescript": "^6.0.3"
+  },
+  "build": {
+    "appId": "com.deskagent.app",
+    "files": [
+      "**/*",
+      "!**/.venv*${/*}",
+      "!**/.venv*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "extraResources": [
+      {
+        "from": "dist/main_server.exe",
+        "to": "."
+      }
+    ]
+  }
+}

@@ -1,0 +1,313 @@
+{
+  "version": "1.0.0",
+  "models": [
+    {
+      "id": "icegirl",
+      "name": "IceGirl",
+      "description": "Nhan vat mac dinh - co gai bang gia de thuong",
+      "path": "assets/live2d/IceGirl/IceGirl.model3.json",
+      "thumbnail": "assets/live2d/IceGirl/textures/texture_03.png",
+      "scale": 0.85,
+      "default": true,
+      "tags": [
+        "default",
+        "anime",
+        "live2d"
+      ],
+      "accessories": [
+        {
+          "id": "gamepad",
+          "label": "🎮 Tay cam",
+          "paramId": "ShouBing",
+          "type": "toggle",
+          "defaultValue": 0,
+          "activeValue": 1
+        },
+        {
+          "id": "catears",
+          "label": "🐱 Tai meo",
+          "paramId": "Param53",
+          "type": "toggle",
+          "defaultValue": 0,
+          "activeValue": 1
+        },
+        {
+          "id": "crown",
+          "label": "👑 Vuong mien",
+          "paramId": "Param40",
+          "type": "toggle",
+          "defaultValue": 0,
+          "activeValue": 1
+        },
+        {
+          "id": "wings",
+          "label": "🪶 Canh",
+          "paramId": "Param41",
+          "type": "toggle",
+          "defaultValue": 0,
+          "activeValue": 1
+        },
+        {
+          "id": "headset",
+          "label": "🎧 Tai nghe",
+          "paramId": "JiaJu",
+          "type": "toggle",
+          "defaultValue": 0,
+          "activeValue": 1
+        },
+        {
+          "id": "ponytail",
+          "label": "💇 Duoi ngua",
+          "paramId": "Param51",
+          "type": "hair",
+          "defaultValue": 0,
+          "activeValue": 1
+        },
+        {
+          "id": "loosehair",
+          "label": "💇 Toc xoa",
+          "paramId": "Param51",
+          "type": "hair",
+          "defaultValue": 0,
+          "activeValue": 2
+        }
+      ],
+      "hitReactions": {
+        "head": [
+          {
+            "expression": "angry",
+            "motion": "shake"
+          },
+          {
+            "expression": "thinking",
+            "motion": "thinking"
+          },
+          {
+            "expression": "surprised",
+            "motion": "nod"
+          }
+        ],
+        "body": [
+          {
+            "expression": "smile",
+            "motion": "nod"
+          },
+          {
+            "expression": "happy",
+            "motion": "excited"
+          },
+          {
+            "expression": "wink",
+            "motion": "nod"
+          }
+        ]
+      },
+      "expressionFallback": {}
+    },
+    {
+      "id": "huohuo",
+      "name": "Huohuo",
+      "description": "Phan quan tap su nho nhan tu Honkai: Star Rail",
+      "path": "assets/live2d/huohuo2/huohuo/huohuo.model3.json",
+      "thumbnail": null,
+      "scale": 0.75,
+      "default": false,
+      "tags": [
+        "honkai",
+        "live2d"
+      ],
+      "accessories": [
+        {
+          "id": "cushion",
+          "label": "🧸 Goi om",
+          "paramId": [
+            "Param99",
+            "Param119",
+            "Param120",
+            "Param121",
+            "Param122"
+          ],
+          "type": "toggle",
+          "defaultValue": 0,
+          "activeValue": 1
+        },
+        {
+          "id": "flag1",
+          "label": "🚩 La co 1",
+          "paramId": "Param63",
+          "type": "flag",
+          "defaultValue": 0,
+          "activeValue": 1
+        },
+        {
+          "id": "flag2",
+          "label": "🚩 La co 2",
+          "paramId": [
+            "Param63",
+            "Param127"
+          ],
+          "type": "flag",
+          "defaultValue": 0,
+          "activeValue": 1
+        }
+      ],
+      "hitReactions": {
+        "head": [
+          {
+            "expression": "surprised",
+            "motion": "excited"
+          },
+          {
+            "expression": "sad",
+            "motion": "shake"
+          },
+          {
+            "expression": "angry",
+            "motion": "shake"
+          }
+        ],
+        "body": [
+          {
+            "expression": "smile",
+            "motion": "nod"
+          },
+          {
+            "expression": "happy",
+            "motion": "zhentou"
+          }
+        ]
+      },
+      "expressionFallback": {}
+    },
+    {
+      "id": "mao",
+      "name": "Mao",
+      "description": "Nhan vat Mao tu bo suu tap Live2D Cubism",
+      "path": "assets/live2d/mao_en/runtime/mao_pro.model3.json",
+      "thumbnail": null,
+      "scale": 0.85,
+      "default": false,
+      "tags": [
+        "cubism",
+        "live2d"
+      ],
+      "accessories": [
+        {
+          "id": "exp02",
+          "label": "😊 Cuoi",
+          "expressionName": "exp_02",
+          "type": "expression"
+        },
+        {
+          "id": "exp04",
+          "label": "😃 Vui ve",
+          "expressionName": "exp_04",
+          "type": "expression"
+        },
+        {
+          "id": "exp05",
+          "label": "😢 Buon",
+          "expressionName": "exp_05",
+          "type": "expression"
+        },
+        {
+          "id": "exp06",
+          "label": "🤔 Suy nghi",
+          "expressionName": "exp_06",
+          "type": "expression"
+        },
+        {
+          "id": "exp07",
+          "label": "😮 Ngac nhien",
+          "expressionName": "exp_07",
+          "type": "expression"
+        },
+        {
+          "id": "exp08",
+          "label": "😠 Tuc gian",
+          "expressionName": "exp_08",
+          "type": "expression"
+        }
+      ],
+      "hitReactions": {
+        "head": [
+          {
+            "expression": "angry",
+            "motion": "shake"
+          },
+          {
+            "expression": "focused",
+            "motion": "thinking"
+          },
+          {
+            "expression": "surprised",
+            "motion": "thinking"
+          }
+        ],
+        "body": [
+          {
+            "expression": "smile",
+            "motion": "nod"
+          },
+          {
+            "expression": "happy",
+            "motion": "excited"
+          },
+          {
+            "expression": "smile",
+            "motion": "look_side"
+          }
+        ]
+      },
+      "expressionFallback": {}
+    },
+    {
+      "id": "hiyori",
+      "name": "Hiyori",
+      "description": "Nhan vat Hiyori tu bo mau Live2D chinh thuc",
+      "path": "assets/live2d/hiyori_en/hiyori_pro/runtime/hiyori_pro_t11.model3.json",
+      "thumbnail": null,
+      "scale": 0.85,
+      "default": false,
+      "tags": [
+        "cubism",
+        "live2d"
+      ],
+      "accessories": [],
+      "hitReactions": {
+        "head": [
+          {
+            "expression": "thinking",
+            "motion": "thinking"
+          }
+        ],
+        "body": [
+          {
+            "expression": "smile",
+            "motion": "nod"
+          },
+          {
+            "expression": "happy",
+            "motion": "excited"
+          },
+          {
+            "expression": "thinking",
+            "motion": "thinking"
+          }
+        ]
+      },
+      "expressionFallback": {
+        "smile": "excited",
+        "friendly": "excited",
+        "happy": "excited",
+        "excited": "excited",
+        "thinking": "thinking",
+        "focused": "thinking",
+        "sad": "sad",
+        "angry": "shake",
+        "surprised": "surprised",
+        "wink": "excited"
+      }
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "name": "homeassistant_plugin",
+  "description": "Plugin kết nối hoặc giả lập điều khiển nhà thông minh Home Assistant.",
+  "version": "1.0.0",
+  "tools": [
+    {
+      "name": "homeassistant_get_devices",
+      "description": "Lấy danh sách các thiết bị thông minh và trạng thái của chúng.",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "homeassistant_control_device",
+      "description": "Điều khiển trạng thái của thiết bị thông minh (bật/tắt đèn, đổi nhiệt độ điều hòa...).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "entity_id": {
+            "type": "string",
+            "description": "ID định danh thiết bị (ví dụ: 'light.living_room', 'climate.bedroom')."
+          },
+          "action": {
+            "type": "string",
+            "description": "Hành động điều khiển ('turn_on', 'turn_off', 'set_temperature'...)."
+          },
+          "value": {
+            "type": "string",
+            "description": "Giá trị cần thiết lập cho hành động nếu có (ví dụ: '24' cho set_temperature)."
+          }
+        },
+        "required": ["entity_id", "action"]
+      }
+    }
+  ]
+}

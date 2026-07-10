@@ -1,0 +1,11 @@
+{
+  "mcp_servers": {
+    "time": {
+      "command": "uvx",
+      "args": [
+        "--offline",
+        "mcp-server-time"
+      ]
+    }
+  }
+}

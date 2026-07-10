@@ -1,0 +1,5 @@
+{
+  "toggleOverlay": "CommandOrControl+Shift+Space",
+  "pushToTalk": "CommandOrControl+Shift+V",
+  "askScreen": "CommandOrControl+Shift+S"
+}
