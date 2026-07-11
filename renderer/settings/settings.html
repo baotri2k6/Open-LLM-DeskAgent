@@ -1,79 +1,397 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Settings</title>
     <link rel="stylesheet" href="./settings.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <main class="settings-shell">
-      
       <!-- ==================== MAIN INDEX VIEW ==================== -->
       <div id="settingsIndex" class="view-panel active">
-        <header class="index-header">
-          <h1>Settings</h1>
-          <span class="index-settings-icon">⚙️</span>
+        <!-- Window Title Bar -->
+        <header class="window-titlebar">
+          <h1 class="window-title">Settings</h1>
         </header>
 
-        <section class="menu-list">
-          
-          <!-- Menu Item 1: Airi Card & Stage -->
-          <div class="menu-card" data-target="pageStage">
-            <div class="menu-card-left">
-              <h2>Airi Card & Stage</h2>
-              <p>Configure Live2D character scale, voice pitch, speed, and avatar model</p>
+        <!-- Scrollable Settings List -->
+        <section class="menu-list" aria-label="Settings categories">
+          <!-- 1. Modules -->
+          <div
+            class="menu-card"
+            data-target="pageStage"
+            id="menuModules"
+            role="button"
+            tabindex="0"
+            aria-label="Open Modules settings"
+          >
+            <div class="menu-card-icon">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                <rect x="14" y="14" width="7" height="7" rx="1.5" />
+              </svg>
             </div>
-            <div class="menu-card-right">
-              <span class="card-art-emoji">🎭</span>
+            <div class="menu-card-body">
+              <span class="menu-card-title">Modules</span>
+              <span class="menu-card-desc"
+                >Thinking, vision, speech synthesis, gaming, etc.</span
+              >
             </div>
-          </div>
-
-          <!-- Menu Item 2: AI Brain -->
-          <div class="menu-card" data-target="pageBrain">
-            <div class="menu-card-left">
-              <h2>AI Brain & Hearing</h2>
-              <p>Setup LLM providers (Gemini, OpenAI, Ollama), API Keys and Speech Recognition</p>
-            </div>
-            <div class="menu-card-right">
-              <span class="card-art-emoji">🧠</span>
-            </div>
-          </div>
-
-          <!-- Menu Item 3: Memory -->
-          <div class="menu-card" data-target="pageMemory">
-            <div class="menu-card-left">
-              <h2>Memory Base</h2>
-              <p>Manage episodic memories, auto-learn database and profile records</p>
-            </div>
-            <div class="menu-card-right">
-              <span class="card-art-emoji">💾</span>
-            </div>
-          </div>
-
-          <!-- Menu Item 4: Interaction & Twitch -->
-          <div class="menu-card" data-target="pageInteraction">
-            <div class="menu-card-left">
-              <h2>Interaction & Twitch</h2>
-              <p>Configure interaction mode (Streamer/Assistant) and Twitch live chat reader</p>
-            </div>
-            <div class="menu-card-right">
-              <span class="card-art-emoji">🎙️</span>
-            </div>
-          </div>
-
-          <!-- Menu Item 5: Diagnostics -->
-          <div class="menu-card" data-target="pageDiagnostics">
-            <div class="menu-card-left">
-              <h2>Diagnostics System</h2>
-              <p>Real-time status check for backend connection, STT, TTS and LLM nodes</p>
-            </div>
-            <div class="menu-card-right">
-              <span class="card-art-emoji">🖥️</span>
+            <div class="menu-card-chevron">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
             </div>
           </div>
 
+          <!-- 2. Scenes -->
+          <div
+            class="menu-card"
+            data-target="pageInteraction"
+            id="menuScenes"
+            role="button"
+            tabindex="0"
+            aria-label="Open Scenes settings"
+          >
+            <div class="menu-card-icon">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+                <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+                <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+                <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                <rect x="7" y="7" width="10" height="10" rx="1" />
+              </svg>
+            </div>
+            <div class="menu-card-body">
+              <span class="menu-card-title">Scenes</span>
+              <span class="menu-card-desc"
+                >Customize the virtual environment for your characters.</span
+              >
+            </div>
+            <div class="menu-card-chevron">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- 3. Models -->
+          <div
+            class="menu-card"
+            data-target="pageStage"
+            id="menuModels"
+            role="button"
+            tabindex="0"
+            aria-label="Open Models settings"
+          >
+            <div class="menu-card-icon">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="8" r="4" />
+                <path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
+              </svg>
+            </div>
+            <div class="menu-card-body">
+              <span class="menu-card-title">Models</span>
+              <span class="menu-card-desc">Live2D, VRM, Spine, etc.</span>
+            </div>
+            <div class="menu-card-chevron">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- 4. Memory -->
+          <div
+            class="menu-card"
+            data-target="pageMemory"
+            id="menuMemory"
+            role="button"
+            tabindex="0"
+            aria-label="Open Memory settings"
+          >
+            <div class="menu-card-icon">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <ellipse cx="12" cy="5" rx="9" ry="3" />
+                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+              </svg>
+            </div>
+            <div class="menu-card-body">
+              <span class="menu-card-title">Memory</span>
+              <span class="menu-card-desc"
+                >Where memories got stored, and organized.</span
+              >
+            </div>
+            <div class="menu-card-chevron">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- 5. Providers -->
+          <div
+            class="menu-card"
+            data-target="pageBrain"
+            id="menuProviders"
+            role="button"
+            tabindex="0"
+            aria-label="Open Providers settings"
+          >
+            <div class="menu-card-icon">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path
+                  d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"
+                />
+              </svg>
+            </div>
+            <div class="menu-card-body">
+              <span class="menu-card-title">Providers</span>
+              <span class="menu-card-desc">LLMs, speech providers, etc.</span>
+            </div>
+            <div class="menu-card-chevron">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- 6. Data -->
+          <div
+            class="menu-card"
+            data-target="pageDiagnostics"
+            id="menuData"
+            role="button"
+            tabindex="0"
+            aria-label="Open Data settings"
+          >
+            <div class="menu-card-icon">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+            </div>
+            <div class="menu-card-body">
+              <span class="menu-card-title">Data</span>
+              <span class="menu-card-desc"
+                >Manage stored AIRI data, exports, and resets.</span
+              >
+            </div>
+            <div class="menu-card-chevron">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- 7. Connection -->
+          <div
+            class="menu-card"
+            data-target="pageDiagnostics"
+            id="menuConnection"
+            role="button"
+            tabindex="0"
+            aria-label="Open Connection settings"
+          >
+            <div class="menu-card-icon">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                <circle cx="12" cy="20" r="1" fill="currentColor" />
+              </svg>
+            </div>
+            <div class="menu-card-body">
+              <span class="menu-card-title">Connection</span>
+              <span class="menu-card-desc"
+                >Configure WebSocket server connection.</span
+              >
+            </div>
+            <div class="menu-card-chevron">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- 8. System -->
+          <div
+            class="menu-card"
+            data-target="pageDiagnostics"
+            id="menuSystem"
+            role="button"
+            tabindex="0"
+            aria-label="Open System settings"
+          >
+            <div class="menu-card-icon">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                <line x1="8" y1="21" x2="16" y2="21" />
+                <line x1="12" y1="17" x2="12" y2="21" />
+              </svg>
+            </div>
+            <div class="menu-card-body">
+              <span class="menu-card-title">System</span>
+              <span class="menu-card-desc">Customize your stage!</span>
+            </div>
+            <div class="menu-card-chevron">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+          </div>
         </section>
       </div>
 
@@ -81,7 +399,19 @@
       <div id="pageStage" class="view-panel">
         <header class="sub-header">
           <button class="back-button" type="button">
-            <span class="back-icon">&lt;</span> Settings
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Settings
           </button>
           <h2>Stage</h2>
         </header>
@@ -90,7 +420,12 @@
           <!-- Character Card Portrait (Airi Style) -->
           <div class="character-preview-card">
             <div class="character-portrait-wrap">
-              <img id="characterPortrait" src="" alt="Airi Portrait" style="display: none;" />
+              <img
+                id="characterPortrait"
+                src=""
+                alt="Airi Portrait"
+                style="display: none"
+              />
               <div id="portraitPlaceholder" class="portrait-placeholder"></div>
             </div>
             <div class="character-badges">
@@ -102,10 +437,15 @@
           <div class="controls-group">
             <!-- Avatar Model Select List (Radio Card Rows) -->
             <div class="control-card">
-              <span class="field-group-title">Chọn nhân vật (Avatar)</span>
+              <span class="field-group-title">Choose Avatar</span>
               <div class="avatar-radio-list">
                 <label class="avatar-option">
-                  <input type="radio" name="avatarModel" value="assets/live2d/IceGirl/IceGirl.model3.json" checked />
+                  <input
+                    type="radio"
+                    name="avatarModel"
+                    value="assets/live2d/IceGirl/IceGirl.model3.json"
+                    checked
+                  />
                   <span class="avatar-option-inner">
                     <span class="opt-emoji">🧊</span>
                     <span class="opt-name">IceGirl</span>
@@ -113,7 +453,11 @@
                 </label>
 
                 <label class="avatar-option">
-                  <input type="radio" name="avatarModel" value="assets/live2d/hiyori_en/hiyori_pro/runtime/hiyori_pro_t11.model3.json" />
+                  <input
+                    type="radio"
+                    name="avatarModel"
+                    value="assets/live2d/hiyori_en/hiyori_pro/runtime/hiyori_pro_t11.model3.json"
+                  />
                   <span class="avatar-option-inner">
                     <span class="opt-emoji">🌸</span>
                     <span class="opt-name">Hiyori</span>
@@ -121,7 +465,11 @@
                 </label>
 
                 <label class="avatar-option">
-                  <input type="radio" name="avatarModel" value="assets/live2d/mao_en/runtime/mao_pro.model3.json" />
+                  <input
+                    type="radio"
+                    name="avatarModel"
+                    value="assets/live2d/mao_en/runtime/mao_pro.model3.json"
+                  />
                   <span class="avatar-option-inner">
                     <span class="opt-emoji">🐱</span>
                     <span class="opt-name">Mao</span>
@@ -129,7 +477,11 @@
                 </label>
 
                 <label class="avatar-option">
-                  <input type="radio" name="avatarModel" value="assets/live2d/huohuo2/huohuo/huohuo.model3.json" />
+                  <input
+                    type="radio"
+                    name="avatarModel"
+                    value="assets/live2d/huohuo2/huohuo/huohuo.model3.json"
+                  />
                   <span class="avatar-option-inner">
                     <span class="opt-emoji">🦋</span>
                     <span class="opt-name">Huohuo</span>
@@ -146,10 +498,17 @@
               </div>
               <div class="control-field">
                 <div class="slider-container">
-                  <input type="range" id="sliderAvatarScale" min="75" max="175" value="100" step="25" />
+                  <input
+                    type="range"
+                    id="sliderAvatarScale"
+                    min="75"
+                    max="175"
+                    value="100"
+                    step="25"
+                  />
                   <span id="lblAvatarScaleVal" class="slider-bubble">1.0x</span>
                 </div>
-                <select id="avatarScaleSelect" style="display: none;">
+                <select id="avatarScaleSelect" style="display: none">
                   <option value="0.75">0.75</option>
                   <option value="1.0" selected>1.0</option>
                   <option value="1.25">1.25</option>
@@ -167,7 +526,14 @@
               </div>
               <div class="control-field">
                 <div class="slider-container">
-                  <input type="range" id="sliderPitch" min="10" max="80" value="50" step="5" />
+                  <input
+                    type="range"
+                    id="sliderPitch"
+                    min="10"
+                    max="80"
+                    value="50"
+                    step="5"
+                  />
                   <span id="lblPitchVal" class="slider-bubble">50Hz</span>
                 </div>
               </div>
@@ -181,7 +547,14 @@
               </div>
               <div class="control-field">
                 <div class="slider-container">
-                  <input type="range" id="sliderRate" min="-50" max="50" value="10" step="5" />
+                  <input
+                    type="range"
+                    id="sliderRate"
+                    min="-50"
+                    max="50"
+                    value="10"
+                    step="5"
+                  />
                   <span id="lblRateVal" class="slider-bubble">+10%</span>
                 </div>
               </div>
@@ -194,11 +567,13 @@
                 <span>Select Voice Generator</span>
               </div>
               <div class="control-field">
-                <select id="ttsSelect" style="display: none;">
+                <select id="ttsSelect" style="display: none">
                   <option value="edge" selected>Edge TTS</option>
                 </select>
                 <select id="dummyTtsSelect">
-                  <option value="edge">Microsoft Edge Neural TTS (en-US-AnaNeural)</option>
+                  <option value="edge">
+                    Microsoft Edge Neural TTS (en-US-AnaNeural)
+                  </option>
                 </select>
               </div>
             </div>
@@ -210,9 +585,21 @@
       <div id="pageBrain" class="view-panel">
         <header class="sub-header">
           <button class="back-button" type="button">
-            <span class="back-icon">&lt;</span> Settings
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Settings
           </button>
-          <h2>AI Brain</h2>
+          <h2>Providers</h2>
         </header>
 
         <section class="sub-content">
@@ -224,13 +611,19 @@
               </div>
               <div class="control-field">
                 <select id="llmSelect">
-                  <option value="ollama">🏠 Ollama — Local Offline Model</option>
+                  <option value="ollama">
+                    🏠 Ollama — Local Offline Model
+                  </option>
                   <option value="gemini">✨ Gemini API — Google Cloud</option>
                   <option value="openai">⚡ OpenAI API — GPT Service</option>
-                  <option value="deepseek">🐳 DeepSeek API — DeepSeek Cloud</option>
+                  <option value="deepseek">
+                    🐳 DeepSeek API — DeepSeek Cloud
+                  </option>
                   <option value="glm">🔮 Zhipu GLM API — GLM Service</option>
                   <option value="qwen">☁️ DashScope Qwen API — Aliyun</option>
-                  <option value="openai-compatible">🔌 OpenAI Compatible</option>
+                  <option value="openai-compatible">
+                    🔌 OpenAI Compatible
+                  </option>
                 </select>
               </div>
             </div>
@@ -241,11 +634,19 @@
               <div id="config-gemini" class="llm-sub-config">
                 <div class="field">
                   <span class="field-label">Gemini API Key</span>
-                  <input type="text" id="geminiKeyInput" placeholder="Nhập API Key..." />
+                  <input
+                    type="text"
+                    id="geminiKeyInput"
+                    placeholder="Enter API Key..."
+                  />
                 </div>
                 <div class="field">
                   <span class="field-label">Gemini Model</span>
-                  <input type="text" id="geminiModelInput" placeholder="Ví dụ: gemini-2.5-flash" />
+                  <input
+                    type="text"
+                    id="geminiModelInput"
+                    placeholder="e.g. gemini-2.5-flash"
+                  />
                 </div>
               </div>
 
@@ -257,7 +658,11 @@
                 </div>
                 <div class="field">
                   <span class="field-label">OpenAI Model</span>
-                  <input type="text" id="openaiModelInput" placeholder="Ví dụ: gpt-4o-mini" />
+                  <input
+                    type="text"
+                    id="openaiModelInput"
+                    placeholder="e.g. gpt-4o-mini"
+                  />
                 </div>
               </div>
 
@@ -265,11 +670,19 @@
               <div id="config-deepseek" class="llm-sub-config">
                 <div class="field">
                   <span class="field-label">DeepSeek API Key</span>
-                  <input type="text" id="deepseekKeyInput" placeholder="sk-..." />
+                  <input
+                    type="text"
+                    id="deepseekKeyInput"
+                    placeholder="sk-..."
+                  />
                 </div>
                 <div class="field">
                   <span class="field-label">DeepSeek Model</span>
-                  <input type="text" id="deepseekModelInput" placeholder="Ví dụ: deepseek-chat" />
+                  <input
+                    type="text"
+                    id="deepseekModelInput"
+                    placeholder="e.g. deepseek-chat"
+                  />
                 </div>
               </div>
 
@@ -277,11 +690,19 @@
               <div id="config-glm" class="llm-sub-config">
                 <div class="field">
                   <span class="field-label">Zhipu GLM API Key</span>
-                  <input type="text" id="glmKeyInput" placeholder="Nhập GLM API Key..." />
+                  <input
+                    type="text"
+                    id="glmKeyInput"
+                    placeholder="Enter GLM API Key..."
+                  />
                 </div>
                 <div class="field">
                   <span class="field-label">GLM Model</span>
-                  <input type="text" id="glmModelInput" placeholder="Ví dụ: glm-4" />
+                  <input
+                    type="text"
+                    id="glmModelInput"
+                    placeholder="e.g. glm-4"
+                  />
                 </div>
               </div>
 
@@ -289,11 +710,19 @@
               <div id="config-qwen" class="llm-sub-config">
                 <div class="field">
                   <span class="field-label">Qwen API Key</span>
-                  <input type="text" id="qwenKeyInput" placeholder="Nhập DashScope API Key..." />
+                  <input
+                    type="text"
+                    id="qwenKeyInput"
+                    placeholder="Enter DashScope API Key..."
+                  />
                 </div>
                 <div class="field">
                   <span class="field-label">Qwen Model</span>
-                  <input type="text" id="qwenModelInput" placeholder="Ví dụ: qwen-plus" />
+                  <input
+                    type="text"
+                    id="qwenModelInput"
+                    placeholder="e.g. qwen-plus"
+                  />
                 </div>
               </div>
 
@@ -301,15 +730,27 @@
               <div id="config-openai-compatible" class="llm-sub-config">
                 <div class="field">
                   <span class="field-label">Custom API Base URL</span>
-                  <input type="text" id="openaiCompatibleBaseUrlInput" placeholder="Ví dụ: http://localhost:11434/v1" />
+                  <input
+                    type="text"
+                    id="openaiCompatibleBaseUrlInput"
+                    placeholder="e.g. http://localhost:11434/v1"
+                  />
                 </div>
                 <div class="field">
                   <span class="field-label">Custom API Key</span>
-                  <input type="text" id="openaiCompatibleKeyInput" placeholder="Nhập API Key..." />
+                  <input
+                    type="text"
+                    id="openaiCompatibleKeyInput"
+                    placeholder="Enter API Key..."
+                  />
                 </div>
                 <div class="field">
                   <span class="field-label">Custom Model Name</span>
-                  <input type="text" id="openaiCompatibleModelInput" placeholder="Ví dụ: llama3" />
+                  <input
+                    type="text"
+                    id="openaiCompatibleModelInput"
+                    placeholder="e.g. llama3"
+                  />
                 </div>
               </div>
             </div>
@@ -322,14 +763,22 @@
               </div>
               <div class="control-field">
                 <select id="sttSelect">
-                  <option value="tiny"> Whisper Tiny — Fast</option>
-                  <option value="base"> Whisper Base — Accurate</option>
-                  <option value="funasr"> Alibaba FunASR — Local</option>
+                  <option value="tiny">Whisper Tiny — Fast</option>
+                  <option value="base">Whisper Base — Accurate</option>
+                  <option value="funasr">Alibaba FunASR — Local</option>
                 </select>
               </div>
-              <div id="stt-funasr-config" class="field" style="display: none; margin-top: 8px;">
-                <span class="field-label">Tên mô hình FunASR</span>
-                <input type="text" id="sttFunasrModelInput" placeholder="Ví dụ: iic/SenseVoiceSmall" />
+              <div
+                id="stt-funasr-config"
+                class="field"
+                style="display: none; margin-top: 8px"
+              >
+                <span class="field-label">FunASR Model Name</span>
+                <input
+                  type="text"
+                  id="sttFunasrModelInput"
+                  placeholder="e.g. iic/SenseVoiceSmall"
+                />
               </div>
             </div>
           </div>
@@ -340,7 +789,19 @@
       <div id="pageMemory" class="view-panel">
         <header class="sub-header">
           <button class="back-button" type="button">
-            <span class="back-icon">&lt;</span> Settings
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Settings
           </button>
           <h2>Memory</h2>
         </header>
@@ -349,8 +810,10 @@
           <div class="controls-group">
             <div class="toggle-row">
               <div class="toggle-info">
-                <span class="toggle-title">Ghi nhớ dài hạn</span>
-                <span class="toggle-desc">Tự động ghi nhớ kỷ niệm qua hội thoại</span>
+                <span class="toggle-title">Long-term Memory</span>
+                <span class="toggle-desc"
+                  >Automatically remember experiences across conversations</span
+                >
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="chkMemoryMode" checked />
@@ -359,13 +822,25 @@
             </div>
 
             <div class="control-card">
-              <span class="field-group-title">Quản lý ký ức</span>
+              <span class="field-group-title">Memory Manager</span>
               <div id="memoryList" class="memory-list-box">
-                <div style="text-align: center; color: var(--text-secondary); padding: 20px;">Đang tải ký ức...</div>
+                <div
+                  style="
+                    text-align: center;
+                    color: var(--text-secondary);
+                    padding: 20px;
+                  "
+                >
+                  Loading memories...
+                </div>
               </div>
               <div class="memory-add-wrap">
-                <input type="text" id="txtNewMemory" placeholder="Thêm ký ức thủ công..." />
-                <button id="btnAddMemory" type="button">Thêm</button>
+                <input
+                  type="text"
+                  id="txtNewMemory"
+                  placeholder="Add memory manually..."
+                />
+                <button id="btnAddMemory" type="button">Add</button>
               </div>
             </div>
           </div>
@@ -376,9 +851,21 @@
       <div id="pageInteraction" class="view-panel">
         <header class="sub-header">
           <button class="back-button" type="button">
-            <span class="back-icon">&lt;</span> Settings
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Settings
           </button>
-          <h2>Interaction</h2>
+          <h2>Scenes</h2>
         </header>
 
         <section class="sub-content">
@@ -387,17 +874,27 @@
               <span class="field-group-title">Interaction Mode</span>
               <div class="mode-select-grid">
                 <label class="mode-card">
-                  <input type="radio" name="interactionMode" value="streamer" id="radModeStreamer" />
+                  <input
+                    type="radio"
+                    name="interactionMode"
+                    value="streamer"
+                    id="radModeStreamer"
+                  />
                   <span class="mode-card-inner">
                     <span class="mode-icon">🎙️</span>
                     <span class="mode-title">Streamer</span>
                   </span>
                 </label>
                 <label class="mode-card">
-                  <input type="radio" name="interactionMode" value="assistant" id="radModeAssistant" />
+                  <input
+                    type="radio"
+                    name="interactionMode"
+                    value="assistant"
+                    id="radModeAssistant"
+                  />
                   <span class="mode-card-inner">
                     <span class="mode-icon">💬</span>
-                    <span class="mode-title">Trợ lý</span>
+                    <span class="mode-title">Assistant</span>
                   </span>
                 </label>
               </div>
@@ -405,8 +902,10 @@
 
             <div class="toggle-row">
               <div class="toggle-info">
-                <span class="toggle-title">Đọc chat Twitch</span>
-                <span class="toggle-desc">AI tự bình luận livestream Twitch</span>
+                <span class="toggle-title">Read Twitch Chat</span>
+                <span class="toggle-desc"
+                  >AI auto-comments on Twitch livestream</span
+                >
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="chkTwitchMode" />
@@ -416,8 +915,12 @@
 
             <div class="twitch-channel-wrap" id="twitchChannelWrap">
               <div class="field">
-                <span class="field-label">Tên kênh Twitch</span>
-                <input type="text" id="txtTwitchChannel" placeholder="Ví dụ: mixigaming" />
+                <span class="field-label">Twitch Channel Name</span>
+                <input
+                  type="text"
+                  id="txtTwitchChannel"
+                  placeholder="e.g. mixigaming"
+                />
               </div>
             </div>
           </div>
@@ -428,9 +931,21 @@
       <div id="pageDiagnostics" class="view-panel">
         <header class="sub-header">
           <button class="back-button" type="button">
-            <span class="back-icon">&lt;</span> Settings
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Settings
           </button>
-          <h2>Diagnostics</h2>
+          <h2>System</h2>
         </header>
 
         <section class="sub-content">
@@ -440,7 +955,9 @@
               <div class="status-grid">
                 <div class="status-item">
                   <span class="status-label">Backend Service</span>
-                  <span id="status-backend" class="status-val">Checking...</span>
+                  <span id="status-backend" class="status-val"
+                    >Checking...</span
+                  >
                 </div>
                 <div class="status-item">
                   <span class="status-label">AI Brain (LLM)</span>
@@ -460,18 +977,19 @@
                 </div>
                 <div class="status-item">
                   <span class="status-label">Avatar Node</span>
-                  <span id="status-avatar" class="status-val online">Online</span>
+                  <span id="status-avatar" class="status-val online"
+                    >Online</span
+                  >
                 </div>
               </div>
             </div>
           </div>
         </section>
       </div>
-
     </main>
 
-    <div class="save-status" id="saveStatus">Đã lưu cài đặt</div>
-    
+    <div class="save-status" id="saveStatus">Settings saved</div>
+
     <script type="module" src="./settings.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
@@ -481,20 +999,28 @@
         const viewPanels = document.querySelectorAll(".view-panel");
         const settingsIndex = document.getElementById("settingsIndex");
 
-        menuCards.forEach(card => {
+        menuCards.forEach((card) => {
           card.addEventListener("click", () => {
             const targetId = card.getAttribute("data-target");
             const targetPanel = document.getElementById(targetId);
             if (targetPanel) {
-              viewPanels.forEach(p => p.classList.remove("active"));
+              viewPanels.forEach((p) => p.classList.remove("active"));
               targetPanel.classList.add("active");
+            }
+          });
+
+          // Keyboard navigation support
+          card.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              card.click();
             }
           });
         });
 
-        backBtns.forEach(btn => {
+        backBtns.forEach((btn) => {
           btn.addEventListener("click", () => {
-            viewPanels.forEach(p => p.classList.remove("active"));
+            viewPanels.forEach((p) => p.classList.remove("active"));
             settingsIndex?.classList.add("active");
           });
         });
@@ -502,45 +1028,47 @@
         // Dynamic Character Portrait Changer
         const portraitImg = document.getElementById("characterPortrait");
         const lblActiveModel = document.getElementById("lblActiveModel");
-        const portraitPlaceholder = document.getElementById("portraitPlaceholder");
-        
+        const portraitPlaceholder = document.getElementById(
+          "portraitPlaceholder",
+        );
+
         const characterPortraits = {
           "assets/live2d/IceGirl/IceGirl.model3.json": "placeholder-icegirl",
-          "assets/live2d/hiyori_en/hiyori_pro/runtime/hiyori_pro_t11.model3.json": "../../assets/live2d/hiyori_en/preview.png",
+          "assets/live2d/hiyori_en/hiyori_pro/runtime/hiyori_pro_t11.model3.json":
+            "../../assets/live2d/hiyori_en/preview.png",
           "assets/live2d/mao_en/runtime/mao_pro.model3.json": "placeholder-mao",
-          "assets/live2d/huohuo2/huohuo/huohuo.model3.json": "placeholder-huohuo"
+          "assets/live2d/huohuo2/huohuo/huohuo.model3.json":
+            "placeholder-huohuo",
         };
         const characterNames = {
           "assets/live2d/IceGirl/IceGirl.model3.json": "IceGirl",
-          "assets/live2d/hiyori_en/hiyori_pro/runtime/hiyori_pro_t11.model3.json": "Hiyori",
+          "assets/live2d/hiyori_en/hiyori_pro/runtime/hiyori_pro_t11.model3.json":
+            "Hiyori",
           "assets/live2d/mao_en/runtime/mao_pro.model3.json": "Mao",
-          "assets/live2d/huohuo2/huohuo/huohuo.model3.json": "Huohuo"
+          "assets/live2d/huohuo2/huohuo/huohuo.model3.json": "Huohuo",
         };
 
         const updatePortrait = (val) => {
           const imgUrl = characterPortraits[val];
           const name = characterNames[val] || "IceGirl";
-          
+
           if (lblActiveModel) {
             lblActiveModel.textContent = name;
           }
 
           if (imgUrl && imgUrl.startsWith("placeholder-")) {
-            // Hide image, show placeholder card
             if (portraitImg) portraitImg.style.display = "none";
             if (portraitPlaceholder) {
               portraitPlaceholder.style.display = "flex";
               portraitPlaceholder.className = "portrait-placeholder " + imgUrl;
-              
-              // Set background gradient & icon based on placeholder type
+
               let emoji = "🧊";
               if (name === "Mao") emoji = "🐱";
               if (name === "Huohuo") emoji = "🦋";
-              
+
               portraitPlaceholder.innerHTML = `<span class="placeholder-emoji">${emoji}</span><span class="placeholder-name">${name}</span>`;
             }
           } else if (imgUrl) {
-            // Show image, hide placeholder card
             if (portraitPlaceholder) portraitPlaceholder.style.display = "none";
             if (portraitImg) {
               portraitImg.src = imgUrl;
@@ -549,8 +1077,10 @@
           }
         };
 
-        const avatarRadios = document.querySelectorAll('input[name="avatarModel"]');
-        avatarRadios.forEach(radio => {
+        const avatarRadios = document.querySelectorAll(
+          'input[name="avatarModel"]',
+        );
+        avatarRadios.forEach((radio) => {
           radio.addEventListener("change", () => {
             if (radio.checked) {
               updatePortrait(radio.value);
@@ -560,7 +1090,9 @@
 
         // Init portrait
         setTimeout(() => {
-          const checkedRadio = document.querySelector('input[name="avatarModel"]:checked');
+          const checkedRadio = document.querySelector(
+            'input[name="avatarModel"]:checked',
+          );
           if (checkedRadio) {
             updatePortrait(checkedRadio.value);
           }
@@ -579,7 +1111,7 @@
             if (window.companion) {
               await window.companion.invoke("ai:update-config", {
                 key: "tts.pitch",
-                value: "+" + val + "Hz"
+                value: "+" + val + "Hz",
               });
             }
           });
@@ -593,7 +1125,7 @@
             if (window.companion) {
               await window.companion.invoke("ai:update-config", {
                 key: "tts.rate",
-                value: sign + val + "%"
+                value: sign + val + "%",
               });
             }
           });
@@ -619,7 +1151,7 @@
             if (window.companion) {
               await window.companion.invoke("ai:update-config", {
                 key: "app.avatarScale",
-                value: val
+                value: val,
               });
             }
           });
