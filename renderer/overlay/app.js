@@ -220,7 +220,7 @@ clearImageButton?.addEventListener("click", () => {
   if (imagePreviewArea) imagePreviewArea.style.display = "none";
   if (imagePreviewThumbnail) imagePreviewThumbnail.src = "";
 });
-voiceButton.addEventListener("click", async () => {
+async function triggerVoiceRecording() {
   if (!isRecording) {
     ttsQueue = [];
     ttsPlaying = false;
@@ -231,24 +231,31 @@ voiceButton.addEventListener("click", async () => {
       console.warn("Failed to cancel active generation:", err);
     });
     isRecording = true;
-    voiceButton.classList.add("active");
-    voiceButton.textContent = "Stop";
+    if (voiceButton) {
+      voiceButton.classList.add("active");
+      voiceButton.textContent = "Stop";
+    }
     avatar.setState({ expression: "focused", motion: "look_side" });
     await recorder.start(() => {
-      voiceButton.click();
+      triggerVoiceRecording();
     });
     return;
   }
   isRecording = false;
-  voiceButton.classList.remove("active");
-  voiceButton.textContent = "Mic";
+  if (voiceButton) {
+    voiceButton.classList.remove("active");
+    voiceButton.textContent = "Mic";
+  }
   setBusy(true);
   const b64 = await recorder.stop();
   if (b64)
     await window.companion.invoke("ai:voice-input", {
       audio_b64: b64
     });
-});
+}
+if (voiceButton) {
+  voiceButton.addEventListener("click", triggerVoiceRecording);
+}
 window.companion.on("stt:result", (text) => {
   if (input) input.value = text;
   setBusy(false);
@@ -256,7 +263,7 @@ window.companion.on("stt:result", (text) => {
 window.companion.on("voice:listen", (action) => {
   if (action === "start") {
     if (!isRecording) {
-      voiceButton.click();
+      triggerVoiceRecording();
     }
   }
 });

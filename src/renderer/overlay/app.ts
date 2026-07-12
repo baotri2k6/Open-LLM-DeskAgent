@@ -13,7 +13,7 @@ import { VoiceRecorder } from "../voice/recoder.js";
 const log = document.getElementById("chatLog") as HTMLDivElement;
 const form = document.getElementById("chatForm") as HTMLFormElement;
 const input = document.getElementById("chatInput") as HTMLInputElement;
-const voiceButton = document.getElementById("voiceButton") as HTMLButtonElement;
+const voiceButton = document.getElementById("voiceButton") as HTMLButtonElement | null;
 const statusPill = document.getElementById("serviceStatus") as HTMLSpanElement;
 const llmSelect = document.getElementById("llmSelect") as HTMLSelectElement;
 const sttSelect = document.getElementById("sttSelect") as HTMLSelectElement;
@@ -257,7 +257,7 @@ clearImageButton?.addEventListener("click", () => {
   if (imagePreviewThumbnail) imagePreviewThumbnail.src = "";
 });
 
-voiceButton.addEventListener("click", async () => {
+async function triggerVoiceRecording() {
   if (!isRecording) {
     // Barge-in: Stop active speech and cancel current generation on mic activation
     ttsQueue = [];
@@ -270,26 +270,34 @@ voiceButton.addEventListener("click", async () => {
     });
 
     isRecording = true;
-    voiceButton.classList.add("active");
-    voiceButton.textContent = "Stop";
+    if (voiceButton) {
+      voiceButton.classList.add("active");
+      voiceButton.textContent = "Stop";
+    }
     avatar.setState({ expression: "focused", motion: "look_side" });
     await recorder.start(() => {
       // Silence trigger callback
-      voiceButton.click();
+      triggerVoiceRecording();
     });
     return;
   }
 
   isRecording = false;
-  voiceButton.classList.remove("active");
-  voiceButton.textContent = "Mic";
+  if (voiceButton) {
+    voiceButton.classList.remove("active");
+    voiceButton.textContent = "Mic";
+  }
   setBusy(true);
   const b64 = await recorder.stop();
   if (b64)
     await (window as any).companion.invoke("ai:voice-input", {
       audio_b64: b64,
     });
-});
+}
+
+if (voiceButton) {
+  voiceButton.addEventListener("click", triggerVoiceRecording);
+}
 
 (window as any).companion.on("stt:result", (text: string) => {
   if (input) input.value = text;
@@ -299,7 +307,7 @@ voiceButton.addEventListener("click", async () => {
 (window as any).companion.on("voice:listen", (action: string) => {
   if (action === "start") {
     if (!isRecording) {
-      voiceButton.click();
+      triggerVoiceRecording();
     }
   }
 });
