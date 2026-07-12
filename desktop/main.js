@@ -88,17 +88,20 @@ function getAvatarWindowSize() {
     };
 }
 function getPythonCommand() {
-    const venvPython = path.join(process.cwd(), ".venv", "bin", "python");
+    const isWin = process.platform === "win32";
+    const venvDir = isWin ? "Scripts" : "bin";
+    const pythonExe = isWin ? "python.exe" : "python";
+    const venvPython = path.join(process.cwd(), ".venv", venvDir, pythonExe);
     if (fs.existsSync(venvPython)) {
         return venvPython;
     }
     const virtualEnvPython = process.env.VIRTUAL_ENV
-        ? path.join(process.env.VIRTUAL_ENV, "bin", "python")
+        ? path.join(process.env.VIRTUAL_ENV, venvDir, pythonExe)
         : null;
     if (virtualEnvPython && fs.existsSync(virtualEnvPython)) {
         return virtualEnvPython;
     }
-    if (process.platform !== "win32") {
+    if (!isWin) {
         return "python";
     }
     // 1. Check local appdata (default location for Python installer)

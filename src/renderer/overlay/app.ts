@@ -1,4 +1,5 @@
 import { AvatarController } from "../../live2d/live2d-manager.js";
+import { AssetRegistry } from "../../live2d/asset-registry.js";
 import { ChatHistory } from "../chat/history.js";
 import {
   renderMessage,
@@ -684,36 +685,24 @@ document.addEventListener("drop", async (e) => {
         isAppBusy = true;
         setBusy(true);
         (avatar as any).setState({ expression: "thinking", emotion: "thinking", motion: "thinking" });
-        setBubbleCaption("Đang giải nén và nạp model Live2D mới, cậu đợi tớ xíu nha...");
+        setBubbleCaption("Đang phân tích cấu trúc tệp ZIP...");
 
-        const res = await (window as any).companion.invoke("avatar:import-zip", { path: filePath });
-
-        if (res && res.success) {
-          const modelPath = res.model.path;
-          await (avatar as any).changeModel(modelPath);
-
-          await (window as any).companion.invoke("ai:update-config", {
-            key: "app.avatarModel",
-            value: modelPath
-          }).catch(() => null);
-
-          setBubbleCaption(`Oa! Đã nạp thành công nhân vật mới "${res.model.name}" rồi nè! [happy]`);
-          (avatar as any).setState({ expression: "happy", emotion: "happy", motion: "excited" });
-
-          setTimeout(() => {
-            if (!isAppBusy && !isRecording) {
-              setBubbleCaption("");
-              (avatar as any).setState({ expression: "smile", emotion: "smile", motion: "idle" });
-            }
-          }, 4000);
+        const scanRes = await (window as any).companion.invoke("avatar:scan-zip", { path: filePath });
+        if (scanRes && scanRes.success && scanRes.files && scanRes.files.length > 0) {
+          if (scanRes.files.length === 1) {
+            await executeOverlayImport(filePath, scanRes.files[0]);
+          } else {
+            showOverlayZipConfigModal(filePath, scanRes.files);
+          }
+        } else if (scanRes && !scanRes.success) {
+          throw new Error(scanRes.error || "Failed to scan ZIP archive.");
         } else {
-          throw new Error(res?.error || "Unknown import error");
+          await executeOverlayImport(filePath);
         }
       } catch (err: any) {
-        console.error("Failed to import Live2D model ZIP:", err);
-        setBubbleCaption(`Không nạp được model Live2D: ${err.message}. Cậu kiểm tra lại file zip nhé.`);
+        console.error("Failed to scan Live2D model ZIP:", err);
+        setBubbleCaption(`Không nạp được: ${err.message}`);
         (avatar as any).setState({ expression: "sad", emotion: "sad", motion: "shake" });
-      } finally {
         isAppBusy = false;
         setBusy(false);
       }
@@ -763,11 +752,175 @@ document.addEventListener("drop", async (e) => {
 
 (window as any).companion.on("avatar:registry-updated", async (newModel: any) => {
   try {
+    await AssetRegistry.load(true);
     setBubbleCaption(`✨ Đã thêm nhân vật: ${newModel?.name || "mới"}`);
     setTimeout(() => setBubbleCaption(""), 3000);
   } catch (e) {
     console.warn("registry-updated reload failed:", e);
   }
+});
+
+async function executeOverlayImport(filePath: string, selectedConfig?: string) {
+  try {
+    isAppBusy = true;
+    setBusy(true);
+    (avatar as any).setState({ expression: "thinking", emotion: "thinking", motion: "thinking" });
+    setBubbleCaption("Đang giải nén và nạp nhân vật mới...");
+
+    const res = await (window as any).companion.invoke("avatar:import-zip", { path: filePath, selectedConfig });
+
+    if (res && res.success) {
+      await AssetRegistry.load(true);
+      const modelPath = res.model.path;
+      await (avatar as any).changeModel(modelPath);
+
+      await (window as any).companion.invoke("ai:update-config", {
+        key: "app.avatarModel",
+        value: modelPath
+      }).catch(() => null);
+
+      setBubbleCaption(`Oa! Đã nạp thành công nhân vật mới "${res.model.name}" rồi nè! [happy]`);
+      (avatar as any).setState({ expression: "happy", emotion: "happy", motion: "excited" });
+
+      // Notify other windows (like settings window) to refresh
+      (window as any).companion.invoke("ai:broadcast", {
+        event: "avatar:registry-updated",
+        data: res.model
+      }).catch(() => null);
+
+      setTimeout(() => {
+        if (!isAppBusy && !isRecording) {
+          setBubbleCaption("");
+          (avatar as any).setState({ expression: "smile", emotion: "smile", motion: "idle" });
+        }
+      }, 4000);
+    } else {
+      throw new Error(res?.error || "Unknown import error");
+    }
+  } catch (err: any) {
+    console.error("Failed to import Live2D model ZIP:", err);
+    setBubbleCaption(`Không nạp được: ${err.message}`);
+    (avatar as any).setState({ expression: "sad", emotion: "sad", motion: "shake" });
+  } finally {
+    isAppBusy = false;
+    setBusy(false);
+  }
+}
+
+function showOverlayZipConfigModal(filePath: string, files: string[]) {
+  const modal = document.getElementById("zipConfigModal");
+  const list = document.getElementById("zipConfigList");
+  if (!modal || !list) return;
+
+  list.innerHTML = "";
+  files.forEach(file => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.style.width = "100%";
+    btn.style.textAlign = "left";
+    btn.style.padding = "8px 12px";
+    btn.style.background = "rgba(255,255,255,0.06)";
+    btn.style.color = "#fff";
+    btn.style.border = "1px solid rgba(255,255,255,0.1)";
+    btn.style.borderRadius = "6px";
+    btn.style.cursor = "pointer";
+    btn.style.fontSize = "11px";
+    btn.style.transition = "background 0.2s";
+
+    // Show filename only or relative path
+    btn.textContent = file.split("/").pop() || file;
+    btn.title = file;
+
+    btn.addEventListener("mouseover", () => {
+      btn.style.background = "rgba(255,255,255,0.12)";
+    });
+    btn.addEventListener("mouseout", () => {
+      btn.style.background = "rgba(255,255,255,0.06)";
+    });
+
+    btn.addEventListener("click", async () => {
+      modal.style.display = "none";
+      await executeOverlayImport(filePath, file);
+    });
+    list.appendChild(btn);
+  });
+
+  modal.style.display = "flex";
+}
+
+// Close Zip Config Modal listener in overlay
+document.getElementById("zipConfigBtnClose")?.addEventListener("click", () => {
+  const modal = document.getElementById("zipConfigModal");
+  if (modal) modal.style.display = "none";
+  isAppBusy = false;
+  setBusy(false);
+  setBubbleCaption("");
+});
+
+// ─── Click-through Optimization (Chạm xuyên qua khoảng trống) ───
+let pointerDrag = false;
+
+const btnDragHandle = document.getElementById("btnDragHandle");
+if (btnDragHandle) {
+  btnDragHandle.addEventListener("mousedown", () => {
+    pointerDrag = true;
+  });
+  window.addEventListener("mouseup", () => {
+    pointerDrag = false;
+  });
+}
+
+function updateMouseInteractivity(clientX: number, clientY: number) {
+  if (pointerDrag) {
+    if ((window as any).companion && typeof (window as any).companion.setIgnoreMouseEvents === "function") {
+      (window as any).companion.setIgnoreMouseEvents(false);
+    }
+    return;
+  }
+
+  let isOverInteractiveElement = false;
+
+  const elementsToCheck = [
+    document.getElementById("floatingWifiBtn"),
+    document.getElementById("controlPanel"),
+    document.getElementById("chatPanel"),
+    document.querySelector(".right-floating-stack"),
+    document.getElementById("loadingBox")
+  ];
+
+  for (const el of elementsToCheck) {
+    if (el && (el as HTMLElement).style.display !== "none" && !el.classList.contains("hidden")) {
+      const rect = el.getBoundingClientRect();
+      if (
+        clientX >= rect.left &&
+        clientX <= rect.right &&
+        clientY >= rect.top &&
+        clientY <= rect.bottom
+      ) {
+        isOverInteractiveElement = true;
+        break;
+      }
+    }
+  }
+
+  const isOverAvatar = (avatar as any).containsPoint(clientX, clientY);
+  const totalInteractive = isOverInteractiveElement || isOverAvatar;
+
+  if ((window as any).companion && typeof (window as any).companion.setIgnoreMouseEvents === "function") {
+    if (totalInteractive) {
+      (window as any).companion.setIgnoreMouseEvents(false);
+    } else {
+      (window as any).companion.setIgnoreMouseEvents(true, { forward: true });
+    }
+  }
+}
+
+window.addEventListener("mousemove", (e) => {
+  updateMouseInteractivity(e.clientX, e.clientY);
+});
+
+(window as any).companion?.on?.("window:cursor-move", (point: { x: number; y: number }) => {
+  updateMouseInteractivity(point.x, point.y);
 });
 
 

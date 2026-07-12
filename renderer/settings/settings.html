@@ -3052,6 +3052,26 @@
       </div>
     </div>
 
+    <!-- ========================================================
+         MODAL: ZIP CONFIG SELECTOR
+         ======================================================== -->
+    <div class="modal-overlay" id="zipConfigModal">
+      <div class="modal-container" style="max-width: 480px; background: rgba(30, 30, 40, 0.85); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px;">
+        <header class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+          <h2 class="modal-title" style="color: #fff; font-size: 16px; font-weight: 600;">Chọn tệp cấu hình nhân vật</h2>
+          <button class="modal-close-btn" id="zipConfigBtnClose" type="button" style="color: rgba(255,255,255,0.6); background: transparent; border: none; font-size: 20px; cursor: pointer;">
+            &times;
+          </button>
+        </header>
+        <div class="modal-content-scroll" style="padding: 20px;">
+          <p style="margin-top: 0; margin-bottom: 15px; color: rgba(255,255,255,0.7); font-size: 13px; line-height: 1.5;">Tệp ZIP chứa nhiều cấu hình nhân vật. Hãy nhấp chọn một tệp cấu hình bạn muốn thêm vào hệ thống:</p>
+          <div class="zip-config-list" id="zipConfigList" style="display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto;">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="save-toast" id="saveStatus">Settings saved</div>
 
     <script type="module" src="./settings.js"></script>

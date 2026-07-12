@@ -988,9 +988,45 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": str(e)}, status=500)
             return
 
+        if path == "/model/scan-zip":
+            try:
+                zip_path = payload.get("zip_path", "").strip()
+                if not zip_path:
+                    self._send_json({"success": False, "error": "zip_path is required"})
+                    return
+                
+                import zipfile as _zipfile
+                zip_path_obj = pathlib.Path(zip_path)
+                if not zip_path_obj.exists() or zip_path_obj.suffix.lower() != ".zip":
+                    self._send_json({"success": False, "error": f"File not found or not a .zip: {zip_path}"})
+                    return
+                
+                with _zipfile.ZipFile(zip_path_obj, "r") as zf:
+                    namelist = zf.namelist()
+                
+                # Find all model3.json or json config files
+                model_files = []
+                for name in namelist:
+                    if name.lower().endswith(".model3.json"):
+                        model_files.append(name)
+                    elif name.lower().endswith(".json") and not name.lower().endswith(".model3.json"):
+                        # Exclude general non-character configs
+                        if "manifest" not in name.lower() and "models" not in name.lower() and "package" not in name.lower() and "metadata" not in name.lower():
+                            model_files.append(name)
+                
+                self._send_json({"success": True, "files": model_files})
+            except Exception as e:
+                logger.error("[ModelScan] Failed to scan zip: %s", e, exc_info=True)
+                self._send_json({"success": False, "error": f"Lỗi quét file ZIP: {str(e)}"})
+            return
+
         if path == "/model/import":
-            result = self._handle_model_import(payload)
-            self._send_json(result)
+            try:
+                result = self._handle_model_import(payload)
+                self._send_json(result)
+            except Exception as e:
+                logger.error("[ModelImport] Failed to import model: %s", e, exc_info=True)
+                self._send_json({"success": False, "error": f"Lỗi giải nén nhân vật: {str(e)}"})
             return
 
         self._send_json({"type": "error", "message": "Not found"}, status=404)
@@ -1003,7 +1039,7 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
         """Extract a Live2D model ZIP and register it in assets/live2d/models.json.
 
         Expected payload:
-          { "zip_path": "<absolute path to .zip file>" }
+          { "zip_path": "<absolute path to .zip file>", "selected_config": "<optional relative path inside zip>" }
 
         Returns:
           { "success": true, "model": { ...entry } }
@@ -1013,6 +1049,7 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
         import shutil
 
         zip_path = payload.get("zip_path", "").strip()
+        selected_config = payload.get("selected_config", "").strip()
         if not zip_path:
             return {"success": False, "error": "zip_path is required"}
 
@@ -1033,12 +1070,26 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
             except _zipfile.BadZipFile as exc:
                 return {"success": False, "error": f"Invalid ZIP: {exc}"}
 
-            # Find model3.json
-            model3_files = list(tmp.rglob("*.model3.json"))
-            if not model3_files:
-                return {"success": False, "error": "No *.model3.json found in ZIP"}
+            if selected_config:
+                # Find the specified config file in extracted files
+                model3_file = tmp / selected_config
+                if not model3_file.exists():
+                    model3_files = list(tmp.rglob(selected_config))
+                    if not model3_files:
+                        model3_files = list(tmp.rglob(pathlib.Path(selected_config).name))
+                    if model3_files:
+                        model3_file = model3_files[0]
+                    else:
+                        return {"success": False, "error": f"Selected config {selected_config} not found in ZIP"}
+            else:
+                # Fallback: Find model3.json automatically
+                model3_files = list(tmp.rglob("*.model3.json"))
+                if not model3_files:
+                    model3_files = [f for f in tmp.rglob("*.json") if not f.name.endswith(".model3.json") and "manifest" not in f.name.lower() and "models" not in f.name.lower()]
+                if not model3_files:
+                    return {"success": False, "error": "No *.model3.json or model configuration found in ZIP"}
+                model3_file = model3_files[0]
 
-            model3_file = model3_files[0]
             # The model folder is the parent of model3.json
             model_src_dir = model3_file.parent
 

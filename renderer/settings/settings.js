@@ -1,3 +1,4 @@
+import { AssetRegistry } from "../../live2d/asset-registry.js";
 console.log("[settings] settings.ts loaded.");
 const saveStatus = document.getElementById("saveStatus");
 let toastTimer = null;
@@ -165,6 +166,27 @@ async function importZipFile(filePath) {
     showImportResult("error", "Not connected to desktop backend.");
     return;
   }
+  try {
+    setImportProgress(true, "Scanning ZIP structure...", 10);
+    const scanRes = await window.companion.invoke("avatar:scan-zip", { path: filePath });
+    setImportProgress(false);
+    if (scanRes && scanRes.success && scanRes.files && scanRes.files.length > 0) {
+      if (scanRes.files.length === 1) {
+        await executeImport(filePath, scanRes.files[0]);
+      } else {
+        showZipConfigModal(filePath, scanRes.files);
+      }
+    } else if (scanRes && !scanRes.success) {
+      throw new Error(scanRes.error || "Failed to scan ZIP archive.");
+    } else {
+      await executeImport(filePath);
+    }
+  } catch (err) {
+    setImportProgress(false);
+    showImportResult("error", err.message);
+  }
+}
+async function executeImport(filePath, selectedConfig) {
   setImportProgress(true, "Extracting and registering model...", 30);
   let pct = 30;
   const tick = setInterval(() => {
@@ -173,13 +195,18 @@ async function importZipFile(filePath) {
     if (fill) fill.style.width = pct + "%";
   }, 400);
   try {
-    const res = await window.companion.invoke("avatar:import-zip", { path: filePath });
+    const res = await window.companion.invoke("avatar:import-zip", { path: filePath, selectedConfig });
     clearInterval(tick);
     if (res && res.success) {
       setImportProgress(true, "Done!", 100);
       showImportResult("success", `"${res.model.name}" imported successfully!`);
       setTimeout(() => setImportProgress(false), 1200);
+      await AssetRegistry.load(true);
       loadModelSelectorGrid();
+      window.companion.invoke("ai:broadcast", {
+        event: "avatar:registry-updated",
+        data: res.model
+      }).catch(() => null);
     } else {
       throw new Error(res?.error || "Unknown import error");
     }
@@ -189,6 +216,44 @@ async function importZipFile(filePath) {
     showImportResult("error", err.message);
   }
 }
+function showZipConfigModal(filePath, files) {
+  const modal = document.getElementById("zipConfigModal");
+  const list = document.getElementById("zipConfigList");
+  if (!modal || !list) return;
+  list.innerHTML = "";
+  files.forEach((file) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "pick-btn";
+    btn.style.width = "100%";
+    btn.style.textAlign = "left";
+    btn.style.justifyContent = "flex-start";
+    btn.style.padding = "10px 14px";
+    btn.style.height = "auto";
+    btn.style.background = "rgba(255,255,255,0.06)";
+    btn.style.color = "#fff";
+    btn.style.border = "1px solid rgba(255,255,255,0.1)";
+    btn.style.borderRadius = "8px";
+    btn.style.cursor = "pointer";
+    btn.style.transition = "background 0.2s";
+    btn.textContent = file;
+    btn.addEventListener("mouseover", () => {
+      btn.style.background = "rgba(255,255,255,0.12)";
+    });
+    btn.addEventListener("mouseout", () => {
+      btn.style.background = "rgba(255,255,255,0.06)";
+    });
+    btn.addEventListener("click", async () => {
+      modal.classList.remove("active");
+      await executeImport(filePath, file);
+    });
+    list.appendChild(btn);
+  });
+  modal.classList.add("active");
+}
+document.getElementById("zipConfigBtnClose")?.addEventListener("click", () => {
+  document.getElementById("zipConfigModal")?.classList.remove("active");
+});
 document.getElementById("btnBrowseZip")?.addEventListener("click", async () => {
   if (!window.companion) {
     showImportResult("error", "Not connected.");
@@ -1320,6 +1385,14 @@ function updateModelTypeLayout(modelPath) {
     accAnimation.style.display = isVrm ? "none" : "block";
   }
 }
+window.companion?.on?.("avatar:registry-updated", async () => {
+  try {
+    await AssetRegistry.load(true);
+    loadModelSelectorGrid();
+  } catch (e) {
+    console.warn("[settings] Failed to reload model selector:", e);
+  }
+});
 export {
   updateModelTypeLayout
 };

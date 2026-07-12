@@ -500,9 +500,18 @@ export function registerAiIpc(ipcMain: IpcMain, windows: any): void {
     broadcast(event, data);
   });
 
-  ipcMain.handle("avatar:import-zip", async (_e: any, { path }: { path: string }) => {
+  ipcMain.handle("avatar:scan-zip", async (_e: any, { path }: { path: string }) => {
     try {
-      const response = await requestJSON("POST", "/model/import", { zip_path: path });
+      const response = await requestJSON("POST", "/model/scan-zip", { zip_path: path });
+      return response;
+    } catch (err: any) {
+      return { error: err.message };
+    }
+  });
+
+  ipcMain.handle("avatar:import-zip", async (_e: any, { path, selectedConfig }: { path: string, selectedConfig?: string }) => {
+    try {
+      const response = await requestJSON("POST", "/model/import", { zip_path: path, selected_config: selectedConfig });
       return response;
     } catch (err: any) {
       return { error: err.message };

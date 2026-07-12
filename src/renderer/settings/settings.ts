@@ -232,6 +232,33 @@ async function importZipFile(filePath: string): Promise<void> {
     showImportResult("error", "Not connected to desktop backend.");
     return;
   }
+  
+  try {
+    setImportProgress(true, "Scanning ZIP structure...", 10);
+    const scanRes = await (window as any).companion.invoke("avatar:scan-zip", { path: filePath });
+    setImportProgress(false);
+
+    if (scanRes && scanRes.success && scanRes.files && scanRes.files.length > 0) {
+      if (scanRes.files.length === 1) {
+        // Only one model config file, import directly
+        await executeImport(filePath, scanRes.files[0]);
+      } else {
+        // Multiple configs found, show selector modal!
+        showZipConfigModal(filePath, scanRes.files);
+      }
+    } else if (scanRes && !scanRes.success) {
+      throw new Error(scanRes.error || "Failed to scan ZIP archive.");
+    } else {
+      // Try to import directly without selected config (let backend handle auto-detection)
+      await executeImport(filePath);
+    }
+  } catch (err: any) {
+    setImportProgress(false);
+    showImportResult("error", err.message);
+  }
+}
+
+async function executeImport(filePath: string, selectedConfig?: string): Promise<void> {
   setImportProgress(true, "Extracting and registering model...", 30);
   let pct = 30;
   const tick = setInterval(() => {
@@ -241,13 +268,23 @@ async function importZipFile(filePath: string): Promise<void> {
   }, 400);
 
   try {
-    const res = await (window as any).companion.invoke("avatar:import-zip", { path: filePath });
+    const res = await (window as any).companion.invoke("avatar:import-zip", { path: filePath, selectedConfig });
     clearInterval(tick);
     if (res && res.success) {
       setImportProgress(true, "Done!", 100);
       showImportResult("success", `"${res.model.name}" imported successfully!`);
       setTimeout(() => setImportProgress(false), 1200);
+      
+      // Force reload asset registry on settings window
+      await AssetRegistry.load(true);
       loadModelSelectorGrid();
+      
+      // Notify other windows (like avatar overlay window) to refresh their registry!
+      (window as any).companion.invoke("ai:broadcast", {
+        event: "avatar:registry-updated",
+        data: res.model
+      }).catch(() => null);
+      
     } else {
       throw new Error(res?.error || "Unknown import error");
     }
@@ -257,6 +294,53 @@ async function importZipFile(filePath: string): Promise<void> {
     showImportResult("error", err.message);
   }
 }
+
+function showZipConfigModal(filePath: string, files: string[]): void {
+  const modal = document.getElementById("zipConfigModal");
+  const list = document.getElementById("zipConfigList");
+  if (!modal || !list) return;
+
+  list.innerHTML = "";
+  files.forEach(file => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "pick-btn";
+    btn.style.width = "100%";
+    btn.style.textAlign = "left";
+    btn.style.justifyContent = "flex-start";
+    btn.style.padding = "10px 14px";
+    btn.style.height = "auto";
+    btn.style.background = "rgba(255,255,255,0.06)";
+    btn.style.color = "#fff";
+    btn.style.border = "1px solid rgba(255,255,255,0.1)";
+    btn.style.borderRadius = "8px";
+    btn.style.cursor = "pointer";
+    btn.style.transition = "background 0.2s";
+
+    // Show path nicely
+    btn.textContent = file;
+    
+    btn.addEventListener("mouseover", () => {
+      btn.style.background = "rgba(255,255,255,0.12)";
+    });
+    btn.addEventListener("mouseout", () => {
+      btn.style.background = "rgba(255,255,255,0.06)";
+    });
+
+    btn.addEventListener("click", async () => {
+      modal.classList.remove("active");
+      await executeImport(filePath, file);
+    });
+    list.appendChild(btn);
+  });
+
+  modal.classList.add("active");
+}
+
+// Close Zip Config Modal listener
+document.getElementById("zipConfigBtnClose")?.addEventListener("click", () => {
+  document.getElementById("zipConfigModal")?.classList.remove("active");
+});
 
 document.getElementById("btnBrowseZip")?.addEventListener("click", async () => {
   if (!(window as any).companion) {
@@ -1595,4 +1679,13 @@ export function updateModelTypeLayout(modelPath: string): void {
     accAnimation.style.display = isVrm ? "none" : "block";
   }
 }
+
+(window as any).companion?.on?.("avatar:registry-updated", async () => {
+  try {
+    await AssetRegistry.load(true);
+    loadModelSelectorGrid();
+  } catch (e) {
+    console.warn("[settings] Failed to reload model selector:", e);
+  }
+});
 

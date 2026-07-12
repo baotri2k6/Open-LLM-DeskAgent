@@ -1,4 +1,5 @@
 import { AvatarController } from "../../live2d/live2d-manager.js";
+import { AssetRegistry } from "../../live2d/asset-registry.js";
 import { ChatHistory } from "../chat/history.js";
 import {
   renderMessage,
@@ -590,31 +591,23 @@ document.addEventListener("drop", async (e) => {
         isAppBusy = true;
         setBusy(true);
         avatar.setState({ expression: "thinking", emotion: "thinking", motion: "thinking" });
-        setBubbleCaption("\u0110ang gi\u1EA3i n\xE9n v\xE0 n\u1EA1p model Live2D m\u1EDBi, c\u1EADu \u0111\u1EE3i t\u1EDB x\xEDu nha...");
-        const res = await window.companion.invoke("avatar:import-zip", { path: filePath });
-        if (res && res.success) {
-          const modelPath = res.model.path;
-          await avatar.changeModel(modelPath);
-          await window.companion.invoke("ai:update-config", {
-            key: "app.avatarModel",
-            value: modelPath
-          }).catch(() => null);
-          setBubbleCaption(`Oa! \u0110\xE3 n\u1EA1p th\xE0nh c\xF4ng nh\xE2n v\u1EADt m\u1EDBi "${res.model.name}" r\u1ED3i n\xE8! [happy]`);
-          avatar.setState({ expression: "happy", emotion: "happy", motion: "excited" });
-          setTimeout(() => {
-            if (!isAppBusy && !isRecording) {
-              setBubbleCaption("");
-              avatar.setState({ expression: "smile", emotion: "smile", motion: "idle" });
-            }
-          }, 4e3);
+        setBubbleCaption("\u0110ang ph\xE2n t\xEDch c\u1EA5u tr\xFAc t\u1EC7p ZIP...");
+        const scanRes = await window.companion.invoke("avatar:scan-zip", { path: filePath });
+        if (scanRes && scanRes.success && scanRes.files && scanRes.files.length > 0) {
+          if (scanRes.files.length === 1) {
+            await executeOverlayImport(filePath, scanRes.files[0]);
+          } else {
+            showOverlayZipConfigModal(filePath, scanRes.files);
+          }
+        } else if (scanRes && !scanRes.success) {
+          throw new Error(scanRes.error || "Failed to scan ZIP archive.");
         } else {
-          throw new Error(res?.error || "Unknown import error");
+          await executeOverlayImport(filePath);
         }
       } catch (err) {
-        console.error("Failed to import Live2D model ZIP:", err);
-        setBubbleCaption(`Kh\xF4ng n\u1EA1p \u0111\u01B0\u1EE3c model Live2D: ${err.message}. C\u1EADu ki\u1EC3m tra l\u1EA1i file zip nh\xE9.`);
+        console.error("Failed to scan Live2D model ZIP:", err);
+        setBubbleCaption(`Kh\xF4ng n\u1EA1p \u0111\u01B0\u1EE3c: ${err.message}`);
         avatar.setState({ expression: "sad", emotion: "sad", motion: "shake" });
-      } finally {
         isAppBusy = false;
         setBusy(false);
       }
@@ -659,9 +652,140 @@ document.addEventListener("drop", async (e) => {
 });
 window.companion.on("avatar:registry-updated", async (newModel) => {
   try {
+    await AssetRegistry.load(true);
     setBubbleCaption(`\u2728 \u0110\xE3 th\xEAm nh\xE2n v\u1EADt: ${newModel?.name || "m\u1EDBi"}`);
     setTimeout(() => setBubbleCaption(""), 3e3);
   } catch (e) {
     console.warn("registry-updated reload failed:", e);
   }
+});
+async function executeOverlayImport(filePath, selectedConfig) {
+  try {
+    isAppBusy = true;
+    setBusy(true);
+    avatar.setState({ expression: "thinking", emotion: "thinking", motion: "thinking" });
+    setBubbleCaption("\u0110ang gi\u1EA3i n\xE9n v\xE0 n\u1EA1p nh\xE2n v\u1EADt m\u1EDBi...");
+    const res = await window.companion.invoke("avatar:import-zip", { path: filePath, selectedConfig });
+    if (res && res.success) {
+      await AssetRegistry.load(true);
+      const modelPath = res.model.path;
+      await avatar.changeModel(modelPath);
+      await window.companion.invoke("ai:update-config", {
+        key: "app.avatarModel",
+        value: modelPath
+      }).catch(() => null);
+      setBubbleCaption(`Oa! \u0110\xE3 n\u1EA1p th\xE0nh c\xF4ng nh\xE2n v\u1EADt m\u1EDBi "${res.model.name}" r\u1ED3i n\xE8! [happy]`);
+      avatar.setState({ expression: "happy", emotion: "happy", motion: "excited" });
+      window.companion.invoke("ai:broadcast", {
+        event: "avatar:registry-updated",
+        data: res.model
+      }).catch(() => null);
+      setTimeout(() => {
+        if (!isAppBusy && !isRecording) {
+          setBubbleCaption("");
+          avatar.setState({ expression: "smile", emotion: "smile", motion: "idle" });
+        }
+      }, 4e3);
+    } else {
+      throw new Error(res?.error || "Unknown import error");
+    }
+  } catch (err) {
+    console.error("Failed to import Live2D model ZIP:", err);
+    setBubbleCaption(`Kh\xF4ng n\u1EA1p \u0111\u01B0\u1EE3c: ${err.message}`);
+    avatar.setState({ expression: "sad", emotion: "sad", motion: "shake" });
+  } finally {
+    isAppBusy = false;
+    setBusy(false);
+  }
+}
+function showOverlayZipConfigModal(filePath, files) {
+  const modal = document.getElementById("zipConfigModal");
+  const list = document.getElementById("zipConfigList");
+  if (!modal || !list) return;
+  list.innerHTML = "";
+  files.forEach((file) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.style.width = "100%";
+    btn.style.textAlign = "left";
+    btn.style.padding = "8px 12px";
+    btn.style.background = "rgba(255,255,255,0.06)";
+    btn.style.color = "#fff";
+    btn.style.border = "1px solid rgba(255,255,255,0.1)";
+    btn.style.borderRadius = "6px";
+    btn.style.cursor = "pointer";
+    btn.style.fontSize = "11px";
+    btn.style.transition = "background 0.2s";
+    btn.textContent = file.split("/").pop() || file;
+    btn.title = file;
+    btn.addEventListener("mouseover", () => {
+      btn.style.background = "rgba(255,255,255,0.12)";
+    });
+    btn.addEventListener("mouseout", () => {
+      btn.style.background = "rgba(255,255,255,0.06)";
+    });
+    btn.addEventListener("click", async () => {
+      modal.style.display = "none";
+      await executeOverlayImport(filePath, file);
+    });
+    list.appendChild(btn);
+  });
+  modal.style.display = "flex";
+}
+document.getElementById("zipConfigBtnClose")?.addEventListener("click", () => {
+  const modal = document.getElementById("zipConfigModal");
+  if (modal) modal.style.display = "none";
+  isAppBusy = false;
+  setBusy(false);
+  setBubbleCaption("");
+});
+let pointerDrag = false;
+const btnDragHandle = document.getElementById("btnDragHandle");
+if (btnDragHandle) {
+  btnDragHandle.addEventListener("mousedown", () => {
+    pointerDrag = true;
+  });
+  window.addEventListener("mouseup", () => {
+    pointerDrag = false;
+  });
+}
+function updateMouseInteractivity(clientX, clientY) {
+  if (pointerDrag) {
+    if (window.companion && typeof window.companion.setIgnoreMouseEvents === "function") {
+      window.companion.setIgnoreMouseEvents(false);
+    }
+    return;
+  }
+  let isOverInteractiveElement = false;
+  const elementsToCheck = [
+    document.getElementById("floatingWifiBtn"),
+    document.getElementById("controlPanel"),
+    document.getElementById("chatPanel"),
+    document.querySelector(".right-floating-stack"),
+    document.getElementById("loadingBox")
+  ];
+  for (const el of elementsToCheck) {
+    if (el && el.style.display !== "none" && !el.classList.contains("hidden")) {
+      const rect = el.getBoundingClientRect();
+      if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
+        isOverInteractiveElement = true;
+        break;
+      }
+    }
+  }
+  const isOverAvatar = avatar.containsPoint(clientX, clientY);
+  const totalInteractive = isOverInteractiveElement || isOverAvatar;
+  if (window.companion && typeof window.companion.setIgnoreMouseEvents === "function") {
+    if (totalInteractive) {
+      window.companion.setIgnoreMouseEvents(false);
+    } else {
+      window.companion.setIgnoreMouseEvents(true, { forward: true });
+    }
+  }
+}
+window.addEventListener("mousemove", (e) => {
+  updateMouseInteractivity(e.clientX, e.clientY);
+});
+window.companion?.on?.("window:cursor-move", (point) => {
+  updateMouseInteractivity(point.x, point.y);
 });
