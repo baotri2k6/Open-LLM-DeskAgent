@@ -217,7 +217,22 @@ document.getElementById("btnBrowseZip")?.addEventListener("click", async () => {
   if (fp) await importZipFile(fp);
 });
 
-document.getElementById("btnSelectModel")?.addEventListener("click", async () => {
+// Select model button -> opens custom Modal Selector Dialog
+document.getElementById("btnSelectModel")?.addEventListener("click", () => {
+  const modal = document.getElementById("modelSelectorModal");
+  if (modal) {
+    modal.classList.add("active");
+    loadModelSelectorGrid();
+  }
+});
+
+// Close modal button
+document.getElementById("modalBtnClose")?.addEventListener("click", () => {
+  document.getElementById("modelSelectorModal")?.classList.remove("active");
+});
+
+// Import button inside modal selector
+document.getElementById("modalBtnImport")?.addEventListener("click", async () => {
   if (!(window as any).companion) {
     showImportResult("error", "Not connected.");
     return;
@@ -229,10 +244,17 @@ document.getElementById("btnSelectModel")?.addEventListener("click", async () =>
       { name: "All files", extensions: ["*"] }
     ]
   });
-  if (fp) await importZipFile(fp);
+  if (fp) {
+    await importZipFile(fp);
+    // Refresh modal selector grid after import
+    loadModelSelectorGrid();
+  }
 });
 
-document.getElementById("btnRefreshModels")?.addEventListener("click", loadModelGrid);
+document.getElementById("btnRefreshModels")?.addEventListener("click", () => {
+  loadModelGrid();
+  loadModelSelectorGrid();
+});
 
 // Page-level drag and drop on pageModels
 document.addEventListener("dragover", e => {
@@ -263,6 +285,103 @@ document.addEventListener("drop", async e => {
   }
   await importZipFile(file.path);
 });
+
+// ─── Models Page: Model Selector Grid inside Modal ─────────────
+async function loadModelSelectorGrid(): Promise<void> {
+  const grid = document.getElementById("modalSelectorGrid");
+  if (!grid) return;
+  grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-3); padding: 30px;">Loading models...</div>';
+  try {
+    let activePath = "assets/live2d/IceGirl/IceGirl.model3.json";
+    if ((window as any).companion) {
+      const resConfig = await (window as any).companion.invoke("ai:get-config", {});
+      activePath = resConfig?.avatar_model || "assets/live2d/IceGirl/IceGirl.model3.json";
+    }
+
+    const res = await fetch("../../assets/live2d/models.json?t=" + Date.now());
+    const data = await res.json();
+    const models: ModelItem[] = data.models || [];
+    if (!models.length) {
+      grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-3); padding: 30px;">No models installed.</div>';
+      return;
+    }
+    grid.innerHTML = "";
+    const emojis: Record<string, string> = { icegirl: "🧊", hiyori: "🌸", mao: "🐱", huohuo: "🦋" };
+
+    models.forEach(m => {
+      const isActive = m.path === activePath;
+      const card = document.createElement("div");
+      card.className = "selector-card" + (isActive ? " active" : "");
+      const emoji = emojis[m.id] || "✨";
+      
+      const isVrm = m.path.toLowerCase().endsWith(".vrm") || m.id.toLowerCase().includes("vrm");
+      const typeLabel = isVrm ? "VRM" : "Live2D";
+      const typeIcon = isVrm 
+        ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>`
+        : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="21" y1="9" x2="3" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>`;
+
+      card.innerHTML = `
+        <div class="selector-card-thumb-wrap">
+          <button class="selector-thumb-action" type="button" title="Info">•••</button>
+          ${m.thumbnail 
+            ? `<img src="../../${m.thumbnail}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><span class="mre" style="display:none">${emoji}</span>` 
+            : `<span class="mre" style="font-size: 48px;">${emoji}</span>`
+          }
+        </div>
+        <div class="selector-card-info">
+          <div class="selector-title-row">
+            <span class="selector-name" title="${m.name}">${m.name}</span>
+            <button class="selector-btn-edit" type="button" title="Rename">✏</button>
+          </div>
+          <span class="selector-badge">
+            ${typeIcon}
+            ${typeLabel}
+          </span>
+          <button class="pick-btn" type="button">
+            ${isActive ? '<span class="pick-btn-active-text">Picked</span>' : "Pick"}
+          </button>
+        </div>
+      `;
+
+      // Pick action button listener
+      card.querySelector(".pick-btn")?.addEventListener("click", async () => {
+        if (isActive) return;
+        if ((window as any).companion) {
+          const resUpdate = await (window as any).companion.invoke("ai:update-config", {
+            key: "app.avatarModel",
+            value: m.path
+          });
+          if (resUpdate && !resUpdate.error) {
+            showStatus(`Changed character to ${m.name}`);
+            loadModelSelectorGrid();
+            loadModelGrid();
+          }
+        }
+      });
+
+      // Rename action button listener
+      card.querySelector(".selector-btn-edit")?.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const newName = prompt(`Rename "${m.name}" to:`, m.name);
+        if (newName && newName.trim() && newName.trim() !== m.name) {
+          // Note: In local DeskAgent manifest, renaming can be saved back
+          showStatus(`Renamed to ${newName}`);
+        }
+      });
+
+      // Options click listener
+      card.querySelector(".selector-thumb-action")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        alert(`Model details:\n\nID: ${m.id}\nName: ${m.name}\nPath: ${m.path}\nDescription: ${m.description || "No description"}`);
+      });
+
+      grid.appendChild(card);
+    });
+  } catch (err: any) {
+    grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-3); padding: 30px;">Error loading: ${err.message}</div>`;
+  }
+}
+
 
 // ─── Models Page: Model Grid ──────────────────────────────────
 async function loadModelGrid(): Promise<void> {

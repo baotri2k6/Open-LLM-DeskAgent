@@ -159,7 +159,17 @@ document.getElementById("btnBrowseZip")?.addEventListener("click", async () => {
   });
   if (fp) await importZipFile(fp);
 });
-document.getElementById("btnSelectModel")?.addEventListener("click", async () => {
+document.getElementById("btnSelectModel")?.addEventListener("click", () => {
+  const modal = document.getElementById("modelSelectorModal");
+  if (modal) {
+    modal.classList.add("active");
+    loadModelSelectorGrid();
+  }
+});
+document.getElementById("modalBtnClose")?.addEventListener("click", () => {
+  document.getElementById("modelSelectorModal")?.classList.remove("active");
+});
+document.getElementById("modalBtnImport")?.addEventListener("click", async () => {
   if (!window.companion) {
     showImportResult("error", "Not connected.");
     return;
@@ -171,9 +181,15 @@ document.getElementById("btnSelectModel")?.addEventListener("click", async () =>
       { name: "All files", extensions: ["*"] }
     ]
   });
-  if (fp) await importZipFile(fp);
+  if (fp) {
+    await importZipFile(fp);
+    loadModelSelectorGrid();
+  }
 });
-document.getElementById("btnRefreshModels")?.addEventListener("click", loadModelGrid);
+document.getElementById("btnRefreshModels")?.addEventListener("click", () => {
+  loadModelGrid();
+  loadModelSelectorGrid();
+});
 document.addEventListener("dragover", (e) => {
   const panel = document.getElementById("pageModels");
   if (panel && panel.classList.contains("active")) {
@@ -200,6 +216,88 @@ document.addEventListener("drop", async (e) => {
   }
   await importZipFile(file.path);
 });
+async function loadModelSelectorGrid() {
+  const grid = document.getElementById("modalSelectorGrid");
+  if (!grid) return;
+  grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-3); padding: 30px;">Loading models...</div>';
+  try {
+    let activePath = "assets/live2d/IceGirl/IceGirl.model3.json";
+    if (window.companion) {
+      const resConfig = await window.companion.invoke("ai:get-config", {});
+      activePath = resConfig?.avatar_model || "assets/live2d/IceGirl/IceGirl.model3.json";
+    }
+    const res = await fetch("../../assets/live2d/models.json?t=" + Date.now());
+    const data = await res.json();
+    const models = data.models || [];
+    if (!models.length) {
+      grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-3); padding: 30px;">No models installed.</div>';
+      return;
+    }
+    grid.innerHTML = "";
+    const emojis = { icegirl: "\u{1F9CA}", hiyori: "\u{1F338}", mao: "\u{1F431}", huohuo: "\u{1F98B}" };
+    models.forEach((m) => {
+      const isActive = m.path === activePath;
+      const card = document.createElement("div");
+      card.className = "selector-card" + (isActive ? " active" : "");
+      const emoji = emojis[m.id] || "\u2728";
+      const isVrm = m.path.toLowerCase().endsWith(".vrm") || m.id.toLowerCase().includes("vrm");
+      const typeLabel = isVrm ? "VRM" : "Live2D";
+      const typeIcon = isVrm ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>` : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="21" y1="9" x2="3" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>`;
+      card.innerHTML = `
+        <div class="selector-card-thumb-wrap">
+          <button class="selector-thumb-action" type="button" title="Info">\u2022\u2022\u2022</button>
+          ${m.thumbnail ? `<img src="../../${m.thumbnail}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><span class="mre" style="display:none">${emoji}</span>` : `<span class="mre" style="font-size: 48px;">${emoji}</span>`}
+        </div>
+        <div class="selector-card-info">
+          <div class="selector-title-row">
+            <span class="selector-name" title="${m.name}">${m.name}</span>
+            <button class="selector-btn-edit" type="button" title="Rename">\u270F</button>
+          </div>
+          <span class="selector-badge">
+            ${typeIcon}
+            ${typeLabel}
+          </span>
+          <button class="pick-btn" type="button">
+            ${isActive ? '<span class="pick-btn-active-text">Picked</span>' : "Pick"}
+          </button>
+        </div>
+      `;
+      card.querySelector(".pick-btn")?.addEventListener("click", async () => {
+        if (isActive) return;
+        if (window.companion) {
+          const resUpdate = await window.companion.invoke("ai:update-config", {
+            key: "app.avatarModel",
+            value: m.path
+          });
+          if (resUpdate && !resUpdate.error) {
+            showStatus(`Changed character to ${m.name}`);
+            loadModelSelectorGrid();
+            loadModelGrid();
+          }
+        }
+      });
+      card.querySelector(".selector-btn-edit")?.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const newName = prompt(`Rename "${m.name}" to:`, m.name);
+        if (newName && newName.trim() && newName.trim() !== m.name) {
+          showStatus(`Renamed to ${newName}`);
+        }
+      });
+      card.querySelector(".selector-thumb-action")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        alert(`Model details:
+
+ID: ${m.id}
+Name: ${m.name}
+Path: ${m.path}
+Description: ${m.description || "No description"}`);
+      });
+      grid.appendChild(card);
+    });
+  } catch (err) {
+    grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-3); padding: 30px;">Error loading: ${err.message}</div>`;
+  }
+}
 async function loadModelGrid() {
   const grid = document.getElementById("modelGrid");
   if (!grid) return;

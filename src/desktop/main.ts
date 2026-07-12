@@ -445,8 +445,8 @@ function createSettingsWindow(): void {
     return;
   }
   settingsWin = new BrowserWindow({
-    width: 380,
-    height: 680,
+    width: 960,
+    height: 580,
     title: "Airi Settings",
     resizable: true,
     icon: path.join(app.getAppPath(), "assets", "icons", "icon.png"),
