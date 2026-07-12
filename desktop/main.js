@@ -237,13 +237,13 @@ function startPython() {
     });
 }
 function createAvatarWindow() {
-    const { width: screenWidth, height: screenHeight } = electron_1.screen.getPrimaryDisplay().workAreaSize;
+    const { x, y, width: sw, height: sh } = electron_1.screen.getPrimaryDisplay().workArea;
     const { width, height } = getAvatarWindowSize();
     avatarWin = new electron_1.BrowserWindow({
         width,
         height,
-        x: screenWidth - width,
-        y: screenHeight - height,
+        x: x + sw - width,
+        y: y,
         transparent: true,
         frame: false,
         resizable: false,

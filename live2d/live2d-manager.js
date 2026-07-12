@@ -471,22 +471,27 @@ export class AvatarController {
     this._state = { expression: "normal", motion: "idle" };
     // Temporary fallback path — will be overwritten in _init once registry is loaded
     this._modelPath = "../../assets/live2d/IceGirl/IceGirl.model3.json";
-    this._init();
+    this.readyPromise = this._init();
   }
 
   async _init() {
+    console.log("[AvatarController] Initializing...");
     // Load the asset registry first — all subsequent logic reads from it
     await AssetRegistry.load();
 
     // Set default path from registry so constructor fallback is no longer needed
     this._modelPath = AssetRegistry.getModelPath(AssetRegistry.getDefault()?.id ?? "icegirl");
+    console.log("[AvatarController] Default model path from registry:", this._modelPath);
 
     // Try to override with saved config
     try {
       if (window.companion) {
+        console.log("[AvatarController] window.companion is available, calling ai:get-config...");
         const res = await window.companion.invoke("ai:get-config");
+        console.log("[AvatarController] Config response:", res);
         if (res && res.avatar_model && !res.error) {
           let path = res.avatar_model;
+          console.log("[AvatarController] Config saved avatar_model:", path);
           if (path.endsWith(".vrm")) {
             // VRM not supported — reset to default
             path = AssetRegistry.getDefault()?.path ?? "assets/live2d/IceGirl/IceGirl.model3.json";
@@ -495,12 +500,18 @@ export class AvatarController {
               .catch(() => null);
           }
           this._modelPath = "../../" + path;
+          console.log("[AvatarController] Updated _modelPath to:", this._modelPath);
+        } else {
+          console.log("[AvatarController] Config does not contain valid avatar_model or error occurred.");
         }
+      } else {
+        console.log("[AvatarController] window.companion is NOT available!");
       }
     } catch (err) {
       console.warn("[AvatarController] Failed to load initial config:", err);
     }
 
+    console.log("[AvatarController] Loading backend with path:", this._modelPath);
     await this._loadBackend();
 
     // idle blinking loop

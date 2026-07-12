@@ -119,6 +119,18 @@ const avatar = new AvatarController({
   light: document.getElementById("expressionLight"),
   img: document.getElementById("avatarImage"),
 });
+
+if (avatar.readyPromise) {
+  avatar.readyPromise.then(() => {
+    avatarWrap.style.opacity = "1";
+    console.log("[Avatar Window] Saved avatar model loaded successfully!");
+  }).catch((err) => {
+    console.error("[Avatar Window] Failed to load saved avatar model:", err);
+    avatarWrap.style.opacity = "1";
+  });
+} else {
+  avatarWrap.style.opacity = "1";
+}
 const recorder = new VoiceRecorder();
 const audioPlayer = new AudioPlayer();
 
@@ -688,6 +700,14 @@ window.companion.on("config:updated", ({ key, value }) => {
     currentModelId = resolvedId;
     rebuildAccessoryButtons(resolvedId);
     setCaption(`Đã đổi nhân vật thành công!`);
+  } else if (key === "app.avatarX" || key === "app.avatarY") {
+    window.companion.invoke("ai:get-config").then((res) => {
+      if (res && !res.error) {
+        const posX = parseInt(res.app?.avatarX || "0");
+        const posY = parseInt(res.app?.avatarY || "0");
+        updateAvatarOffset(posX, posY);
+      }
+    });
   }
 });
 
@@ -764,12 +784,13 @@ async function applyInitialMode() {
         }
       }
       if (res.avatar_model) {
-        const newId = AssetRegistry.resolvePathToId(res.avatar_model);
-        if (currentModelId !== newId) {
-          currentModelId = newId;
-          avatar.changeModel(res.avatar_model);
-        }
+        currentModelId = AssetRegistry.resolvePathToId(res.avatar_model);
       }
+
+      // Restore avatar scale and position offsets
+      const posX = parseInt(res.app?.avatarX || "0");
+      const posY = parseInt(res.app?.avatarY || "0");
+      updateAvatarOffset(posX, posY);
 
       rebuildAccessoryButtons(currentModelId);
       if (currentInteractionMode === "streamer") {
@@ -1201,3 +1222,10 @@ window.companion.on("avatar:registry-updated", async (newModel) => {
     console.warn("[avatar-pet] registry-updated reload failed:", e);
   }
 });
+
+function updateAvatarOffset(x, y) {
+  const wrap = document.getElementById("avatarWrap");
+  if (wrap) {
+    wrap.style.transform = `translate(${x || 0}px, ${y || 0}px)`;
+  }
+}

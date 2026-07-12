@@ -453,11 +453,29 @@ if (sttSelect) {
 loadConfig();
 
 // ─── Floating Widgets UI Logic ──────────────────────────────────
-// Hide loading box after initial load
-setTimeout(() => {
-  const loadingBox = document.getElementById("loadingBox");
-  if (loadingBox) loadingBox.classList.add("hidden");
-}, 1800);
+// Hide loading box and fade in avatar after it is fully loaded
+if ((avatar as any).readyPromise) {
+  (avatar as any).readyPromise.then(() => {
+    const loadingBox = document.getElementById("loadingBox");
+    if (loadingBox) loadingBox.classList.add("hidden");
+    const avatarWrap = document.getElementById("avatarWrap");
+    if (avatarWrap) avatarWrap.style.opacity = "1";
+    console.log("[Overlay App] Saved avatar loaded successfully!");
+  }).catch((err: any) => {
+    console.error("[Overlay App] Failed to load saved avatar:", err);
+    const loadingBox = document.getElementById("loadingBox");
+    if (loadingBox) loadingBox.classList.add("hidden");
+    const avatarWrap = document.getElementById("avatarWrap");
+    if (avatarWrap) avatarWrap.style.opacity = "1";
+  });
+} else {
+  setTimeout(() => {
+    const loadingBox = document.getElementById("loadingBox");
+    if (loadingBox) loadingBox.classList.add("hidden");
+    const avatarWrap = document.getElementById("avatarWrap");
+    if (avatarWrap) avatarWrap.style.opacity = "1";
+  }, 1800);
+}
 
 // Toggle Control Panel (Chevron button)
 const btnToggleMenu = document.getElementById("btnToggleMenu");

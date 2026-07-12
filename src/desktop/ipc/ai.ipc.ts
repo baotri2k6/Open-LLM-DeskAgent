@@ -1,5 +1,8 @@
 import * as http from "http";
-import { BrowserWindow, IpcMain } from "electron";
+import * as fs from "fs";
+import * as path from "path";
+import * as os from "os";
+import { BrowserWindow, IpcMain, app } from "electron";
 import { broadcast } from "../websocket-server";
 
 const API_HOST = "127.0.0.1";
@@ -13,6 +16,43 @@ function sendToTargets(channel: string, payload: any): void {
   for (const win of liveTargets()) {
     win.webContents.send(channel, payload);
   }
+}
+
+function getLocalConfig(): any {
+  let configPath = "";
+  const isPackaged = app.isPackaged;
+  if (isPackaged) {
+    configPath = path.join(
+      os.homedir(),
+      ".deskagent",
+      "config",
+      "companion.config.json",
+    );
+  } else {
+    configPath = path.join(app.getAppPath(), "config", "companion.config.json");
+  }
+
+  if (fs.existsSync(configPath)) {
+    try {
+      return JSON.parse(fs.readFileSync(configPath, "utf8"));
+    } catch {
+      // ignore
+    }
+  }
+
+  const fallbackPath = path.join(
+    app.getAppPath(),
+    "config",
+    "companion.config.json",
+  );
+  if (fs.existsSync(fallbackPath)) {
+    try {
+      return JSON.parse(fs.readFileSync(fallbackPath, "utf8"));
+    } catch {
+      // ignore
+    }
+  }
+  return {};
 }
 
 function requestJSON(method: string, path: string, payload: any = null): Promise<any> {
@@ -359,6 +399,28 @@ export function registerAiIpc(ipcMain: IpcMain, windows: any): void {
       const response = await requestJSON("GET", "/config");
       return response;
     } catch (err: any) {
+      console.log("[ai.ipc] Python config server not ready, using local config fallback...");
+      try {
+        const localConfig = getLocalConfig();
+        if (localConfig && Object.keys(localConfig).length > 0) {
+          return {
+            avatar_model: localConfig.app?.avatarModel || "assets/live2d/IceGirl/IceGirl.model3.json",
+            avatar_scale: localConfig.app?.avatarScale || "1.0",
+            avatar_x: localConfig.app?.avatarX || "0",
+            avatar_y: localConfig.app?.avatarY || "0",
+            interaction_mode: localConfig.app?.interactionMode || "streamer",
+            llm_provider: localConfig.llm?.provider || "ollama",
+            stt_model: localConfig.stt?.model || "base",
+            tts_backend: localConfig.tts?.backend || "edge",
+            screen_awareness: localConfig.features?.screenAwareness || false,
+            twitch_mode: localConfig.features?.twitchMode || false,
+            twitch_channel: localConfig.twitch?.channel || "",
+            memory: localConfig.features?.memory !== false
+          };
+        }
+      } catch (fallbackErr) {
+        console.error("[ai.ipc] Fallback local config error:", fallbackErr);
+      }
       return { error: err.message };
     }
   });

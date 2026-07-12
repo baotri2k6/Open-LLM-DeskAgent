@@ -35,6 +35,9 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.registerAiIpc = registerAiIpc;
 const http = __importStar(require("http"));
+const fs = __importStar(require("fs"));
+const path = __importStar(require("path"));
+const os = __importStar(require("os"));
 const electron_1 = require("electron");
 const websocket_server_1 = require("../websocket-server");
 const API_HOST = "127.0.0.1";
@@ -46,6 +49,34 @@ function sendToTargets(channel, payload) {
     for (const win of liveTargets()) {
         win.webContents.send(channel, payload);
     }
+}
+function getLocalConfig() {
+    let configPath = "";
+    const isPackaged = electron_1.app.isPackaged;
+    if (isPackaged) {
+        configPath = path.join(os.homedir(), ".deskagent", "config", "companion.config.json");
+    }
+    else {
+        configPath = path.join(electron_1.app.getAppPath(), "config", "companion.config.json");
+    }
+    if (fs.existsSync(configPath)) {
+        try {
+            return JSON.parse(fs.readFileSync(configPath, "utf8"));
+        }
+        catch {
+            // ignore
+        }
+    }
+    const fallbackPath = path.join(electron_1.app.getAppPath(), "config", "companion.config.json");
+    if (fs.existsSync(fallbackPath)) {
+        try {
+            return JSON.parse(fs.readFileSync(fallbackPath, "utf8"));
+        }
+        catch {
+            // ignore
+        }
+    }
+    return {};
 }
 function requestJSON(method, path, payload = null) {
     return new Promise((resolve, reject) => {
@@ -380,6 +411,29 @@ function registerAiIpc(ipcMain, windows) {
             return response;
         }
         catch (err) {
+            console.log("[ai.ipc] Python config server not ready, using local config fallback...");
+            try {
+                const localConfig = getLocalConfig();
+                if (localConfig && Object.keys(localConfig).length > 0) {
+                    return {
+                        avatar_model: localConfig.app?.avatarModel || "assets/live2d/IceGirl/IceGirl.model3.json",
+                        avatar_scale: localConfig.app?.avatarScale || "1.0",
+                        avatar_x: localConfig.app?.avatarX || "0",
+                        avatar_y: localConfig.app?.avatarY || "0",
+                        interaction_mode: localConfig.app?.interactionMode || "streamer",
+                        llm_provider: localConfig.llm?.provider || "ollama",
+                        stt_model: localConfig.stt?.model || "base",
+                        tts_backend: localConfig.tts?.backend || "edge",
+                        screen_awareness: localConfig.features?.screenAwareness || false,
+                        twitch_mode: localConfig.features?.twitchMode || false,
+                        twitch_channel: localConfig.twitch?.channel || "",
+                        memory: localConfig.features?.memory !== false
+                    };
+                }
+            }
+            catch (fallbackErr) {
+                console.error("[ai.ipc] Fallback local config error:", fallbackErr);
+            }
             return { error: err.message };
         }
     });

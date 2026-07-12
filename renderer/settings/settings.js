@@ -463,10 +463,21 @@ document.getElementById("btnOpenDataFolder")?.addEventListener("click", () => {
     });
   }
 });
-document.getElementById("btnMoveToCenter")?.addEventListener("click", () => {
+document.getElementById("btnMoveToCenter")?.addEventListener("click", async () => {
   if (window.companion) {
-    window.companion.invoke("pet:move-to", { x: 0, y: 0 }).catch(() => {
-    });
+    try {
+      const bounds = await window.companion.invoke("pet:get-bounds");
+      if (bounds && bounds.workArea) {
+        const { x, y, width: sw, height: sh } = bounds.workArea;
+        const targetX = x + (sw - bounds.width) / 2;
+        const targetY = y + (sh - bounds.height) / 2;
+        await window.companion.invoke("pet:move-to", { x: targetX, y: targetY });
+      } else {
+        await window.companion.invoke("pet:move-to", { x: 600, y: 400 });
+      }
+    } catch (e) {
+      console.error("Failed to move avatar to center:", e);
+    }
   }
 });
 document.getElementById("btnUploadBackground")?.addEventListener("click", async () => {

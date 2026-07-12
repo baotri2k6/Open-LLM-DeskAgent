@@ -262,15 +262,14 @@ function startPython(): void {
 }
 
 function createAvatarWindow(): BrowserWindow {
-  const { width: screenWidth, height: screenHeight } =
-    screen.getPrimaryDisplay().workAreaSize;
+  const { x, y, width: sw, height: sh } = screen.getPrimaryDisplay().workArea;
   const { width, height } = getAvatarWindowSize();
 
   avatarWin = new BrowserWindow({
     width,
     height,
-    x: screenWidth - width,
-    y: screenHeight - height,
+    x: x + sw - width,
+    y: y,
     transparent: true,
     frame: false,
     resizable: false,

@@ -389,10 +389,28 @@ if (sttSelect) {
   });
 }
 loadConfig();
-setTimeout(() => {
-  const loadingBox = document.getElementById("loadingBox");
-  if (loadingBox) loadingBox.classList.add("hidden");
-}, 1800);
+if (avatar.readyPromise) {
+  avatar.readyPromise.then(() => {
+    const loadingBox = document.getElementById("loadingBox");
+    if (loadingBox) loadingBox.classList.add("hidden");
+    const avatarWrap2 = document.getElementById("avatarWrap");
+    if (avatarWrap2) avatarWrap2.style.opacity = "1";
+    console.log("[Overlay App] Saved avatar loaded successfully!");
+  }).catch((err) => {
+    console.error("[Overlay App] Failed to load saved avatar:", err);
+    const loadingBox = document.getElementById("loadingBox");
+    if (loadingBox) loadingBox.classList.add("hidden");
+    const avatarWrap2 = document.getElementById("avatarWrap");
+    if (avatarWrap2) avatarWrap2.style.opacity = "1";
+  });
+} else {
+  setTimeout(() => {
+    const loadingBox = document.getElementById("loadingBox");
+    if (loadingBox) loadingBox.classList.add("hidden");
+    const avatarWrap2 = document.getElementById("avatarWrap");
+    if (avatarWrap2) avatarWrap2.style.opacity = "1";
+  }, 1800);
+}
 const btnToggleMenu = document.getElementById("btnToggleMenu");
 const controlPanel = document.getElementById("controlPanel");
 if (btnToggleMenu && controlPanel) {
