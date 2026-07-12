@@ -887,66 +887,49 @@
             </div>
           </div>
 
-          <!-- Accordion: Installed Models -->
-          <div class="accordion" id="accordionModels">
-            <button
-              class="accordion-hdr"
-              type="button"
-              aria-expanded="true"
-              data-accordion="accordionModels"
-            >
-              <svg
-                class="accordion-icon-svg"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <circle cx="12" cy="12" r="3" />
-                <path
-                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
-                />
-              </svg>
-              <span class="accordion-label">Installed Models</span>
-              <button
-                class="acc-refresh-btn"
-                id="btnRefreshModels"
-                type="button"
-                title="Refresh"
-                onclick="event.stopPropagation()"
-              >
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.2"
-                >
-                  <polyline points="23 4 23 10 17 10" />
-                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-                </svg>
-              </button>
-              <svg
-                class="accordion-chevron"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.2"
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
+          <!-- Accordion: 3D VRM Settings (Godot Stage) -->
+          <div class="accordion" id="accordion3DVrm" style="display:none; margin-bottom: 8px;">
+            <button class="accordion-hdr" type="button" aria-expanded="false" data-accordion="accordion3DVrm">
+              <svg class="accordion-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+              <span class="accordion-label">3D VRM Configuration</span>
+              <svg class="accordion-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
-            <div class="accordion-body accordion-body-open">
-              <div class="model-grid" id="modelGrid">
-                <div class="model-grid-empty">Loading models...</div>
+            <div class="accordion-body">
+              <div class="acc-row">
+                <label class="acc-label">Camera Height</label>
+                <div class="slider-container" style="flex:1;">
+                  <input type="range" id="slider3DCameraHeight" min="0" max="200" value="100" />
+                  <span id="lbl3DCameraHeightVal" class="slider-bubble">1.00m</span>
+                </div>
+              </div>
+              <div class="acc-row">
+                <label class="acc-label">Camera Zoom</label>
+                <div class="slider-container" style="flex:1;">
+                  <input type="range" id="slider3DCameraZoom" min="50" max="300" value="100" />
+                  <span id="lbl3DCameraZoomVal" class="slider-bubble">1.00x</span>
+                </div>
+              </div>
+              <div class="acc-row">
+                <label class="acc-label">Environment Light</label>
+                <div class="slider-container" style="flex:1;">
+                  <input type="range" id="slider3DLight" min="0" max="200" value="100" />
+                  <span id="lbl3DLightVal" class="slider-bubble">100%</span>
+                </div>
+              </div>
+              <div class="acc-row" style="align-items: flex-start; flex-direction: column; gap: 8px;">
+                <label class="acc-label" style="min-width: unset;">Webcam Face Tracking</label>
+                <div style="display: flex; gap: 8px; width: 100%;">
+                  <select id="webcamSelect" style="flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--r-sm); font-family: var(--font); font-size: 12px; background: var(--surface); color: var(--text-1); outline: none;">
+                    <option value="default">Default Webcam (USB Camera)</option>
+                    <option value="obs">OBS Virtual Camera</option>
+                  </select>
+                  <button class="action-btn" id="btnStartTracking" type="button" style="padding: 5px 12px; font-size: 12px;">Start Tracking</button>
+                </div>
               </div>
             </div>
           </div>
+
+
 
           <!-- Accordion: Animation -->
           <div class="accordion" id="accordionAnimation">

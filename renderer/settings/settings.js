@@ -16,7 +16,7 @@ function navigateTo(targetId) {
   if (targetPanel) {
     targetPanel.classList.add("active");
   }
-  if (targetId === "pageModels") loadModelGrid();
+  if (targetId === "pageModels") loadModelSelectorGrid();
   if (targetId === "pageProviders") renderProviders();
   if (targetId === "pageCard") loadAiriCards();
 }
@@ -83,6 +83,8 @@ if (slScale && slLbl) {
           slScale.value = Math.round(val * 100).toString();
           slLbl.textContent = val.toFixed(2) + "x";
         }
+        const activeModelPath = cfg?.app?.avatarModel || cfg?.avatar_model || "";
+        updateModelTypeLayout(activeModelPath);
       }
     } catch (err) {
       console.error("[settings] Init scale error:", err);
@@ -138,7 +140,7 @@ async function importZipFile(filePath) {
       setImportProgress(true, "Done!", 100);
       showImportResult("success", `"${res.model.name}" imported successfully!`);
       setTimeout(() => setImportProgress(false), 1200);
-      loadModelGrid();
+      loadModelSelectorGrid();
     } else {
       throw new Error(res?.error || "Unknown import error");
     }
@@ -187,7 +189,6 @@ document.getElementById("modalBtnImport")?.addEventListener("click", async () =>
   }
 });
 document.getElementById("btnRefreshModels")?.addEventListener("click", () => {
-  loadModelGrid();
   loadModelSelectorGrid();
 });
 document.addEventListener("dragover", (e) => {
@@ -252,6 +253,7 @@ async function loadModelSelectorGrid() {
           <div class="selector-title-row">
             <span class="selector-name" title="${m.name}">${m.name}</span>
             <button class="selector-btn-edit" type="button" title="Rename">\u270F</button>
+            ${isActive ? "" : '<button class="selector-btn-delete" type="button" title="Delete">\u{1F5D1}\uFE0F</button>'}
           </div>
           <span class="selector-badge">
             ${typeIcon}
@@ -271,8 +273,8 @@ async function loadModelSelectorGrid() {
           });
           if (resUpdate && !resUpdate.error) {
             showStatus(`Changed character to ${m.name}`);
+            updateModelTypeLayout(m.path);
             loadModelSelectorGrid();
-            loadModelGrid();
           }
         }
       });
@@ -281,6 +283,21 @@ async function loadModelSelectorGrid() {
         const newName = prompt(`Rename "${m.name}" to:`, m.name);
         if (newName && newName.trim() && newName.trim() !== m.name) {
           showStatus(`Renamed to ${newName}`);
+        }
+      });
+      card.querySelector(".selector-btn-delete")?.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (!confirm(`Are you sure you want to delete "${m.name}"?
+(This action cannot be undone)`)) return;
+        if (window.companion) {
+          const r = await window.companion.deleteCharacter(m.id);
+          if (r?.success) {
+            card.remove();
+            showStatus(`Deleted "${m.name}"`);
+            loadModelSelectorGrid();
+          } else {
+            showStatus(r?.error || "Failed to delete.");
+          }
         }
       });
       card.querySelector(".selector-thumb-action")?.addEventListener("click", (e) => {
@@ -296,57 +313,6 @@ Description: ${m.description || "No description"}`);
     });
   } catch (err) {
     grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-3); padding: 30px;">Error loading: ${err.message}</div>`;
-  }
-}
-async function loadModelGrid() {
-  const grid = document.getElementById("modelGrid");
-  if (!grid) return;
-  grid.innerHTML = '<div class="model-grid-empty">Loading...</div>';
-  try {
-    const res = await fetch("../../assets/live2d/models.json?t=" + Date.now());
-    const data = await res.json();
-    const models = data.models || [];
-    if (!models.length) {
-      grid.innerHTML = '<div class="model-grid-empty">No models installed.</div>';
-      return;
-    }
-    grid.innerHTML = "";
-    const emojis = { icegirl: "\u{1F9CA}", hiyori: "\u{1F338}", mao: "\u{1F431}", huohuo: "\u{1F98B}" };
-    models.forEach((m) => {
-      const card = document.createElement("div");
-      card.className = "model-row";
-      card.dataset.id = m.id;
-      const emoji = emojis[m.id] || "\u2728";
-      card.innerHTML = `
-        <div class="model-row-thumb">
-          ${m.thumbnail ? `<img src="../../${m.thumbnail}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><span class="mre" style="display:none">${emoji}</span>` : `<span class="mre">${emoji}</span>`}
-        </div>
-        <div class="model-row-info">
-          <span class="model-row-name">${m.name}</span>
-          <span class="model-row-desc">${m.description || m.path.split("/").pop()}</span>
-        </div>
-        <div class="model-row-actions">
-          ${m.default ? '<span class="model-badge-default">Default</span>' : `<button class="model-del-btn" data-id="${m.id}" title="Remove"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>`}
-        </div>
-      `;
-      card.querySelector(".model-del-btn")?.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        if (!confirm(`Remove "${m.name}" from the list?
-(Files won't be deleted from disk)`)) return;
-        if (window.companion) {
-          const r = await window.companion.deleteCharacter(m.id);
-          if (r?.success) {
-            card.remove();
-            showImportResult("success", `"${m.name}" removed.`);
-          } else {
-            showImportResult("error", r?.error || "Failed to remove.");
-          }
-        }
-      });
-      grid.appendChild(card);
-    });
-  } catch (err) {
-    grid.innerHTML = `<div class="model-grid-empty">Error: ${err.message}</div>`;
   }
 }
 const PROVIDERS = [
@@ -623,4 +589,68 @@ if (window.companion) {
       showStatus("Connection auth token updated");
     });
   }
+  const slider3DHeight = document.getElementById("slider3DCameraHeight");
+  const lbl3DHeight = document.getElementById("lbl3DCameraHeightVal");
+  if (slider3DHeight && lbl3DHeight) {
+    slider3DHeight.addEventListener("input", async () => {
+      const val = (parseInt(slider3DHeight.value) / 100).toFixed(2);
+      lbl3DHeight.textContent = val + "m";
+      await window.companion.invoke("ai:update-config", {
+        key: "3d.camera_height",
+        value: val
+      });
+    });
+  }
+  const slider3DZoom = document.getElementById("slider3DCameraZoom");
+  const lbl3DZoom = document.getElementById("lbl3DCameraZoomVal");
+  if (slider3DZoom && lbl3DZoom) {
+    slider3DZoom.addEventListener("input", async () => {
+      const val = (parseInt(slider3DZoom.value) / 100).toFixed(2);
+      lbl3DZoom.textContent = val + "x";
+      await window.companion.invoke("ai:update-config", {
+        key: "3d.camera_zoom",
+        value: val
+      });
+    });
+  }
+  const slider3DLight = document.getElementById("slider3DLight");
+  const lbl3DLight = document.getElementById("lbl3DLightVal");
+  if (slider3DLight && lbl3DLight) {
+    slider3DLight.addEventListener("input", async () => {
+      const val = slider3DLight.value;
+      lbl3DLight.textContent = val + "%";
+      await window.companion.invoke("ai:update-config", {
+        key: "3d.light_intensity",
+        value: val
+      });
+    });
+  }
+  const btnStartTracking = document.getElementById("btnStartTracking");
+  if (btnStartTracking) {
+    let isTracking = false;
+    btnStartTracking.addEventListener("click", () => {
+      isTracking = !isTracking;
+      btnStartTracking.textContent = isTracking ? "Stop Tracking" : "Start Tracking";
+      btnStartTracking.classList.toggle("data-btn-accent", isTracking);
+      showStatus(isTracking ? "Face tracking started" : "Face tracking stopped");
+    });
+  }
 }
+function updateModelTypeLayout(modelPath) {
+  const isVrm = modelPath.toLowerCase().endsWith(".vrm") || modelPath.toLowerCase().includes("vrm");
+  const acc3DVrm = document.getElementById("accordion3DVrm");
+  const accExpressions = document.getElementById("accordionExpressions");
+  const accParams = document.getElementById("accordionParams");
+  if (acc3DVrm) {
+    acc3DVrm.style.display = isVrm ? "block" : "none";
+  }
+  if (accExpressions) {
+    accExpressions.style.display = isVrm ? "none" : "block";
+  }
+  if (accParams) {
+    accParams.style.display = isVrm ? "none" : "block";
+  }
+}
+export {
+  updateModelTypeLayout
+};

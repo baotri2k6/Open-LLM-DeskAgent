@@ -1097,3 +1097,17 @@ input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.15)}
   color: var(--accent);
 }
 
+.selector-btn-delete {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-3);
+  padding: 2px 4px;
+  border-radius: var(--r-sm);
+  transition: color 0.12s, background 0.12s;
+  font-size: 11px;
+}
+.selector-btn-delete:hover {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
