@@ -439,7 +439,7 @@ export function registerAiIpc(ipcMain: IpcMain, windows: any): void {
 
   ipcMain.handle("avatar:import-zip", async (_e: any, { path }: { path: string }) => {
     try {
-      const response = await requestJSON("POST", "/model/import", { file_path: path });
+      const response = await requestJSON("POST", "/model/import", { zip_path: path });
       return response;
     } catch (err: any) {
       return { error: err.message };

@@ -23,6 +23,8 @@ electron_1.contextBridge.exposeInMainWorld("companion", {
     petSetSize: (scale) => electron_1.ipcRenderer.invoke("pet:set-size", scale),
     broadcast: (event, data) => electron_1.ipcRenderer.send("ai:broadcast", { event, data }),
     invoke: (ch, data) => electron_1.ipcRenderer.invoke(ch, data),
+    showOpenDialog: (opts) => electron_1.ipcRenderer.invoke("dialog:open-file", opts),
+    deleteCharacter: (id) => electron_1.ipcRenderer.invoke("character:delete", { id }),
     setIgnoreMouseEvents: (ignore, options) => electron_1.ipcRenderer.send("window:set-ignore-mouse-events", ignore, options),
     openCoding: (folderPath) => electron_1.ipcRenderer.send("window:open-coding", folderPath),
     on: (channel, cb) => {

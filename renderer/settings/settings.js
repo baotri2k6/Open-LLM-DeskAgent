@@ -1,12 +1,4 @@
-import { AssetRegistry } from "../../live2d/asset-registry.js";
 console.log("[settings] settings.ts loaded.");
-const llmSelect = document.getElementById("llmSelect");
-const sttSelect = document.getElementById("sttSelect");
-const chkTwitchMode = document.getElementById("chkTwitchMode");
-const txtTwitchChannel = document.getElementById("txtTwitchChannel");
-const twitchChannelWrap = document.getElementById("twitchChannelWrap");
-const radModeStreamer = document.getElementById("radModeStreamer");
-const radModeAssistant = document.getElementById("radModeAssistant");
 const saveStatus = document.getElementById("saveStatus");
 let toastTimer = null;
 function showStatus(msg = "\u0110\xE3 l\u01B0u c\xE0i \u0111\u1EB7t") {
@@ -16,394 +8,521 @@ function showStatus(msg = "\u0110\xE3 l\u01B0u c\xE0i \u0111\u1EB7t") {
   if (toastTimer) clearTimeout(toastTimer);
   toastTimer = setTimeout(() => saveStatus.classList.remove("visible"), 2200);
 }
-function syncTwitchWrap(checked) {
-  if (twitchChannelWrap) {
-    twitchChannelWrap.classList.toggle("visible", checked);
+const allPanels = document.querySelectorAll(".view-panel");
+const settingsIndex = document.getElementById("settingsIndex");
+function navigateTo(targetId) {
+  allPanels.forEach((p) => p.classList.remove("active"));
+  const targetPanel = document.getElementById(targetId);
+  if (targetPanel) {
+    targetPanel.classList.add("active");
   }
+  if (targetId === "pageModels") loadModelGrid();
+  if (targetId === "pageProviders") renderProviders();
+  if (targetId === "pageCard") loadAiriCards();
 }
-function toggleLLMSubConfigs(provider) {
-  document.querySelectorAll(".llm-sub-config").forEach((block) => {
-    block.style.display = "none";
-  });
-  const activeBlock = document.getElementById(`config-${provider}`);
-  if (activeBlock) {
-    activeBlock.style.display = "block";
-  }
-}
-async function loadConfig() {
-  if (!window.companion) return;
-  try {
-    const res = await window.companion.invoke("ai:get-config", {});
-    if (!res || res.error) return;
-    if (llmSelect) {
-      llmSelect.value = res.llm_provider || "ollama";
-      toggleLLMSubConfigs(res.llm_provider || "ollama");
-    }
-    const setVal = (id, val) => {
-      const el = document.getElementById(id);
-      if (el) el.value = val;
-    };
-    setVal("geminiKeyInput", res.gemini_key || "");
-    setVal("geminiModelInput", res.gemini_model || "");
-    setVal("openaiKeyInput", res.openai_key || "");
-    setVal("openaiModelInput", res.openai_model || "");
-    setVal("deepseekKeyInput", res.deepseek_key || "");
-    setVal("deepseekModelInput", res.deepseek_model || "");
-    setVal("glmKeyInput", res.glm_key || "");
-    setVal("glmModelInput", res.glm_model || "");
-    setVal("qwenKeyInput", res.qwen_key || "");
-    setVal("qwenModelInput", res.qwen_model || "");
-    setVal("openaiCompatibleKeyInput", res.openai_compatible_key || "");
-    setVal("openaiCompatibleModelInput", res.openai_compatible_model || "");
-    setVal("openaiCompatibleBaseUrlInput", res.openai_compatible_base_url || "");
-    if (sttSelect) {
-      sttSelect.value = res.stt_model || "base";
-      const block = document.getElementById("stt-funasr-config");
-      if (block) block.style.display = sttSelect.value === "funasr" ? "block" : "none";
-    }
-    setVal("sttFunasrModelInput", res.stt_funasr_model || "");
-    if (chkTwitchMode) chkTwitchMode.checked = Boolean(res.twitch_mode);
-    if (txtTwitchChannel) txtTwitchChannel.value = res.twitch_channel || "";
-    syncTwitchWrap(Boolean(res.twitch_mode));
-    const avatarVal = res.avatar_model || "assets/live2d/IceGirl/IceGirl.model3.json";
-    const avatarRadioList = document.querySelector(".avatar-radio-list");
-    if (avatarRadioList) {
-      await AssetRegistry.load(true);
-      const models = AssetRegistry.getAll();
-      const existingRadios = avatarRadioList.querySelectorAll('input[type="radio"]');
-      const needsRebuild = existingRadios.length !== models.length || Array.from(existingRadios).some((r, idx) => r.value !== models[idx]?.path);
-      if (needsRebuild) {
-        avatarRadioList.innerHTML = "";
-        models.forEach((m) => {
-          let emoji = "\u{1F9CA}";
-          if (m.id.includes("hiyori")) emoji = "\u{1F338}";
-          else if (m.id.includes("mao")) emoji = "\u{1F431}";
-          else if (m.id.includes("huohuo")) emoji = "\u{1F98B}";
-          else if (m.id !== "icegirl") emoji = "\u2728";
-          const label = document.createElement("label");
-          label.className = "avatar-option";
-          label.innerHTML = `
-            <input type="radio" name="avatarModel" value="${m.path}" ${m.path === avatarVal ? "checked" : ""} />
-            <span class="avatar-option-inner">
-              <span class="opt-emoji">${emoji}</span>
-              <span class="opt-name">${m.name}</span>
-            </span>
-          `;
-          avatarRadioList.appendChild(label);
-        });
-      } else {
-        existingRadios.forEach((radio) => {
-          radio.checked = radio.value === avatarVal;
-        });
-      }
-      updatePortrait(avatarVal);
-    }
-    const avatarScaleSelect = document.getElementById("avatarScaleSelect");
-    if (avatarScaleSelect) {
-      avatarScaleSelect.value = res.avatar_scale || "1.0";
-    }
-    if (radModeStreamer && radModeAssistant) {
-      if (res.interaction_mode === "streamer") radModeStreamer.checked = true;
-      else radModeAssistant.checked = true;
-    }
-    const chkMemoryMode = document.getElementById("chkMemoryMode");
-    if (chkMemoryMode) {
-      chkMemoryMode.checked = res.memory !== false;
-    }
-    loadMemories();
-  } catch (err) {
-    console.error("[settings] loadConfig error:", err);
-  }
-}
-async function loadMemories() {
-  const memoryList = document.getElementById("memoryList");
-  if (!memoryList) return;
-  try {
-    const res = await window.companion.invoke("ai:get-memories", {});
-    if (!res || res.error) {
-      memoryList.innerHTML = `<div style="text-align: center; color: var(--text-3); padding: 20px;">L\u1ED7i t\u1EA3i k\xFD \u1EE9c: ${res ? res.error : "Kh\xF4ng c\xF3 ph\u1EA3n h\u1ED3i"}</div>`;
-      return;
-    }
-    const memories = res.memories || [];
-    if (memories.length === 0) {
-      memoryList.innerHTML = `<div style="text-align: center; color: var(--text-3); padding: 20px;">Ch\u01B0a l\u01B0u k\xFD \u1EE9c n\xE0o.</div>`;
-      return;
-    }
-    memoryList.innerHTML = "";
-    memories.forEach((mem) => {
-      const item = document.createElement("div");
-      item.className = "memory-item";
-      const inp = document.createElement("input");
-      inp.type = "text";
-      inp.className = "memory-text";
-      inp.value = mem.text;
-      const saveEdit = async () => {
-        const val = inp.value.trim();
-        if (val && val !== mem.text) {
-          const updateRes = await window.companion.invoke("ai:update-memory", { id: mem.id, text: val });
-          if (updateRes && !updateRes.error && updateRes.success) {
-            mem.text = val;
-            showStatus("\u0110\xE3 c\u1EADp nh\u1EADt k\xFD \u1EE9c");
-          } else {
-            inp.value = mem.text;
-            showStatus("L\u1ED7i c\u1EADp nh\u1EADt k\xFD \u1EE9c");
-          }
-        }
-      };
-      inp.addEventListener("blur", saveEdit);
-      inp.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          saveEdit();
-          inp.blur();
-        }
-      });
-      const actions = document.createElement("div");
-      actions.className = "memory-actions";
-      const delBtn = document.createElement("button");
-      delBtn.className = "memory-btn delete";
-      delBtn.innerHTML = "\u{1F5D1}\uFE0F";
-      delBtn.title = "X\xF3a k\xFD \u1EE9c";
-      delBtn.addEventListener("click", async () => {
-        if (confirm("B\u1EA1n c\xF3 ch\u1EAFc ch\u1EAFn mu\u1ED1n x\xF3a k\xFD \u1EE9c n\xE0y kh\xF4ng?")) {
-          const delRes = await window.companion.invoke("ai:delete-memory", { id: mem.id });
-          if (delRes && !delRes.error && delRes.success) {
-            item.remove();
-            showStatus("\u0110\xE3 x\xF3a k\xFD \u1EE9c");
-            if (memoryList.children.length === 0) {
-              memoryList.innerHTML = `<div style="text-align: center; color: var(--text-3); padding: 20px;">Ch\u01B0a l\u01B0u k\xFD \u1EE9c n\xE0o.</div>`;
-            }
-          } else {
-            showStatus("L\u1ED7i khi x\xF3a k\xFD \u1EE9c");
-          }
-        }
-      });
-      actions.appendChild(delBtn);
-      item.appendChild(inp);
-      item.appendChild(actions);
-      memoryList.appendChild(item);
-    });
-  } catch (err) {
-    console.error("[settings] loadMemories error:", err);
-  }
-}
-if (!window.companion) {
-  console.error("[settings] window.companion undefined!");
-} else {
-  llmSelect?.addEventListener("change", async () => {
-    toggleLLMSubConfigs(llmSelect.value);
-    const res = await window.companion.invoke("ai:update-config", {
-      key: "llm.provider",
-      value: llmSelect.value
-    });
-    if (res && !res.error) showStatus();
-  });
-  const bindConfigInput = (elemId, configKey, label) => {
-    const elem = document.getElementById(elemId);
-    elem?.addEventListener("change", async () => {
-      const res = await window.companion.invoke("ai:update-config", {
-        key: configKey,
-        value: elem.value
-      });
-      if (res && !res.error) showStatus(`\u0110\xE3 l\u01B0u ${label}`);
-    });
-  };
-  bindConfigInput("geminiKeyInput", "llm.gemini_api_key", "Gemini Key");
-  bindConfigInput("geminiModelInput", "llm.gemini_model", "Gemini Model");
-  bindConfigInput("openaiKeyInput", "llm.openai_api_key", "OpenAI Key");
-  bindConfigInput("openaiModelInput", "llm.openai_model", "OpenAI Model");
-  bindConfigInput("deepseekKeyInput", "llm.deepseek_api_key", "DeepSeek Key");
-  bindConfigInput("deepseekModelInput", "llm.deepseek_model", "DeepSeek Model");
-  bindConfigInput("glmKeyInput", "llm.glm_api_key", "GLM Key");
-  bindConfigInput("glmModelInput", "llm.glm_model", "GLM Model");
-  bindConfigInput("qwenKeyInput", "llm.qwen_api_key", "Qwen Key");
-  bindConfigInput("qwenModelInput", "llm.qwen_model", "Qwen Model");
-  bindConfigInput("openaiCompatibleKeyInput", "llm.openai_compatible_api_key", "Custom Key");
-  bindConfigInput("openaiCompatibleModelInput", "llm.openai_compatible_model", "Custom Model");
-  bindConfigInput("openaiCompatibleBaseUrlInput", "llm.openai_compatible_base_url", "Custom Base URL");
-  bindConfigInput("sttFunasrModelInput", "stt.funasr_model", "FunASR Model");
-  sttSelect?.addEventListener("change", async () => {
-    const block = document.getElementById("stt-funasr-config");
-    if (block) block.style.display = sttSelect.value === "funasr" ? "block" : "none";
-    const res = await window.companion.invoke("ai:update-config", {
-      key: "stt.model",
-      value: sttSelect.value
-    });
-    if (res && !res.error) showStatus();
-  });
-  const avatarRadioList = document.querySelector(".avatar-radio-list");
-  avatarRadioList?.addEventListener("change", async (e) => {
-    if (e.target && e.target.name === "avatarModel") {
-      const value = e.target.value;
-      const res = await window.companion.invoke("ai:update-config", {
-        key: "app.avatarModel",
-        value
-      });
-      if (res && !res.error) {
-        showStatus("\u0110\xE3 \u0111\u1ED5i nh\xE2n v\u1EADt");
-        updatePortrait(value);
-      }
-    }
-  });
-  const avatarScaleSelect = document.getElementById("avatarScaleSelect");
-  avatarScaleSelect?.addEventListener("change", async () => {
-    const res = await window.companion.invoke("ai:update-config", {
-      key: "app.avatarScale",
-      value: avatarScaleSelect.value
-    });
-    if (res && !res.error) showStatus("\u0110\xE3 l\u01B0u t\u1EF7 l\u1EC7 nh\xE2n v\u1EADt");
-  });
-  document.querySelectorAll('input[name="interactionMode"]').forEach((radio) => {
-    radio.addEventListener("change", async () => {
-      const r = radio;
-      if (!r.checked) return;
-      const res = await window.companion.invoke("ai:update-config", {
-        key: "app.interactionMode",
-        value: r.value
-      });
-      if (res && !res.error) showStatus("\u0110\xE3 \u0111\u1ED5i ch\u1EBF \u0111\u1ED9");
-    });
-  });
-  chkTwitchMode?.addEventListener("change", async () => {
-    syncTwitchWrap(chkTwitchMode.checked);
-    const res = await window.companion.invoke("ai:update-config", {
-      key: "features.twitchMode",
-      value: chkTwitchMode.checked
-    });
-    if (res && !res.error)
-      showStatus(chkTwitchMode.checked ? "Twitch \u0111\xE3 b\u1EADt" : "Twitch \u0111\xE3 t\u1EAFt");
-  });
-  const saveChannel = async () => {
-    const channel = txtTwitchChannel?.value.trim() || "";
-    const res = await window.companion.invoke("ai:update-config", {
-      key: "twitch.channel",
-      value: channel
-    });
-    if (res && !res.error) showStatus(`K\xEAnh: ${channel}`);
-  };
-  txtTwitchChannel?.addEventListener("blur", saveChannel);
-  txtTwitchChannel?.addEventListener("keypress", (e) => {
-    if (e.key === "Enter") {
+document.querySelectorAll(".menu-card").forEach((card) => {
+  const target = card.dataset.target || "";
+  card.addEventListener("click", () => navigateTo(target));
+  card.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      saveChannel();
-      txtTwitchChannel.blur();
+      navigateTo(target);
     }
   });
-  const chkMemoryMode = document.getElementById("chkMemoryMode");
-  chkMemoryMode?.addEventListener("change", async () => {
-    const res = await window.companion.invoke("ai:update-config", {
-      key: "features.memory",
-      value: chkMemoryMode.checked
-    });
-    if (res && !res.error) {
-      showStatus(chkMemoryMode.checked ? "\u0110\xE3 b\u1EADt ghi nh\u1EDB d\xE0i h\u1EA1n" : "\u0110\xE3 t\u1EAFt ghi nh\u1EDB d\xE0i h\u1EA1n");
-    }
+});
+document.querySelectorAll(".back-button").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    allPanels.forEach((p) => p.classList.remove("active"));
+    if (settingsIndex) settingsIndex.classList.add("active");
   });
-  const txtNewMemory = document.getElementById("txtNewMemory");
-  const btnAddMemory = document.getElementById("btnAddMemory");
-  const handleAddMemory = async () => {
-    const text = txtNewMemory?.value.trim() || "";
-    if (!text) return;
-    const res = await window.companion.invoke("ai:add-memory", { text });
-    if (res && !res.error && res.success) {
-      txtNewMemory.value = "";
-      showStatus("\u0110\xE3 th\xEAm k\xFD \u1EE9c m\u1EDBi");
-      loadMemories();
+});
+document.querySelectorAll(".accordion-hdr").forEach((hdr) => {
+  hdr.addEventListener("click", (e) => {
+    if (e.target && e.target.closest("button") && e.target.closest("button") !== hdr) {
+      return;
+    }
+    const accordionId = hdr.dataset.accordion || "";
+    const accordionBody = document.querySelector(`#${accordionId} .accordion-body`);
+    if (!accordionBody) return;
+    const isOpen = hdr.getAttribute("aria-expanded") === "true";
+    hdr.setAttribute("aria-expanded", String(!isOpen));
+    if (isOpen) {
+      accordionBody.style.maxHeight = accordionBody.scrollHeight + "px";
+      requestAnimationFrame(() => {
+        accordionBody.style.maxHeight = "0";
+        accordionBody.style.paddingBottom = "0";
+      });
+      setTimeout(() => {
+        accordionBody.style.display = "none";
+        accordionBody.style.maxHeight = "";
+        accordionBody.style.paddingBottom = "";
+      }, 220);
     } else {
-      showStatus("L\u1ED7i th\xEAm k\xFD \u1EE9c");
-    }
-  };
-  btnAddMemory?.addEventListener("click", handleAddMemory);
-  txtNewMemory?.addEventListener("keypress", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleAddMemory();
+      accordionBody.style.display = "block";
+      accordionBody.style.overflow = "hidden";
+      accordionBody.style.maxHeight = "0";
+      requestAnimationFrame(() => {
+        accordionBody.style.maxHeight = accordionBody.scrollHeight + "px";
+      });
+      setTimeout(() => {
+        accordionBody.style.maxHeight = "";
+        accordionBody.style.overflow = "";
+      }, 220);
     }
   });
-  async function updateSystemStatus() {
-    const statusBackend = document.getElementById("status-backend");
-    const statusLlm = document.getElementById("status-llm");
-    const statusTts = document.getElementById("status-tts");
-    const statusStt = document.getElementById("status-stt");
-    const statusMemory = document.getElementById("status-memory");
+});
+const slScale = document.getElementById("sliderAvatarScale");
+const slLbl = document.getElementById("lblAvatarScaleVal");
+if (slScale && slLbl) {
+  setTimeout(async () => {
     try {
-      const res = await window.companion.health();
-      if (res && res.status === "ok" && res.checks) {
-        const checks = res.checks;
-        if (statusBackend) {
-          statusBackend.textContent = "Online";
-          statusBackend.style.color = "var(--accent)";
+      if (window.companion) {
+        const cfg = await window.companion.invoke("ai:get-config", {});
+        const val = parseFloat(cfg?.app?.avatarScale);
+        if (!isNaN(val) && val > 0) {
+          slScale.value = Math.round(val * 100).toString();
+          slLbl.textContent = val.toFixed(2) + "x";
         }
-        if (statusLlm) {
-          statusLlm.textContent = `${checks.llm.status} (${checks.llm.provider})`;
-          statusLlm.style.color = checks.llm.status === "Online" ? "var(--accent)" : "#ef4444";
-        }
-        if (statusTts) {
-          statusTts.textContent = `${checks.tts.status} (${checks.tts.backend})`;
-          statusTts.style.color = checks.tts.status === "Online" ? "var(--accent)" : "#ef4444";
-        }
-        if (statusStt) {
-          statusStt.textContent = `${checks.stt.status} (${checks.stt.model})`;
-          statusStt.style.color = checks.stt.status === "Online" ? "var(--accent)" : "#ef4444";
-        }
-        if (statusMemory) {
-          statusMemory.textContent = checks.memory.status;
-          statusMemory.style.color = checks.memory.status === "Online" ? "var(--accent)" : "#ef4444";
-        }
-      } else {
-        throw new Error("offline");
       }
     } catch (err) {
-      const offlineList = [statusBackend, statusLlm, statusTts, statusStt, statusMemory];
-      offlineList.forEach((el) => {
-        if (el) {
-          el.textContent = "Offline";
-          el.style.color = "#ef4444";
-        }
+      console.error("[settings] Init scale error:", err);
+    }
+  }, 200);
+  slScale.addEventListener("input", async () => {
+    const val = (parseInt(slScale.value) / 100).toFixed(2);
+    slLbl.textContent = val + "x";
+    if (window.companion) {
+      await window.companion.invoke("ai:update-config", {
+        key: "app.avatarScale",
+        value: val
       });
     }
+  });
+}
+function showImportResult(type, msg) {
+  const el = document.getElementById("importResult");
+  if (!el) return;
+  el.className = `import-result import-result-${type}`;
+  el.textContent = (type === "success" ? "\u2713 " : "\u2717 ") + msg;
+  el.style.display = "block";
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => {
+    el.style.display = "none";
+  }, 5e3);
+}
+function setImportProgress(visible, label = "Extracting...", pct = null) {
+  const bar = document.getElementById("importProgress");
+  const fill = document.getElementById("importProgressFill");
+  const lbl = document.getElementById("importProgressLabel");
+  if (!bar) return;
+  bar.style.display = visible ? "block" : "none";
+  if (lbl) lbl.textContent = label;
+  if (fill) fill.style.width = (pct !== null ? pct : 0) + "%";
+}
+async function importZipFile(filePath) {
+  if (!window.companion) {
+    showImportResult("error", "Not connected to desktop backend.");
+    return;
   }
+  setImportProgress(true, "Extracting and registering model...", 30);
+  let pct = 30;
+  const tick = setInterval(() => {
+    pct = Math.min(pct + 8, 85);
+    const fill = document.getElementById("importProgressFill");
+    if (fill) fill.style.width = pct + "%";
+  }, 400);
+  try {
+    const res = await window.companion.invoke("avatar:import-zip", { path: filePath });
+    clearInterval(tick);
+    if (res && res.success) {
+      setImportProgress(true, "Done!", 100);
+      showImportResult("success", `"${res.model.name}" imported successfully!`);
+      setTimeout(() => setImportProgress(false), 1200);
+      loadModelGrid();
+    } else {
+      throw new Error(res?.error || "Unknown import error");
+    }
+  } catch (err) {
+    clearInterval(tick);
+    setImportProgress(false);
+    showImportResult("error", err.message);
+  }
+}
+document.getElementById("btnBrowseZip")?.addEventListener("click", async () => {
+  if (!window.companion) {
+    showImportResult("error", "Not connected.");
+    return;
+  }
+  const fp = await window.companion.showOpenDialog({
+    title: "Select ZIP",
+    filters: [{ name: "ZIP Archives", extensions: ["zip"] }]
+  });
+  if (fp) await importZipFile(fp);
+});
+document.getElementById("btnSelectModel")?.addEventListener("click", async () => {
+  if (!window.companion) {
+    showImportResult("error", "Not connected.");
+    return;
+  }
+  const fp = await window.companion.showOpenDialog({
+    title: "Select model",
+    filters: [
+      { name: "Model files", extensions: ["zip", "vrm"] },
+      { name: "All files", extensions: ["*"] }
+    ]
+  });
+  if (fp) await importZipFile(fp);
+});
+document.getElementById("btnRefreshModels")?.addEventListener("click", loadModelGrid);
+document.addEventListener("dragover", (e) => {
+  const panel = document.getElementById("pageModels");
+  if (panel && panel.classList.contains("active")) {
+    e.preventDefault();
+    document.getElementById("modelsDropOverlay")?.classList.add("visible");
+  }
+});
+document.addEventListener("dragleave", (e) => {
+  const panel = document.getElementById("pageModels");
+  if (panel && !panel.contains(e.relatedTarget)) {
+    document.getElementById("modelsDropOverlay")?.classList.remove("visible");
+  }
+});
+document.addEventListener("drop", async (e) => {
+  const panel = document.getElementById("pageModels");
+  if (!panel || !panel.classList.contains("active")) return;
+  e.preventDefault();
+  document.getElementById("modelsDropOverlay")?.classList.remove("visible");
+  const file = e.dataTransfer?.files?.[0];
+  if (!file) return;
+  if (!file.name.toLowerCase().endsWith(".zip")) {
+    showImportResult("error", "Please drop a .zip file.");
+    return;
+  }
+  await importZipFile(file.path);
+});
+async function loadModelGrid() {
+  const grid = document.getElementById("modelGrid");
+  if (!grid) return;
+  grid.innerHTML = '<div class="model-grid-empty">Loading...</div>';
+  try {
+    const res = await fetch("../../assets/live2d/models.json?t=" + Date.now());
+    const data = await res.json();
+    const models = data.models || [];
+    if (!models.length) {
+      grid.innerHTML = '<div class="model-grid-empty">No models installed.</div>';
+      return;
+    }
+    grid.innerHTML = "";
+    const emojis = { icegirl: "\u{1F9CA}", hiyori: "\u{1F338}", mao: "\u{1F431}", huohuo: "\u{1F98B}" };
+    models.forEach((m) => {
+      const card = document.createElement("div");
+      card.className = "model-row";
+      card.dataset.id = m.id;
+      const emoji = emojis[m.id] || "\u2728";
+      card.innerHTML = `
+        <div class="model-row-thumb">
+          ${m.thumbnail ? `<img src="../../${m.thumbnail}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><span class="mre" style="display:none">${emoji}</span>` : `<span class="mre">${emoji}</span>`}
+        </div>
+        <div class="model-row-info">
+          <span class="model-row-name">${m.name}</span>
+          <span class="model-row-desc">${m.description || m.path.split("/").pop()}</span>
+        </div>
+        <div class="model-row-actions">
+          ${m.default ? '<span class="model-badge-default">Default</span>' : `<button class="model-del-btn" data-id="${m.id}" title="Remove"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>`}
+        </div>
+      `;
+      card.querySelector(".model-del-btn")?.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (!confirm(`Remove "${m.name}" from the list?
+(Files won't be deleted from disk)`)) return;
+        if (window.companion) {
+          const r = await window.companion.deleteCharacter(m.id);
+          if (r?.success) {
+            card.remove();
+            showImportResult("success", `"${m.name}" removed.`);
+          } else {
+            showImportResult("error", r?.error || "Failed to remove.");
+          }
+        }
+      });
+      grid.appendChild(card);
+    });
+  } catch (err) {
+    grid.innerHTML = `<div class="model-grid-empty">Error: ${err.message}</div>`;
+  }
+}
+const PROVIDERS = [
+  { id: "official", name: "Official Provider", desc: "Official AI provider by AIRI.", tags: ["RECOMMENDED", "PAID", "CLOUD"], icon: "\u2B50" },
+  { id: "openrouter", name: "OpenRouter", desc: "openrouter.ai", tags: ["PAID", "CLOUD"], icon: "\u25C0" },
+  { id: "aihubmix", name: "AIHubMix", desc: "https://aihubmix.com (10% off)", tags: ["PAID", "CLOUD"], icon: "\u{1F310}" },
+  { id: "azure", name: "Azure OpenAI", desc: "Azure OpenAI API", tags: ["PAID", "CLOUD"], icon: "A" },
+  { id: "ollama", name: "Ollama", desc: "ollama.ai", tags: ["FREE", "LOCAL"], icon: "\u{1F999}" },
+  { id: "lmstudio", name: "LM Studio", desc: "lmstudio.ai", tags: ["FREE", "LOCAL"], icon: "\u2261" },
+  { id: "deepseek", name: "DeepSeek", desc: "deepseek.com", tags: ["PAID", "CLOUD"], icon: "\u{1F40B}" },
+  { id: "openai-compat", name: "OpenAI Compatible", desc: "OpenAI Compatible", tags: [], icon: "\u2699" },
+  { id: "xiaomi", name: "Xiaomi MiMo", desc: "api.xiaomimimo.com", tags: ["PAID", "CLOUD"], icon: "M" },
+  { id: "openai", name: "OpenAI", desc: "openai.com", tags: ["PAID", "CLOUD"], icon: "\u25CE" },
+  { id: "anthropic", name: "Anthropic", desc: "anthropic.com", tags: ["PAID", "CLOUD"], icon: "\u2B21" },
+  { id: "gemini", name: "Google Gemini", desc: "ai.google.dev", tags: ["PAID", "CLOUD"], icon: "\u2726" }
+];
+function renderProviders() {
+  const grid = document.getElementById("providerGrid");
+  if (!grid || grid.children.length > 0) return;
+  grid.innerHTML = "";
+  PROVIDERS.forEach((p) => {
+    const card = document.createElement("div");
+    card.className = "provider-card";
+    card.dataset.id = p.id;
+    const tagsHtml = p.tags.map((t) => `<span class="provider-tag provider-tag-${t.toLowerCase()}">${t}</span>`).join("");
+    card.innerHTML = `
+      <div class="provider-card-top">
+        <div class="provider-card-info">
+          <span class="provider-card-name">${p.name}</span>
+          <span class="provider-card-desc">${p.desc}</span>
+        </div>
+        <div class="provider-card-logo">${p.icon}</div>
+      </div>
+      ${p.tags.length ? `<div class="provider-tags">${tagsHtml}</div>` : ""}
+      <label class="provider-radio">
+        <input type="radio" name="provider" value="${p.id}"/>
+        <span class="radio-dot"></span>
+      </label>
+    `;
+    card.addEventListener("click", () => {
+      const radio2 = card.querySelector('input[type="radio"]');
+      if (radio2 && !radio2.checked) {
+        radio2.checked = true;
+        radio2.dispatchEvent(new Event("change"));
+      }
+    });
+    const radio = card.querySelector('input[type="radio"]');
+    radio?.addEventListener("change", async () => {
+      if (radio.checked && window.companion) {
+        const res = await window.companion.invoke("ai:update-config", {
+          key: "llm.provider",
+          value: p.id
+        });
+        if (res && !res.error) showStatus(`Provider changed to ${p.name}`);
+      }
+    });
+    grid.appendChild(card);
+  });
+  setTimeout(async () => {
+    try {
+      if (window.companion) {
+        const cfg = await window.companion.invoke("ai:get-config", {});
+        const currentProvider = cfg?.llm_provider || "ollama";
+        const targetRadio = grid.querySelector(`input[name="provider"][value="${currentProvider}"]`);
+        if (targetRadio) targetRadio.checked = true;
+      }
+    } catch (_) {
+    }
+  }, 100);
+}
+function loadAiriCards() {
+  const container = document.getElementById("airiExistingCards");
+  if (!container || container.children.length > 0) return;
+  container.innerHTML = "";
+  const personas = [
+    {
+      name: "ReLU",
+      desc: "(from Neko Ayaka) Good morning! You are finally awake. Your name is AIRI, pronounced as /\u02C8e\u026Atri\u02D0/, it the word A.I. companion. Your creator is Neko Ayaka.",
+      version: "v1.0.0",
+      active: true
+    }
+  ];
+  personas.forEach((p) => {
+    const card = document.createElement("div");
+    card.className = "airi-persona-card" + (p.active ? " airi-persona-card-active" : "");
+    card.innerHTML = `
+      <div class="apc-header">
+        <span class="apc-name">${p.name}</span>
+        <div class="apc-actions">
+          <button class="apc-btn-edit" title="Edit">\u270F</button>
+          ${p.active ? '<span class="apc-active-dot"></span>' : ""}
+        </div>
+      </div>
+      <p class="apc-desc">${p.desc}</p>
+      <div class="apc-footer">
+        <span class="apc-version">${p.version}</span>
+        <div class="apc-badges">
+          <span class="apc-badge">\u{1F4C4} default</span>
+          <span class="apc-badge">\u{1F50A} default</span>
+        </div>
+      </div>
+      ${p.active ? '<div class="apc-bottom-active"><span class="apc-active-check">\u2713</span></div>' : ""}
+    `;
+    container.appendChild(card);
+  });
+}
+document.getElementById("btnOpenDataFolder")?.addEventListener("click", () => {
+  if (window.companion) {
+    window.companion.invoke("system:open-data-folder", {}).catch(() => {
+    });
+  }
+});
+document.getElementById("btnMoveToCenter")?.addEventListener("click", () => {
+  if (window.companion) {
+    window.companion.invoke("pet:move-to", { x: 0, y: 0 }).catch(() => {
+    });
+  }
+});
+document.getElementById("btnUploadBackground")?.addEventListener("click", async () => {
+  if (!window.companion) return;
+  const fp = await window.companion.showOpenDialog({
+    title: "Select background image",
+    filters: [{ name: "Images", extensions: ["jpg", "jpeg", "png", "gif", "webp"] }]
+  });
+  if (!fp) return;
+  const gallery = document.getElementById("scenesGallery");
+  const empty = gallery?.querySelector(".scene-empty");
+  if (empty) empty.remove();
+  const thumb = document.createElement("div");
+  thumb.className = "scene-thumb";
+  thumb.innerHTML = `
+    <img src="file://${fp}" alt="Background" />
+    <span class="scene-thumb-label">${fp.split(/[\\/]/).pop()}</span>
+  `;
+  gallery?.appendChild(thumb);
+  showStatus("Background uploaded successfully");
+});
+async function updateSystemStatus() {
+  const statusBackend = document.getElementById("status-backend");
+  const statusLlm = document.getElementById("status-llm");
+  const statusTts = document.getElementById("status-tts");
+  const statusStt = document.getElementById("status-stt");
+  const statusMemory = document.getElementById("status-memory");
+  try {
+    if (!window.companion) return;
+    const res = await window.companion.health();
+    if (res && res.status === "ok" && res.checks) {
+      const checks = res.checks;
+      if (statusBackend) {
+        statusBackend.textContent = "Online";
+        statusBackend.style.color = "var(--accent)";
+      }
+      if (statusLlm) {
+        statusLlm.textContent = `${checks.llm.status} (${checks.llm.provider})`;
+        statusLlm.style.color = checks.llm.status === "Online" ? "var(--accent)" : "var(--danger)";
+      }
+      if (statusTts) {
+        statusTts.textContent = `${checks.tts.status} (${checks.tts.backend})`;
+        statusTts.style.color = checks.tts.status === "Online" ? "var(--accent)" : "var(--danger)";
+      }
+      if (statusStt) {
+        statusStt.textContent = `${checks.stt.status} (${checks.stt.model})`;
+        statusStt.style.color = checks.stt.status === "Online" ? "var(--accent)" : "var(--danger)";
+      }
+      if (statusMemory) {
+        statusMemory.textContent = checks.memory.status;
+        statusMemory.style.color = checks.memory.status === "Online" ? "var(--accent)" : "var(--danger)";
+      }
+    } else {
+      throw new Error("offline");
+    }
+  } catch (err) {
+    const offlineList = [statusBackend, statusLlm, statusTts, statusStt, statusMemory];
+    offlineList.forEach((el) => {
+      if (el) {
+        el.textContent = "Offline";
+        el.style.color = "var(--danger)";
+      }
+    });
+  }
+}
+if (window.companion) {
   window.companion.on("python:ready", () => {
-    loadConfig();
     updateSystemStatus();
   });
-  window.companion.on("config:updated", ({ key }) => {
-    if (key === "app.avatarModel") {
-      loadConfig();
-    }
-  });
-  loadConfig();
   updateSystemStatus();
   setInterval(updateSystemStatus, 4e3);
-}
-function updatePortrait(val) {
-  const portraitImg = document.getElementById("characterPortrait");
-  const lblActiveModel = document.getElementById("lblActiveModel");
-  const portraitPlaceholder = document.getElementById("portraitPlaceholder");
-  const models = AssetRegistry.getAll() || [];
-  const model = models.find((m) => m.path === val);
-  const name = model ? model.name : "IceGirl";
-  const thumbnail = model ? model.thumbnail : "";
-  if (lblActiveModel) {
-    lblActiveModel.textContent = name;
+  setTimeout(async () => {
+    try {
+      if (window.companion) {
+        const cfg = await window.companion.invoke("ai:get-config", {});
+        const wsAddr = cfg?.["connection.ws_address"] || "ws://localhost:6121/ws";
+        const wsInput = document.getElementById("txtWsAddress");
+        if (wsInput) wsInput.value = wsAddr;
+        const secureWss = cfg?.["connection.secure_wss"] === true || cfg?.["connection.secure_wss"] === "true";
+        const secureInput = document.getElementById("chkSecureWs");
+        if (secureInput) secureInput.checked = secureWss;
+        const netExpose = cfg?.["connection.network_expose"] || "local";
+        const segBtns = document.querySelectorAll("#networkExposure .segment-btn");
+        segBtns.forEach((btn) => {
+          if (btn.dataset.value === netExpose) {
+            segBtns.forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+          }
+        });
+        const authToken = cfg?.["connection.auth_token"] || "q7x9w2v8k4m3n5p6r8t2y1u9i8o7p6a5";
+        const tokenInput = document.getElementById("txtAuthToken");
+        if (tokenInput) tokenInput.value = authToken;
+      }
+    } catch (err) {
+      console.error("[settings] Init connection config error:", err);
+    }
+  }, 250);
+  const txtAuthToken = document.getElementById("txtAuthToken");
+  const btnToggleTokenVis = document.getElementById("btnToggleTokenVis");
+  if (txtAuthToken && btnToggleTokenVis) {
+    btnToggleTokenVis.addEventListener("click", () => {
+      const isPass = txtAuthToken.type === "password";
+      txtAuthToken.type = isPass ? "text" : "password";
+      btnToggleTokenVis.setAttribute("title", isPass ? "Hide Token" : "Show Token");
+      btnToggleTokenVis.style.opacity = isPass ? "1" : "0.5";
+    });
   }
-  if (thumbnail) {
-    if (portraitPlaceholder) portraitPlaceholder.style.display = "none";
-    if (portraitImg) {
-      portraitImg.src = "../../" + thumbnail;
-      portraitImg.style.display = "block";
-    }
-  } else {
-    if (portraitImg) portraitImg.style.display = "none";
-    if (portraitPlaceholder) {
-      portraitPlaceholder.style.display = "flex";
-      portraitPlaceholder.className = "portrait-placeholder placeholder-" + (model ? model.id : "icegirl");
-      let emoji = "\u{1F9CA}";
-      if (name.includes("Mao")) emoji = "\u{1F431}";
-      else if (name.includes("Huohuo")) emoji = "\u{1F98B}";
-      else if (name.includes("Hiyori")) emoji = "\u{1F338}";
-      else if (name !== "IceGirl") emoji = "\u2728";
-      portraitPlaceholder.innerHTML = `<span class="placeholder-emoji">${emoji}</span><span class="placeholder-name">${name}</span>`;
-    }
+  const btnCopyToken = document.getElementById("btnCopyToken");
+  if (btnCopyToken && txtAuthToken) {
+    btnCopyToken.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(txtAuthToken.value);
+        showStatus("Copied token to clipboard!");
+      } catch (err) {
+        showStatus("Failed to copy token.");
+      }
+    });
+  }
+  const segButtons = document.querySelectorAll("#networkExposure .segment-btn");
+  segButtons.forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      segButtons.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const val = btn.dataset.value || "local";
+      await window.companion.invoke("ai:update-config", {
+        key: "connection.network_expose",
+        value: val
+      });
+      showStatus(`Expose network set to: ${btn.textContent}`);
+    });
+  });
+  const chkSecureWs = document.getElementById("chkSecureWs");
+  if (chkSecureWs) {
+    chkSecureWs.addEventListener("change", async () => {
+      await window.companion.invoke("ai:update-config", {
+        key: "connection.secure_wss",
+        value: chkSecureWs.checked
+      });
+      showStatus(chkSecureWs.checked ? "Secure WSS enabled" : "Secure WSS disabled");
+    });
+  }
+  const txtWsAddress = document.getElementById("txtWsAddress");
+  if (txtWsAddress) {
+    txtWsAddress.addEventListener("change", async () => {
+      await window.companion.invoke("ai:update-config", {
+        key: "connection.ws_address",
+        value: txtWsAddress.value.trim()
+      });
+      showStatus("WebSocket server address saved");
+    });
+  }
+  if (txtAuthToken) {
+    txtAuthToken.addEventListener("change", async () => {
+      await window.companion.invoke("ai:update-config", {
+        key: "connection.auth_token",
+        value: txtAuthToken.value.trim()
+      });
+      showStatus("Connection auth token updated");
+    });
   }
 }

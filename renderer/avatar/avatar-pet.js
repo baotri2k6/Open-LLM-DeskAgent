@@ -5,7 +5,6 @@ import { AssetRegistry } from "../../live2d/asset-registry.js";
 
 // ─── Lazy-loaded modules (CDN-dependent, must not block avatar rendering) ───
 
-
 const avatarWrap = document.getElementById("avatarWrap");
 const petCaption = document.getElementById("petCaption");
 const petStatusDot = document.getElementById("petStatusDot");
@@ -17,8 +16,7 @@ const petPowerButton = document.getElementById("petPowerButton");
 
 // currentModelId stores the active model identifier (registry id string)
 // Initialized after AssetRegistry is loaded in applyInitialMode.
-let currentModelId = 'icegirl';
-
+let currentModelId = "icegirl";
 
 function rebuildAccessoryButtons(modelId) {
   const container = document.getElementById("characterPropsRow");
@@ -316,7 +314,11 @@ async function stopRecording() {
     avatar.setState({ expression: "normal", motion: "idle" });
     if (currentInteractionMode === "streamer" && streamerLoopActive) {
       setTimeout(() => {
-        if (currentInteractionMode === "streamer" && streamerLoopActive && !isRecording) {
+        if (
+          currentInteractionMode === "streamer" &&
+          streamerLoopActive &&
+          !isRecording
+        ) {
           startRecording();
         }
       }, 350);
@@ -339,7 +341,11 @@ async function stopRecording() {
     avatar.setState({ expression: "sad", motion: "shake" });
     if (currentInteractionMode === "streamer" && streamerLoopActive) {
       setTimeout(() => {
-        if (currentInteractionMode === "streamer" && streamerLoopActive && !isRecording) {
+        if (
+          currentInteractionMode === "streamer" &&
+          streamerLoopActive &&
+          !isRecording
+        ) {
           startRecording();
         }
       }, 700);
@@ -389,11 +395,9 @@ function toggleMic() {
   }
 }
 
-
 petMicButton?.addEventListener("click", () => {
   toggleMic();
 });
-
 
 petPowerButton?.addEventListener("click", () => {
   window.companion.hideAvatar();
@@ -495,7 +499,11 @@ window.companion.on("stt:result", (text) => {
     avatar.setState({ expression: "sad", motion: "shake" });
     if (currentInteractionMode === "streamer" && streamerLoopActive) {
       setTimeout(() => {
-        if (currentInteractionMode === "streamer" && streamerLoopActive && !isRecording) {
+        if (
+          currentInteractionMode === "streamer" &&
+          streamerLoopActive &&
+          !isRecording
+        ) {
           startRecording();
         }
       }, 700);
@@ -621,8 +629,6 @@ function toggleConsole() {
     }
   }
 }
-
-
 
 // Right-click on avatar to open settings (options) window
 avatarWrap?.addEventListener("contextmenu", (event) => {
@@ -1071,10 +1077,12 @@ document.addEventListener("drop", async (e) => {
         setControlsDisabled(true);
         setStatus("thinking");
         avatar.setState({ expression: "thinking", motion: "thinking" });
-        setCaption("Đang giải nén và nạp model Live2D mới, cậu đợi tớ xíu nha...");
+        setCaption(
+          "Đang giải nén và nạp model Live2D mới, cậu đợi tớ xíu nha...",
+        );
 
         console.log("[avatar-pet] Dropped ZIP:", filePath);
-        const res = await window.companion.invoke("avatar:import-zip", filePath);
+        const res = await window.companion.invoke("avatar:import-zip", { path: filePath });
 
         if (res && res.success) {
           console.log("[avatar-pet] Model imported successfully:", res.model);
@@ -1091,13 +1099,17 @@ document.addEventListener("drop", async (e) => {
           rebuildAccessoryButtons(modelId);
 
           // Save selected model path back to application config
-          await window.companion.invoke("ai:update-config", {
-            key: "app.avatarModel",
-            value: modelPath
-          }).catch(() => null);
+          await window.companion
+            .invoke("ai:update-config", {
+              key: "app.avatarModel",
+              value: modelPath,
+            })
+            .catch(() => null);
 
           setStatus("idle");
-          setCaption(`Oa! Đã nạp thành công nhân vật mới "${res.model.name}" rồi nè! [happy]`);
+          setCaption(
+            `Oa! Đã nạp thành công nhân vật mới "${res.model.name}" rồi nè! [happy]`,
+          );
           avatar.setState({ expression: "happy", motion: "excited" });
 
           setTimeout(() => {
@@ -1112,7 +1124,9 @@ document.addEventListener("drop", async (e) => {
       } catch (err) {
         console.error("[avatar-pet] Failed to import Live2D model ZIP:", err);
         setStatus("error");
-        setCaption(`Không nạp được model Live2D: ${err.message}. Cậu kiểm tra lại file zip nhé.`);
+        setCaption(
+          `Không nạp được model Live2D: ${err.message}. Cậu kiểm tra lại file zip nhé.`,
+        );
         avatar.setState({ expression: "sad", motion: "shake" });
       } finally {
         busy = false;
@@ -1121,22 +1135,29 @@ document.addEventListener("drop", async (e) => {
     } else {
       const ext = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
       const docExtensions = [".pdf", ".docx", ".doc", ".txt", ".md"];
-      
+
       if (docExtensions.includes(ext)) {
         try {
           busy = true;
           setControlsDisabled(true);
           setStatus("thinking");
           avatar.setState({ expression: "thinking", motion: "thinking" });
-          setCaption(`Đang đọc tài liệu "${fileName}" để nạp kiến thức, cậu chờ tớ một xíu nhé...`);
+          setCaption(
+            `Đang đọc tài liệu "${fileName}" để nạp kiến thức, cậu chờ tớ một xíu nhé...`,
+          );
 
           console.log("[avatar-pet] Dropped document:", filePath);
-          const res = await window.companion.invoke("system:import-document", filePath);
+          const res = await window.companion.invoke(
+            "system:import-document",
+            filePath,
+          );
 
           if (res && res.success) {
             console.log("[avatar-pet] Document imported successfully:", res);
             setStatus("idle");
-            setCaption(`Tớ đã học xong tài liệu "${fileName}" rồi nè! Bây giờ cậu có thể hỏi tớ bất cứ điều gì về nó rồi nhé! [happy]`);
+            setCaption(
+              `Tớ đã học xong tài liệu "${fileName}" rồi nè! Bây giờ cậu có thể hỏi tớ bất cứ điều gì về nó rồi nhé! [happy]`,
+            );
             avatar.setState({ expression: "happy", motion: "excited" });
 
             setTimeout(() => {
@@ -1151,7 +1172,9 @@ document.addEventListener("drop", async (e) => {
         } catch (err) {
           console.error("[avatar-pet] Failed to import document:", err);
           setStatus("error");
-          setCaption(`Không nạp được tài liệu: ${err.message}. Cậu kiểm tra lại định dạng file nhé.`);
+          setCaption(
+            `Không nạp được tài liệu: ${err.message}. Cậu kiểm tra lại định dạng file nhé.`,
+          );
           avatar.setState({ expression: "sad", motion: "shake" });
         } finally {
           busy = false;
@@ -1162,10 +1185,19 @@ document.addEventListener("drop", async (e) => {
         speakQuickReaction(msg, "happy");
       }
     }
-
-
   } else {
     avatar.setState({ expression: "normal", motion: "idle" });
     setCaption("");
+  }
+});
+
+// ── Khi Settings import ZIP xong → reload AssetRegistry ──────────────────
+window.companion.on("avatar:registry-updated", async (newModel) => {
+  try {
+    await AssetRegistry.load(true);
+    setCaption(`✨ Đã thêm nhân vật: ${newModel?.name || "mới"}`);
+    setTimeout(() => setCaption(""), 3000);
+  } catch (e) {
+    console.warn("[avatar-pet] registry-updated reload failed:", e);
   }
 });

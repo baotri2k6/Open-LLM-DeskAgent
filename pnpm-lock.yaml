@@ -11,6 +11,9 @@ importers:
       '@esotericsoftware/spine-webgl':
         specifier: ^4.1.56
         version: 4.3.8
+      adm-zip:
+        specifier: ^0.5.10
+        version: 0.5.18
       pixi-live2d-display:
         specifier: ^0.4.0
         version: 0.4.0(0736f5bd67d2e4de7e9fff36ad63fa2e)
@@ -593,6 +596,10 @@ packages:
   abbrev@4.0.0:
     resolution: {integrity: sha512-a1wflyaL0tHtJSmLSOVybYhy22vRih4eduhhrkcjgrWGnRfrZtovJ2FRjxuTtkkj47O/baf0R86QU5OuYpz8fA==}
     engines: {node: ^20.17.0 || >=22.9.0}
+
+  adm-zip@0.5.18:
+    resolution: {integrity: sha512-ufJnssQGbxzLNS1Ho9bCtX4rQKCCvoVuDLHoJyc3F9dOGDB4BkWs2Ci0kv53lqocAEQ/Cbi+I2XCsNYGqVYqng==}
+    engines: {node: '>=12.0'}
 
   agent-base@7.1.4:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
@@ -2198,6 +2205,8 @@ snapshots:
   '@xmldom/xmldom@0.8.13': {}
 
   abbrev@4.0.0: {}
+
+  adm-zip@0.5.18: {}
 
   agent-base@7.1.4: {}
 

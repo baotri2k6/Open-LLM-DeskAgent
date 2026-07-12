@@ -22,6 +22,8 @@ contextBridge.exposeInMainWorld("companion", {
   petSetSize: (scale: number) => ipcRenderer.invoke("pet:set-size", scale),
   broadcast: (event: string, data: any) => ipcRenderer.send("ai:broadcast", { event, data }),
   invoke: (ch: string, data: any) => ipcRenderer.invoke(ch, data),
+  showOpenDialog: (opts?: any) => ipcRenderer.invoke("dialog:open-file", opts),
+  deleteCharacter: (id: string) => ipcRenderer.invoke("character:delete", { id }),
   setIgnoreMouseEvents: (ignore: boolean, options: any) =>
     ipcRenderer.send("window:set-ignore-mouse-events", ignore, options),
   openCoding: (folderPath: string) => ipcRenderer.send("window:open-coding", folderPath),

@@ -455,7 +455,7 @@ function registerAiIpc(ipcMain, windows) {
     });
     ipcMain.handle("avatar:import-zip", async (_e, { path }) => {
         try {
-            const response = await requestJSON("POST", "/model/import", { file_path: path });
+            const response = await requestJSON("POST", "/model/import", { zip_path: path });
             return response;
         }
         catch (err) {
