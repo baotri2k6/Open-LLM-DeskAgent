@@ -761,7 +761,7 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
         if path == "/config":
             self._send_json({
                 "llm_provider":    config.get("llm.provider",              "ollama"),
-                "ollama_model":    config.get("llm.model",                 "qwen2.5:1.5b"),
+                "ollama_model":    config.get("llm.model",                 "llama3.2:3b"),
                 "gemini_key":      config.get("llm.gemini_api_key",        ""),
                 "gemini_model":    config.get("llm.gemini_model",          "gemini-2.5-flash"),
                 "openai_key":      config.get("llm.openai_api_key",        ""),
