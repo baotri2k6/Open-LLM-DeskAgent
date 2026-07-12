@@ -289,6 +289,12 @@ setTimeout(() => {
   );
   avatar.setState({ expression: "smile", motion: "idle" });
 }, 300);
+function updateAvatarOffset(x, y) {
+  const wrap = document.getElementById("avatarWrap");
+  if (wrap) {
+    wrap.style.transform = `translate(${x || 0}px, ${y || 0}px)`;
+  }
+}
 async function loadConfig() {
   try {
     const res = await window.companion.invoke("ai:get-config", {});
@@ -301,6 +307,9 @@ async function loadConfig() {
         }
       }
       if (sttSelect) sttSelect.value = res.stt_model || "base";
+      const posX = res.app?.avatarX || res.avatarX || 0;
+      const posY = res.app?.avatarY || res.avatarY || 0;
+      updateAvatarOffset(posX, posY);
     }
   } catch (err) {
     console.warn("[config] Failed to load initial configuration:", err);
@@ -380,3 +389,105 @@ if (sttSelect) {
   });
 }
 loadConfig();
+setTimeout(() => {
+  const loadingBox = document.getElementById("loadingBox");
+  if (loadingBox) loadingBox.classList.add("hidden");
+}, 1800);
+const btnToggleMenu = document.getElementById("btnToggleMenu");
+const controlPanel = document.getElementById("controlPanel");
+if (btnToggleMenu && controlPanel) {
+  btnToggleMenu.addEventListener("click", () => {
+    const isActive = controlPanel.classList.toggle("active");
+    if (isActive) {
+      btnToggleMenu.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>`;
+    } else {
+      btnToggleMenu.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>`;
+    }
+  });
+}
+const btnToggleMic = document.getElementById("btnToggleMic");
+const svgMicNormal = document.getElementById("svgMicNormal");
+const svgMicMuted = document.getElementById("svgMicMuted");
+if (btnToggleMic && svgMicNormal && svgMicMuted) {
+  let isMuted = true;
+  btnToggleMic.addEventListener("click", () => {
+    isMuted = !isMuted;
+    btnToggleMic.classList.toggle("active", !isMuted);
+    btnToggleMic.classList.toggle("muted", isMuted);
+    svgMicNormal.style.display = isMuted ? "none" : "block";
+    svgMicMuted.style.display = isMuted ? "block" : "none";
+    window.companion.invoke("voice:toggle-mute", { muted: isMuted }).catch(() => null);
+  });
+}
+const btnToggleChat = document.getElementById("btnToggleChat");
+const chatPanel = document.getElementById("chatPanel");
+const btnCloseChat = document.getElementById("btnCloseChat");
+if (btnToggleChat && chatPanel) {
+  btnToggleChat.addEventListener("click", () => {
+    const isHidden = chatPanel.style.display === "none" || chatPanel.style.display === "";
+    chatPanel.style.display = isHidden ? "flex" : "none";
+    btnToggleChat.classList.toggle("active", isHidden);
+  });
+}
+if (btnCloseChat && chatPanel) {
+  btnCloseChat.addEventListener("click", () => {
+    chatPanel.style.display = "none";
+    if (btnToggleChat) btnToggleChat.classList.remove("active");
+  });
+}
+const btnReloadAvatar = document.getElementById("btnReloadAvatar");
+if (btnReloadAvatar) {
+  btnReloadAvatar.addEventListener("click", () => {
+    btnReloadAvatar.classList.add("active");
+    const loadingBox = document.getElementById("loadingBox");
+    if (loadingBox) loadingBox.classList.remove("hidden");
+    setTimeout(() => {
+      window.location.reload();
+    }, 600);
+  });
+}
+const btnQuickSettings = document.getElementById("btnQuickSettings");
+if (btnQuickSettings) {
+  btnQuickSettings.addEventListener("click", () => {
+    window.companion.invoke("win:open-settings").catch(() => null);
+  });
+}
+const btnPinWindow = document.getElementById("btnPinWindow");
+if (btnPinWindow) {
+  let isPinned = true;
+  btnPinWindow.addEventListener("click", async () => {
+    isPinned = !isPinned;
+    btnPinWindow.classList.toggle("active", isPinned);
+    await window.companion.invoke("win:set-always-on-top", { alwaysOnTop: isPinned }).catch(() => null);
+  });
+}
+const btnHideAvatar = document.getElementById("btnHideAvatar");
+const avatarWrap = document.getElementById("avatarWrap");
+if (btnHideAvatar && avatarWrap) {
+  let isHidden = false;
+  btnHideAvatar.addEventListener("click", () => {
+    isHidden = !isHidden;
+    avatarWrap.style.opacity = isHidden ? "0" : "1";
+    avatarWrap.style.pointerEvents = isHidden ? "none" : "auto";
+    btnHideAvatar.classList.toggle("active", isHidden);
+  });
+}
+const btnQuitApp = document.getElementById("btnQuitApp");
+if (btnQuitApp) {
+  btnQuitApp.addEventListener("click", () => {
+    if (confirm("Do you want to close DeskAgent?")) {
+      window.companion.invoke("win:quit").catch(() => {
+        window.close();
+      });
+    }
+  });
+}
+window.companion.on("config:updated", ({ key, value }) => {
+  if (key === "app.avatarX" || key === "app.avatarY") {
+    window.companion.invoke("ai:get-config", {}).then((res) => {
+      const posX = res.app?.avatarX || res.avatarX || 0;
+      const posY = res.app?.avatarY || res.avatarY || 0;
+      updateAvatarOffset(posX, posY);
+    });
+  }
+});

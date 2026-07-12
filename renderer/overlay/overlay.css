@@ -1,8 +1,8 @@
 :root {
   color-scheme: dark;
   font-family: Inter, "Segoe UI", Arial, sans-serif;
-  background: #101418;
-  color: #eef3f8;
+  background: transparent !important;
+  user-select: none;
 }
 
 * {
@@ -11,134 +11,370 @@
 
 body {
   margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(79, 171, 255, 0.18), transparent 34%),
-    linear-gradient(180deg, #101418 0%, #161b20 100%);
-}
-
-button,
-input,
-select {
-  font: inherit;
-}
-
-.app-shell {
-  display: grid;
-  grid-template-rows: minmax(260px, 42vh) minmax(0, 1fr);
-  min-height: 100vh;
-}
-
-.avatar-stage {
-  position: relative;
-  display: grid;
-  place-items: end center;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  background: transparent !important;
   overflow: hidden;
-  padding: 20px 18px 0;
 }
 
-.status-pill {
+/* Base App Shell Container */
+.overlay-app-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: transparent !important;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+/* ==========================================
+   WIDGET 1: LOADING BOX (Screenshot 1)
+   ========================================== */
+.loading-overlay-box {
   position: absolute;
-  top: 14px;
-  left: 14px;
-  padding: 6px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  background: rgba(8, 11, 14, 0.72);
-  color: #aeb9c5;
-  font-size: 12px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(243, 244, 246, 0.72);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(16px);
+  padding: 14px 28px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  z-index: 1000;
+  color: #1f2937;
+  font-size: 13.5px;
+  font-weight: 600;
+  animation: pulse 1.8s infinite ease-in-out;
+}
+.loading-overlay-box.hidden {
+  display: none !important;
+}
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(31, 41, 55, 0.15);
+  border-top-color: #1f2937;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.95; }
+  50% { opacity: 0.75; }
 }
 
-.status-pill[data-status="ok"] {
-  color: #9ce6bd;
+/* ==========================================
+   WIDGET 2: FLOATING BUTTONS & STACKS
+   ========================================== */
+.floating-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(12px);
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  transition: all 0.15s ease;
+  outline: none;
+}
+.floating-btn:hover {
+  background: rgba(255, 255, 255, 0.88);
+  color: #1f2937;
+  transform: scale(1.05);
+}
+.floating-btn:active {
+  transform: scale(0.96);
+}
+
+/* Wifi Button (Left side) */
+.wifi-btn {
+  position: absolute;
+  left: 20px;
+  top: 140px;
+  z-index: 50;
+}
+.wifi-btn.active {
+  color: #10b981; /* Green active status */
+}
+.wifi-btn.offline {
+  color: #ef4444; /* Red offline status */
+}
+
+/* Stack of control buttons (Right side, stacked vertically) */
+.right-floating-stack {
+  position: absolute;
+  right: 20px;
+  bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 50;
+}
+
+/* Mic muted button style */
+.mic-btn.muted {
+  color: #4b5563;
+}
+.mic-btn.muted svg {
+  opacity: 0.8;
+}
+.mic-btn.active {
+  color: #2563eb;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* Drag indicator handle */
+.drag-btn {
+  cursor: move;
+  -webkit-app-region: drag; /* Allows dragging in Electron */
+}
+
+/* ==========================================
+   WIDGET 4: FLOATING GLASS CONTROL PANEL (Screenshot 2)
+   ========================================== */
+.floating-control-panel {
+  display: none; /* Toggled via active class */
+  position: absolute;
+  right: 20px;
+  bottom: 160px; /* Sits directly above the stack */
+  width: 172px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(24px) saturate(110%);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  padding: 10px;
+  z-index: 100;
+  flex-direction: column;
+  gap: 8px;
+  transform-origin: bottom right;
+  animation: widgetOpen 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.floating-control-panel.active {
+  display: flex;
+}
+@keyframes widgetOpen {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Sign in row */
+.panel-header-signin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(37, 99, 235, 0.06);
+  border: 1px solid rgba(37, 99, 235, 0.1);
+  padding: 6px 12px;
+  border-radius: 8px;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.panel-header-signin:hover {
+  background: rgba(37, 99, 235, 0.12);
+}
+
+/* 6 Grid items buttons (3 columns, 2 rows) */
+.panel-grid-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.grid-opt-btn {
+  aspect-ratio: 1;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.grid-opt-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #111827;
+}
+.grid-opt-btn.active {
+  background: rgba(37, 99, 235, 0.08);
+  color: #2563eb;
+}
+
+/* Footer Pin, Hide, Close row */
+.panel-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding-top: 8px;
+  margin-top: 4px;
+}
+.footer-action-icon-btn {
+  background: transparent;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.footer-action-icon-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #1f2937;
+}
+#btnQuitApp:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* ==========================================
+   AVATAR STAGE
+   ========================================== */
+.avatar-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: none; /* Make overlay click-through */
+  z-index: 10;
 }
 
 .avatar-wrap {
   position: relative;
-  width: min(76vw, 290px);
-  aspect-ratio: 0.72;
-  display: grid;
-  place-items: end center;
-  transform-origin: bottom center;
-  animation: breathe 4.8s ease-in-out infinite;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: auto; /* Re-enable pointer events for the model */
 }
 
-.avatar-wrap[data-motion="nod"] {
-  animation: nod 0.8s ease-in-out 1, breathe 4.8s ease-in-out infinite 0.8s;
-}
-
-.avatar-wrap[data-motion="shake"] {
-  animation: shake 0.5s ease-in-out 1, breathe 4.8s ease-in-out infinite 0.5s;
-}
-
-.avatar-wrap[data-motion="thinking"],
-.avatar-wrap[data-motion="look_side"] {
-  transform: rotate(-2deg) translateX(-4px);
-}
-
-.avatar-image {
-  position: relative;
-  z-index: 2;
-  display: block;
-  max-width: 100%;
-  max-height: 100%;
+/* The model images / canvas */
+.avatar-image, canvas {
+  max-width: 90%;
+  max-height: 94%;
   object-fit: contain;
-  filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.42));
-  user-select: none;
-  pointer-events: none;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.12));
+  -webkit-user-drag: none;
 }
 
-.expression-light {
-  display: none !important;
+/* ==========================================
+   CHAT PANEL (Toggled dynamically)
+   ========================================== */
+.chat-panel {
+  position: absolute;
+  left: 20px;
+  bottom: 24px;
+  width: 320px;
+  height: 380px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  z-index: 200;
+  overflow: hidden;
+  animation: widgetOpen 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.expression-light[data-expression="smile"],
-.expression-light[data-expression="happy"] {
-  background: rgba(117, 231, 172, 0.26);
+.chat-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.chat-header h1 {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+.chat-header p {
+  font-size: 10.5px;
+  color: #6b7280;
+  margin: 0;
+}
+.close-chat-btn {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+.close-chat-btn:hover {
+  color: #1f2937;
 }
 
-.expression-light[data-expression="focused"] {
-  background: rgba(255, 207, 117, 0.24);
+.chat-log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.expression-light[data-expression="sad"] {
-  background: rgba(118, 146, 255, 0.22);
+.chat-form {
+  padding: 8px 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-
-.expression-light[data-expression="surprised"] {
-  background: rgba(255, 143, 143, 0.24);
+.chat-form input {
+  flex: 1;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: 12.5px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #1f2937;
+  outline: none;
 }
-
-@keyframes breathe {
-  0%,
-  100% {
-    transform: translateY(0) scale(1);
-  }
-  50% {
-    transform: translateY(-5px) scale(1.015);
-  }
+.chat-form button[type="submit"] {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
 }
-
-@keyframes nod {
-  0%,
-  100% {
-    transform: rotate(0deg);
-  }
-  45% {
-    transform: rotate(3deg) translateY(4px);
-  }
+.chat-form button[type="submit"]:hover {
+  background: #1d4ed8;
 }
-
-@keyframes shake {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(-8px);
-  }
-  75% {
-    transform: translateX(8px);
-  }
+.attach-btn {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #6b7280;
 }

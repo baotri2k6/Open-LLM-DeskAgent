@@ -884,6 +884,24 @@
                   <option value="1.0" selected>1.0</option>
                 </select>
               </div>
+
+              <!-- Position X -->
+              <div class="acc-row" style="margin-top: 12px;">
+                <label class="acc-label">Position X</label>
+                <div class="slider-container" style="flex: 1">
+                  <input type="range" id="sliderAvatarX" min="-300" max="300" value="0" step="1" />
+                  <span id="lblAvatarXVal" class="slider-bubble">0px</span>
+                </div>
+              </div>
+
+              <!-- Position Y -->
+              <div class="acc-row" style="margin-top: 12px;">
+                <label class="acc-label">Position Y</label>
+                <div class="slider-container" style="flex: 1">
+                  <input type="range" id="sliderAvatarY" min="-300" max="300" value="0" step="1" />
+                  <span id="lblAvatarYVal" class="slider-bubble">0px</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -895,36 +913,138 @@
               <svg class="accordion-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             <div class="accordion-body">
+              
+              <!-- SECTION: Scene Model Position -->
+              <div class="acc-subsection-title" style="font-size:11.5px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:0.5px; margin: 4px 0 8px;">Scene & Model Position</div>
               <div class="acc-row">
-                <label class="acc-label">Camera Height</label>
+                <label class="acc-label">Position X</label>
                 <div class="slider-container" style="flex:1;">
-                  <input type="range" id="slider3DCameraHeight" min="0" max="200" value="100" />
-                  <span id="lbl3DCameraHeightVal" class="slider-bubble">1.00m</span>
+                  <input type="range" id="slider3DPosX" min="-100" max="100" value="0" step="1" />
+                  <span id="lbl3DPosXVal" class="slider-bubble">0.0000</span>
                 </div>
               </div>
               <div class="acc-row">
-                <label class="acc-label">Camera Zoom</label>
+                <label class="acc-label">Position Y</label>
                 <div class="slider-container" style="flex:1;">
-                  <input type="range" id="slider3DCameraZoom" min="50" max="300" value="100" />
-                  <span id="lbl3DCameraZoomVal" class="slider-bubble">1.00x</span>
+                  <input type="range" id="slider3DPosY" min="-100" max="100" value="0" step="1" />
+                  <span id="lbl3DPosYVal" class="slider-bubble">0.0000</span>
                 </div>
               </div>
               <div class="acc-row">
-                <label class="acc-label">Environment Light</label>
+                <label class="acc-label">Position Z</label>
                 <div class="slider-container" style="flex:1;">
-                  <input type="range" id="slider3DLight" min="0" max="200" value="100" />
-                  <span id="lbl3DLightVal" class="slider-bubble">100%</span>
+                  <input type="range" id="slider3DPosZ" min="-100" max="100" value="0" step="1" />
+                  <span id="lbl3DPosZVal" class="slider-bubble">0.0000</span>
                 </div>
               </div>
-              <div class="acc-row" style="align-items: flex-start; flex-direction: column; gap: 8px;">
-                <label class="acc-label" style="min-width: unset;">Webcam Face Tracking</label>
-                <div style="display: flex; gap: 8px; width: 100%;">
-                  <select id="webcamSelect" style="flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--r-sm); font-family: var(--font); font-size: 12px; background: var(--surface); color: var(--text-1); outline: none;">
-                    <option value="default">Default Webcam (USB Camera)</option>
-                    <option value="obs">OBS Virtual Camera</option>
-                  </select>
-                  <button class="action-btn" id="btnStartTracking" type="button" style="padding: 5px 12px; font-size: 12px;">Start Tracking</button>
+
+              <!-- FOV, Camera Distance, Rotation -->
+              <div class="acc-row">
+                <label class="acc-label">FOV (degree)</label>
+                <div class="slider-container" style="flex:1;">
+                  <input type="range" id="slider3DFov" min="10" max="120" value="40" step="1" />
+                  <span id="lbl3DFovVal" class="slider-bubble">40</span>
                 </div>
+              </div>
+              <div class="acc-row">
+                <label class="acc-label">Camera distance</label>
+                <div class="slider-container" style="flex:1;">
+                  <input type="range" id="slider3DDist" min="50" max="500" value="145" step="1" />
+                  <span id="lbl3DDistVal" class="slider-bubble">1.4513</span>
+                </div>
+              </div>
+              <div class="acc-row">
+                <label class="acc-label">Rotation (Y-axis)</label>
+                <div class="slider-container" style="flex:1;">
+                  <input type="range" id="slider3DRotY" min="-180" max="180" value="0" step="1" />
+                  <span id="lbl3DRotYVal" class="slider-bubble">0</span>
+                </div>
+              </div>
+
+              <!-- Looking at -->
+              <div class="acc-row">
+                <label class="acc-label">Looking at</label>
+                <select id="select3DLookAt" style="flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--r-sm); font-family: var(--font); font-size: 12px; background: var(--surface); color: var(--text-1); outline: none;">
+                  <option value="camera">Camera</option>
+                  <option value="mouse" selected>Mouse</option>
+                  <option value="disabled">Disabled</option>
+                </select>
+              </div>
+
+              <!-- SECTION: Directional Light -->
+              <div class="acc-subsection-title" style="font-size:11.5px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:0.5px; margin: 14px 0 8px;">Directional Light</div>
+              <div class="acc-row">
+                <label class="acc-label">Light Rot - X</label>
+                <div class="slider-container" style="flex:1;">
+                  <input type="range" id="slider3DLightRotX" min="-180" max="180" value="0" step="1" />
+                  <span id="lbl3DLightRotXVal" class="slider-bubble">0</span>
+                </div>
+              </div>
+              <div class="acc-row">
+                <label class="acc-label">Light Rot - Y</label>
+                <div class="slider-container" style="flex:1;">
+                  <input type="range" id="slider3DLightRotY" min="-180" max="180" value="0" step="1" />
+                  <span id="lbl3DLightRotYVal" class="slider-bubble">0</span>
+                </div>
+              </div>
+              <div class="acc-row" style="justify-content: space-between;">
+                <label class="acc-label">Light Color</label>
+                <input type="color" id="cp3DLightColor" value="#fffbf5" style="border: 1px solid var(--border); border-radius: 4px; width: 42px; height: 26px; cursor: pointer; background: transparent; padding: 0;" />
+              </div>
+              <div class="acc-row">
+                <label class="acc-label">Light Intensity</label>
+                <div class="slider-container" style="flex:1;">
+                  <input type="range" id="slider3DLightIntensity" min="0" max="500" value="202" step="1" />
+                  <span id="lbl3DLightIntensityVal" class="slider-bubble">2.02</span>
+                </div>
+              </div>
+
+              <!-- SECTION: Ambient & Environment -->
+              <div class="acc-subsection-title" style="font-size:11.5px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:0.5px; margin: 14px 0 8px;">Ambient & Environment</div>
+              <div class="acc-row">
+                <label class="acc-label">Ambient Intensity</label>
+                <div class="slider-container" style="flex:1;">
+                  <input type="range" id="slider3DAmbientIntensity" min="0" max="200" value="60" step="1" />
+                  <span id="lbl3DAmbientIntensityVal" class="slider-bubble">0.60</span>
+                </div>
+              </div>
+              <div class="acc-row" style="justify-content: space-between;">
+                <label class="acc-label">Ambient Color</label>
+                <input type="color" id="cp3DAmbientColor" value="#ffffff" style="border: 1px solid var(--border); border-radius: 4px; width: 42px; height: 26px; cursor: pointer; background: transparent; padding: 0;" />
+              </div>
+              <div class="acc-row">
+                <label class="acc-label">Environment</label>
+                <select id="select3DEnvironment" style="flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--r-sm); font-family: var(--font); font-size: 12px; background: var(--surface); color: var(--text-1); outline: none;">
+                  <option value="hemisphere" selected>Hemisphere</option>
+                  <option value="skybox">SkyBox</option>
+                </select>
+              </div>
+              <div class="acc-row">
+                <label class="acc-label">Hemisphere Intensity</label>
+                <div class="slider-container" style="flex:1;">
+                  <input type="range" id="slider3DHemiIntensity" min="0" max="200" value="40" step="1" />
+                  <span id="lbl3DHemiIntensityVal" class="slider-bubble">0.40</span>
+                </div>
+              </div>
+              <div class="acc-row" style="justify-content: space-between;">
+                <label class="acc-label">Hemi Sky Color</label>
+                <input type="color" id="cp3DHemiSkyColor" value="#ffffff" style="border: 1px solid var(--border); border-radius: 4px; width: 42px; height: 26px; cursor: pointer; background: transparent; padding: 0;" />
+              </div>
+              <div class="acc-row" style="justify-content: space-between;">
+                <label class="acc-label">Hemi Ground Color</label>
+                <input type="color" id="cp3DHemiGroundColor" value="#222222" style="border: 1px solid var(--border); border-radius: 4px; width: 42px; height: 26px; cursor: pointer; background: transparent; padding: 0;" />
+              </div>
+
+              <!-- SECTION: Model Size Info -->
+              <div class="acc-subsection-title" style="font-size:11.5px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:0.5px; margin: 18px 0 8px;">Model Size Information</div>
+              <div style="background: var(--bg); border: 1px dashed var(--border); border-radius: 8px; padding: 10px; font-size: 11.5px; color: var(--text-2); display: flex; flex-direction: column; gap: 6px; font-family: monospace;">
+                <div style="display:flex; justify-content:space-between;"><span>Width (X):</span><span style="font-weight: 700; color: var(--text-1);">1.3447</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>Height (Y):</span><span style="font-weight: 700; color: var(--text-1);">1.5674</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>Depth (Z):</span><span style="font-weight: 700; color: var(--text-1);">0.5019</span></div>
+              </div>
+
+              <div class="vrm-tips-box" style="margin-top: 12px; padding: 8px 10px; background: rgba(37,99,235,0.04); border-left: 3px solid #2563eb; font-size: 11px; color: var(--text-2); line-height: 1.4; border-radius: 0 4px 4px 0;">
+                <strong>Tips!</strong> Edit the initial position the VRM model. Coordinate axes are visualised.
               </div>
             </div>
           </div>
@@ -933,141 +1053,207 @@
 
           <!-- Accordion: Animation -->
           <div class="accordion" id="accordionAnimation">
-            <button
-              class="accordion-hdr"
-              type="button"
-              aria-expanded="false"
-              data-accordion="accordionAnimation"
-            >
-              <svg
-                class="accordion-icon-svg"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <circle cx="12" cy="12" r="3" />
-                <path
-                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
-                />
-              </svg>
+            <button class="accordion-hdr" type="button" aria-expanded="false" data-accordion="accordionAnimation">
+              <svg class="accordion-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
               <span class="accordion-label">Animation</span>
-              <svg
-                class="accordion-chevron"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.2"
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
+              <svg class="accordion-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             <div class="accordion-body">
-              <div class="acc-row">
-                <label class="acc-label">Idle loop</label
-                ><span class="acc-val">Auto (random nod / look side)</span>
+              <div class="form-group-item form-row-between">
+                <div class="form-item-info">
+                  <span class="form-item-title">Enable mouse tracking</span>
+                  <span class="form-item-desc">Look at the cursor while it is moving. Idle eye movement resumes after the cursor stops.</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="chkMouseTracking" checked />
+                  <span class="toggle-slider"></span>
+                </label>
               </div>
-              <div class="acc-row">
-                <label class="acc-label">Idle interval</label
-                ><span class="acc-val">4 – 8 s</span>
+
+              <div class="acc-row" style="margin-top: 10px;">
+                <label class="acc-label">Eye offset (%)</label>
+                <div class="slider-container" style="flex: 1">
+                  <input type="range" id="sliderEyeOffset" min="0" max="100" value="0" />
+                  <span id="lblEyeOffsetVal" class="slider-bubble">0.00%</span>
+                </div>
+              </div>
+
+              <div class="form-group-item form-row-between" style="margin-top: 10px;">
+                <div class="form-item-info">
+                  <span class="form-item-title">Idle eye movement</span>
+                  <span class="form-item-desc">Randomly look around when there is no active cursor focus.</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="chkIdleEyeMovement" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="form-group-item form-row-between" style="margin-top: 10px;">
+                <div class="form-item-info">
+                  <span class="form-item-title">Enable blink</span>
+                  <span class="form-item-desc">Let the model blink.</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="chkBlink" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="acc-row" style="margin-top: 10px;">
+                <label class="acc-label">Blink mode</label>
+                <select id="selectBlinkMode" style="flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--r-sm); font-family: var(--font); font-size: 12px; background: var(--surface); color: var(--text-1); outline: none;">
+                  <option value="auto">Auto</option>
+                  <option value="force">Force</option>
+                </select>
+              </div>
+
+              <div class="acc-row" style="margin-top: 10px;">
+                <label class="acc-label">Idle animation</label>
+                <select id="selectIdleAnimation" style="flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--r-sm); font-family: var(--font); font-size: 12px; background: var(--surface); color: var(--text-1); outline: none;">
+                  <option value="idle">Default Idle</option>
+                  <option value="breath">Breathing</option>
+                </select>
               </div>
             </div>
           </div>
 
           <!-- Accordion: Model Parameters -->
           <div class="accordion" id="accordionParams">
-            <button
-              class="accordion-hdr"
-              type="button"
-              aria-expanded="false"
-              data-accordion="accordionParams"
-            >
-              <svg
-                class="accordion-icon-svg"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <circle cx="12" cy="12" r="3" />
-                <path
-                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
-                />
-              </svg>
+            <button class="accordion-hdr" type="button" aria-expanded="false" data-accordion="accordionParams">
+              <svg class="accordion-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-9m3 10H4m10 0h6M4 7h2m0 0v10M20 7v10"/></svg>
               <span class="accordion-label">Model Parameters</span>
-              <svg
-                class="accordion-chevron"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.2"
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
+              <svg class="accordion-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             <div class="accordion-body">
+              
               <div class="acc-row">
-                <label class="acc-label">Renderer</label
-                ><span class="acc-val">pixi-live2d-display (Cubism 4)</span>
+                <label class="acc-label">Render scale</label>
+                <div class="slider-container" style="flex: 1">
+                  <input type="range" id="sliderRenderScale" min="50" max="300" value="200" />
+                  <span id="lblRenderScaleVal" class="slider-bubble">2.00x</span>
+                </div>
+              </div>
+
+              <div class="acc-row">
+                <label class="acc-label">FPS Limit</label>
+                <div class="segment-control" id="fpsLimitSegment" style="display: flex; gap: 4px; background: var(--bg); padding: 2px; border-radius: 6px; border: 1px solid var(--border); flex: 1;">
+                  <button class="segment-btn active" data-value="30" type="button" style="flex: 1; border: none; padding: 4px 8px; font-size: 11px; font-family: var(--font); cursor: pointer; border-radius: 4px; background: transparent; font-weight: 600; color: var(--text-1);">30</button>
+                  <button class="segment-btn" data-value="60" type="button" style="flex: 1; border: none; padding: 4px 8px; font-size: 11px; font-family: var(--font); cursor: pointer; border-radius: 4px; background: transparent; font-weight: 600; color: var(--text-1);">60</button>
+                  <button class="segment-btn" data-value="infinite" type="button" style="flex: 1; border: none; padding: 4px 8px; font-size: 11px; font-family: var(--font); cursor: pointer; border-radius: 4px; background: transparent; font-weight: 600; color: var(--text-1);">∞</button>
+                </div>
+              </div>
+
+              <div class="form-group-item form-row-between" style="margin-top: 10px;">
+                <div class="form-item-info">
+                  <span class="form-item-title">Drop shadow</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="chkDropShadow" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div style="display: flex; gap: 8px; margin-top: 12px;">
+                <button class="action-btn" id="btnResetParams" type="button" style="flex: 1; font-size: 11.5px; padding: 6px;">Reset Parameters</button>
+                <button class="action-btn" id="btnClearCache" type="button" style="flex: 1; font-size: 11.5px; padding: 6px; background: var(--bg); border: 1px solid var(--border); color: var(--text-2);">Clear Cache</button>
+              </div>
+
+              <!-- Subsection: Head Rotation -->
+              <div class="acc-subsection-title" style="font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; margin: 18px 0 8px;">Head Rotation</div>
+              <div class="acc-row">
+                <label class="acc-label">Angle X</label>
+                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamAngleX" min="-30" max="30" value="0" /><span id="lblParamAngleXVal" class="slider-bubble">0</span></div>
               </div>
               <div class="acc-row">
-                <label class="acc-label">Click-through</label
-                ><span class="acc-val">Alpha pixel test (WebGL)</span>
+                <label class="acc-label">Angle Y</label>
+                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamAngleY" min="-30" max="30" value="0" /><span id="lblParamAngleYVal" class="slider-bubble">0</span></div>
               </div>
+              <div class="acc-row">
+                <label class="acc-label">Angle Z</label>
+                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamAngleZ" min="-30" max="30" value="0" /><span id="lblParamAngleZVal" class="slider-bubble">0</span></div>
+              </div>
+
+              <!-- Subsection: Eyes -->
+              <div class="acc-subsection-title" style="font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; margin: 14px 0 8px;">Eyes</div>
+              <div class="acc-row">
+                <label class="acc-label">Left Eye Open</label>
+                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamEyeLOpen" min="0" max="100" value="100" /><span id="lblParamEyeLOpenVal" class="slider-bubble">1.00</span></div>
+              </div>
+              <div class="acc-row">
+                <label class="acc-label">Right Eye Open</label>
+                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamEyeROpen" min="0" max="100" value="100" /><span id="lblParamEyeROpenVal" class="slider-bubble">1.00</span></div>
+              </div>
+              <div class="acc-row">
+                <label class="acc-label">Left Eye Smile</label>
+                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamEyeLSmile" min="0" max="100" value="0" /><span id="lblParamEyeLSmileVal" class="slider-bubble">0.00</span></div>
+              </div>
+              <div class="acc-row">
+                <label class="acc-label">Right Eye Smile</label>
+                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamEyeRSmile" min="0" max="100" value="0" /><span id="lblParamEyeRSmileVal" class="slider-bubble">0.00</span></div>
+              </div>
+
+              <!-- Subsection: Eyebrows -->
+              <div class="acc-subsection-title" style="font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; margin: 14px 0 8px;">Eyebrows</div>
+              <div class="acc-row">
+                <label class="acc-label">Left Eyebrow X</label>
+                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamBrowLX" min="-100" max="100" value="0" /><span id="lblParamBrowLXVal" class="slider-bubble">0.00</span></div>
+              </div>
+              <div class="acc-row">
+                <label class="acc-label">Right Eyebrow X</label>
+                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamBrowRX" min="-100" max="100" value="0" /><span id="lblParamBrowRXVal" class="slider-bubble">0.00</span></div>
+              </div>
+              <div class="acc-row">
+                <label class="acc-label">Left Eyebrow Y</label>
+                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamBrowLY" min="-100" max="100" value="0" /><span id="lblParamBrowLYVal" class="slider-bubble">0.00</span></div>
+              </div>
+              <div class="acc-row">
+                <label class="acc-label">Right Eyebrow Y</label>
+                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamBrowRY" min="-100" max="100" value="0" /><span id="lblParamBrowRYVal" class="slider-bubble">0.00</span></div>
+              </div>
+
+              <!-- Subsection: Mouth -->
+              <div class="acc-subsection-title" style="font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; margin: 14px 0 8px;">Mouth</div>
+              <div class="acc-row">
+                <label class="acc-label">Mouth Open</label>
+                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamMouthOpen" min="0" max="100" value="0" /><span id="lblParamMouthOpenVal" class="slider-bubble">0.00</span></div>
+              </div>
+              <div class="acc-row">
+                <label class="acc-label">Mouth Form</label>
+                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamMouthForm" min="-100" max="100" value="0" /><span id="lblParamMouthFormVal" class="slider-bubble">0.00</span></div>
+              </div>
+
+              <!-- Subsection: Body & Breath -->
+              <div class="acc-subsection-title" style="font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; margin: 14px 0 8px;">Body & Physics</div>
+              <div class="acc-row">
+                <label class="acc-label">Body Rot X</label>
+                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamBodyX" min="-10" max="10" value="0" /><span id="lblParamBodyXVal" class="slider-bubble">0</span></div>
+              </div>
+              <div class="acc-row">
+                <label class="acc-label">Breath</label>
+                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamBreath" min="0" max="100" value="0" /><span id="lblParamBreathVal" class="slider-bubble">0.00</span></div>
+              </div>
+
             </div>
           </div>
 
           <!-- Accordion: Expressions -->
           <div class="accordion" id="accordionExpressions">
-            <button
-              class="accordion-hdr"
-              type="button"
-              aria-expanded="false"
-              data-accordion="accordionExpressions"
-            >
-              <svg
-                class="accordion-icon-svg"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <circle cx="12" cy="12" r="3" />
-                <path
-                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
-                />
-              </svg>
+            <button class="accordion-hdr" type="button" aria-expanded="false" data-accordion="accordionExpressions">
+              <svg class="accordion-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82a2 2 0 0 1-2.83 2.83"/></svg>
               <span class="accordion-label">Expressions</span>
-              <svg
-                class="accordion-chevron"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.2"
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
+              <svg class="accordion-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             <div class="accordion-body">
-              <div class="acc-row">
-                <label class="acc-label">Driven by</label
-                ><span class="acc-val">LLM emotion tags</span>
-              </div>
-              <div class="acc-row">
-                <label class="acc-label">Fallback</label
-                ><span class="acc-val">CSS animation (if no .exp3.json)</span>
+              <div class="form-group-item form-row-between">
+                <div class="form-item-info">
+                  <span class="form-item-title">Expression system</span>
+                  <span class="form-item-desc">SDK expression manager and eye blink are preserved when disabled.</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="chkExpressionSystem" checked />
+                  <span class="toggle-slider"></span>
+                </label>
               </div>
             </div>
           </div>

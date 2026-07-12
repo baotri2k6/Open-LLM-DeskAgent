@@ -73,6 +73,10 @@ document.querySelectorAll(".accordion-hdr").forEach((hdr) => {
 });
 const slScale = document.getElementById("sliderAvatarScale");
 const slLbl = document.getElementById("lblAvatarScaleVal");
+const slX = document.getElementById("sliderAvatarX");
+const slXLbl = document.getElementById("lblAvatarXVal");
+const slY = document.getElementById("sliderAvatarY");
+const slYLbl = document.getElementById("lblAvatarYVal");
 if (slScale && slLbl) {
   setTimeout(async () => {
     try {
@@ -82,6 +86,16 @@ if (slScale && slLbl) {
         if (!isNaN(val) && val > 0) {
           slScale.value = Math.round(val * 100).toString();
           slLbl.textContent = val.toFixed(2) + "x";
+        }
+        if (slX && slXLbl) {
+          const posX = parseInt(cfg?.app?.avatarX || "0");
+          slX.value = posX.toString();
+          slXLbl.textContent = posX + "px";
+        }
+        if (slY && slYLbl) {
+          const posY = parseInt(cfg?.app?.avatarY || "0");
+          slY.value = posY.toString();
+          slYLbl.textContent = posY + "px";
         }
         const activeModelPath = cfg?.app?.avatarModel || cfg?.avatar_model || "";
         updateModelTypeLayout(activeModelPath);
@@ -100,6 +114,30 @@ if (slScale && slLbl) {
       });
     }
   });
+  if (slX && slXLbl) {
+    slX.addEventListener("input", async () => {
+      const val = slX.value;
+      slXLbl.textContent = val + "px";
+      if (window.companion) {
+        await window.companion.invoke("ai:update-config", {
+          key: "app.avatarX",
+          value: val
+        });
+      }
+    });
+  }
+  if (slY && slYLbl) {
+    slY.addEventListener("input", async () => {
+      const val = slY.value;
+      slYLbl.textContent = val + "px";
+      if (window.companion) {
+        await window.companion.invoke("ai:update-config", {
+          key: "app.avatarY",
+          value: val
+        });
+      }
+    });
+  }
 }
 function showImportResult(type, msg) {
   const el = document.getElementById("importResult");
@@ -589,58 +627,344 @@ if (window.companion) {
       showStatus("Connection auth token updated");
     });
   }
-  const slider3DHeight = document.getElementById("slider3DCameraHeight");
-  const lbl3DHeight = document.getElementById("lbl3DCameraHeightVal");
-  if (slider3DHeight && lbl3DHeight) {
-    slider3DHeight.addEventListener("input", async () => {
-      const val = (parseInt(slider3DHeight.value) / 100).toFixed(2);
-      lbl3DHeight.textContent = val + "m";
+  setTimeout(async () => {
+    try {
+      if (window.companion) {
+        const cfg = await window.companion.invoke("ai:get-config", {});
+        const bindVal = (id, lblId, val, divisor = 1) => {
+          const el = document.getElementById(id);
+          const lbl = document.getElementById(lblId);
+          if (el && val !== void 0) {
+            const num = parseFloat(val);
+            el.value = Math.round(num * divisor).toString();
+            if (lbl) {
+              if (divisor === 1e4 || divisor === 100) {
+                lbl.textContent = num.toFixed(4);
+              } else {
+                lbl.textContent = num.toString();
+              }
+            }
+          }
+        };
+        const bindSelect = (id, val) => {
+          const el = document.getElementById(id);
+          if (el && val !== void 0) el.value = val;
+        };
+        const bindColor = (id, val) => {
+          const el = document.getElementById(id);
+          if (el && val !== void 0) {
+            el.value = val.slice(0, 7);
+          }
+        };
+        const config3d = cfg?.["3d"] || {};
+        bindVal("slider3DPosX", "lbl3DPosXVal", config3d.pos_x ?? "0.0000", 1e4);
+        bindVal("slider3DPosY", "lbl3DPosYVal", config3d.pos_y ?? "0.0000", 1e4);
+        bindVal("slider3DPosZ", "lbl3DPosZVal", config3d.pos_z ?? "0.0000", 1e4);
+        bindVal("slider3DFov", "lbl3DFovVal", config3d.fov ?? "40", 1);
+        bindVal("slider3DDist", "lbl3DDistVal", config3d.distance ?? "1.4513", 100);
+        bindVal("slider3DRotY", "lbl3DRotYVal", config3d.rotation_y ?? "0", 1);
+        bindSelect("select3DLookAt", config3d.look_at ?? "mouse");
+        bindVal("slider3DLightRotX", "lbl3DLightRotXVal", config3d.light_rot_x ?? "0", 1);
+        bindVal("slider3DLightRotY", "lbl3DLightRotYVal", config3d.light_rot_y ?? "0", 1);
+        bindColor("cp3DLightColor", config3d.light_color ?? "#fffbf5ff");
+        bindVal("slider3DLightIntensity", "lbl3DLightIntensityVal", config3d.light_intensity ?? "2.02", 100);
+        bindVal("slider3DAmbientIntensity", "lbl3DAmbientIntensityVal", config3d.ambient_intensity ?? "0.60", 100);
+        bindColor("cp3DAmbientColor", config3d.ambient_color ?? "#ffffffff");
+        bindSelect("select3DEnvironment", config3d.environment ?? "hemisphere");
+        bindVal("slider3DHemiIntensity", "lbl3DHemiIntensityVal", config3d.hemi_intensity ?? "0.40", 100);
+        bindColor("cp3DHemiSkyColor", config3d.hemi_sky_color ?? "#ffffffff");
+        bindColor("cp3DHemiGroundColor", config3d.hemi_ground_color ?? "#222222ff");
+      }
+    } catch (err) {
+      console.error("[settings] Init 3d config error:", err);
+    }
+  }, 200);
+  const setup3DListener = (id, lblId, configKey, factor = 1) => {
+    const el = document.getElementById(id);
+    const lbl = document.getElementById(lblId);
+    if (el) {
+      el.addEventListener("input", async () => {
+        const raw = parseFloat(el.value);
+        const val = (raw / factor).toFixed(4);
+        if (lbl) {
+          if (factor === 1) {
+            lbl.textContent = Math.round(raw).toString();
+          } else {
+            lbl.textContent = parseFloat(val).toFixed(4);
+          }
+        }
+        await window.companion.invoke("ai:update-config", {
+          key: configKey,
+          value: val
+        });
+      });
+    }
+  };
+  const setup3DColorListener = (id, configKey) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("change", async () => {
+        await window.companion.invoke("ai:update-config", {
+          key: configKey,
+          value: el.value + "ff"
+          // append standard alpha
+        });
+      });
+    }
+  };
+  const setup3DSelectListener = (id, configKey) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("change", async () => {
+        await window.companion.invoke("ai:update-config", {
+          key: configKey,
+          value: el.value
+        });
+      });
+    }
+  };
+  setup3DListener("slider3DPosX", "lbl3DPosXVal", "3d.pos_x", 1e4);
+  setup3DListener("slider3DPosY", "lbl3DPosYVal", "3d.pos_y", 1e4);
+  setup3DListener("slider3DPosZ", "lbl3DPosZVal", "3d.pos_z", 1e4);
+  setup3DListener("slider3DFov", "lbl3DFovVal", "3d.fov", 1);
+  setup3DListener("slider3DDist", "lbl3DDistVal", "3d.distance", 100);
+  setup3DListener("slider3DRotY", "lbl3DRotYVal", "3d.rotation_y", 1);
+  setup3DSelectListener("select3DLookAt", "3d.look_at");
+  setup3DListener("slider3DLightRotX", "lbl3DLightRotXVal", "3d.light_rot_x", 1);
+  setup3DListener("slider3DLightRotY", "lbl3DLightRotYVal", "3d.light_rot_y", 1);
+  setup3DColorListener("cp3DLightColor", "3d.light_color");
+  setup3DListener("slider3DLightIntensity", "lbl3DLightIntensityVal", "3d.light_intensity", 100);
+  setup3DListener("slider3DAmbientIntensity", "lbl3DAmbientIntensityVal", "3d.ambient_intensity", 100);
+  setup3DColorListener("cp3DAmbientColor", "3d.ambient_color");
+  setup3DSelectListener("select3DEnvironment", "3d.environment");
+  setup3DListener("slider3DHemiIntensity", "lbl3DHemiIntensityVal", "3d.hemi_intensity", 100);
+  setup3DColorListener("cp3DHemiSkyColor", "3d.hemi_sky_color");
+  setup3DColorListener("cp3DHemiGroundColor", "3d.hemi_ground_color");
+  setTimeout(async () => {
+    try {
+      if (window.companion) {
+        const cfg = await window.companion.invoke("ai:get-config", {});
+        const anim = cfg?.animation || {};
+        const chkMouse = document.getElementById("chkMouseTracking");
+        if (chkMouse) chkMouse.checked = anim.mouse_tracking !== false;
+        const slEyeOffset2 = document.getElementById("sliderEyeOffset");
+        const lblEyeOffset2 = document.getElementById("lblEyeOffsetVal");
+        if (slEyeOffset2 && anim.eye_offset !== void 0) {
+          slEyeOffset2.value = Math.round(parseFloat(anim.eye_offset) * 100).toString();
+          if (lblEyeOffset2) lblEyeOffset2.textContent = (parseFloat(anim.eye_offset) * 100).toFixed(2) + "%";
+        }
+        const chkIdleEye = document.getElementById("chkIdleEyeMovement");
+        if (chkIdleEye) chkIdleEye.checked = anim.idle_eye_movement !== false;
+        const chkBlink = document.getElementById("chkBlink");
+        if (chkBlink) chkBlink.checked = anim.enable_blink !== false;
+        const selBlink = document.getElementById("selectBlinkMode");
+        if (selBlink) selBlink.value = anim.blink_mode || "auto";
+        const selIdle = document.getElementById("selectIdleAnimation");
+        if (selIdle) selIdle.value = anim.idle_animation || "idle";
+        const params = cfg?.params || {};
+        const slRenderScale2 = document.getElementById("sliderRenderScale");
+        const lblRenderScale2 = document.getElementById("lblRenderScaleVal");
+        if (slRenderScale2 && params.render_scale !== void 0) {
+          slRenderScale2.value = Math.round(parseFloat(params.render_scale) * 100).toString();
+          if (lblRenderScale2) lblRenderScale2.textContent = parseFloat(params.render_scale).toFixed(2) + "x";
+        }
+        const chkShadow = document.getElementById("chkDropShadow");
+        if (chkShadow) chkShadow.checked = params.drop_shadow === true;
+        const fpsVal = params.fps_limit || "30";
+        const fpsBtns2 = document.querySelectorAll("#fpsLimitSegment .segment-btn");
+        fpsBtns2.forEach((btn) => {
+          if (btn.dataset.value === fpsVal) {
+            fpsBtns2.forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+          }
+        });
+        const chkExpr = document.getElementById("chkExpressionSystem");
+        if (chkExpr) chkExpr.checked = cfg?.expressions?.enabled !== false;
+        const paramVals = params.values || {};
+        const bindParam = (id, lblId, val, isMultiplier = false) => {
+          const el = document.getElementById(id);
+          const lbl = document.getElementById(lblId);
+          if (el && val !== void 0) {
+            const num = parseFloat(val);
+            el.value = isMultiplier ? Math.round(num * 100).toString() : num.toString();
+            if (lbl) lbl.textContent = num.toFixed(isMultiplier ? 2 : 0);
+          }
+        };
+        bindParam("sliderParamAngleX", "lblParamAngleXVal", paramVals.angle_x ?? "0");
+        bindParam("sliderParamAngleY", "lblParamAngleYVal", paramVals.angle_y ?? "0");
+        bindParam("sliderParamAngleZ", "lblParamAngleZVal", paramVals.angle_z ?? "0");
+        bindParam("sliderParamEyeLOpen", "lblParamEyeLOpenVal", paramVals.eye_l_open ?? "1.0", true);
+        bindParam("sliderParamEyeROpen", "lblParamEyeROpenVal", paramVals.eye_r_open ?? "1.0", true);
+        bindParam("sliderParamEyeLSmile", "lblParamEyeLSmileVal", paramVals.eye_l_smile ?? "0.0", true);
+        bindParam("sliderParamEyeRSmile", "lblParamEyeRSmileVal", paramVals.eye_r_smile ?? "0.0", true);
+        bindParam("sliderParamBrowLX", "lblParamBrowLXVal", paramVals.brow_l_x ?? "0.0", true);
+        bindParam("sliderParamBrowRX", "lblParamBrowRXVal", paramVals.brow_r_x ?? "0.0", true);
+        bindParam("sliderParamBrowLY", "lblParamBrowLYVal", paramVals.brow_l_y ?? "0.0", true);
+        bindParam("sliderParamBrowRY", "lblParamBrowRYVal", paramVals.brow_r_y ?? "0.0", true);
+        bindParam("sliderParamMouthOpen", "lblParamMouthOpenVal", paramVals.mouth_open ?? "0.0", true);
+        bindParam("sliderParamMouthForm", "lblParamMouthFormVal", paramVals.mouth_form ?? "0.0", true);
+        bindParam("sliderParamBodyX", "lblParamBodyXVal", paramVals.body_x ?? "0");
+        bindParam("sliderParamBreath", "lblParamBreathVal", paramVals.breath ?? "0.0", true);
+      }
+    } catch (err) {
+      console.error("[settings] Init 2d config error:", err);
+    }
+  }, 200);
+  const setup2DCheckbox = (id, configKey) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("change", async () => {
+        await window.companion.invoke("ai:update-config", {
+          key: configKey,
+          value: el.checked
+        });
+      });
+    }
+  };
+  const setup2DSelect = (id, configKey) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("change", async () => {
+        await window.companion.invoke("ai:update-config", {
+          key: configKey,
+          value: el.value
+        });
+      });
+    }
+  };
+  setup2DCheckbox("chkMouseTracking", "animation.mouse_tracking");
+  setup2DCheckbox("chkIdleEyeMovement", "animation.idle_eye_movement");
+  setup2DCheckbox("chkBlink", "animation.enable_blink");
+  setup2DSelect("selectBlinkMode", "animation.blink_mode");
+  setup2DSelect("selectIdleAnimation", "animation.idle_animation");
+  const slEyeOffset = document.getElementById("sliderEyeOffset");
+  const lblEyeOffset = document.getElementById("lblEyeOffsetVal");
+  if (slEyeOffset) {
+    slEyeOffset.addEventListener("input", async () => {
+      const pct = parseInt(slEyeOffset.value);
+      const val = (pct / 100).toFixed(4);
+      if (lblEyeOffset) lblEyeOffset.textContent = pct.toFixed(2) + "%";
       await window.companion.invoke("ai:update-config", {
-        key: "3d.camera_height",
+        key: "animation.eye_offset",
         value: val
       });
     });
   }
-  const slider3DZoom = document.getElementById("slider3DCameraZoom");
-  const lbl3DZoom = document.getElementById("lbl3DCameraZoomVal");
-  if (slider3DZoom && lbl3DZoom) {
-    slider3DZoom.addEventListener("input", async () => {
-      const val = (parseInt(slider3DZoom.value) / 100).toFixed(2);
-      lbl3DZoom.textContent = val + "x";
+  const slRenderScale = document.getElementById("sliderRenderScale");
+  const lblRenderScale = document.getElementById("lblRenderScaleVal");
+  if (slRenderScale) {
+    slRenderScale.addEventListener("input", async () => {
+      const pct = parseInt(slRenderScale.value);
+      const val = (pct / 100).toFixed(2);
+      if (lblRenderScale) lblRenderScale.textContent = val + "x";
       await window.companion.invoke("ai:update-config", {
-        key: "3d.camera_zoom",
+        key: "params.render_scale",
         value: val
       });
     });
   }
-  const slider3DLight = document.getElementById("slider3DLight");
-  const lbl3DLight = document.getElementById("lbl3DLightVal");
-  if (slider3DLight && lbl3DLight) {
-    slider3DLight.addEventListener("input", async () => {
-      const val = slider3DLight.value;
-      lbl3DLight.textContent = val + "%";
+  const fpsBtns = document.querySelectorAll("#fpsLimitSegment .segment-btn");
+  fpsBtns.forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      fpsBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const val = btn.dataset.value || "30";
       await window.companion.invoke("ai:update-config", {
-        key: "3d.light_intensity",
+        key: "params.fps_limit",
         value: val
       });
     });
-  }
-  const btnStartTracking = document.getElementById("btnStartTracking");
-  if (btnStartTracking) {
-    let isTracking = false;
-    btnStartTracking.addEventListener("click", () => {
-      isTracking = !isTracking;
-      btnStartTracking.textContent = isTracking ? "Stop Tracking" : "Start Tracking";
-      btnStartTracking.classList.toggle("data-btn-accent", isTracking);
-      showStatus(isTracking ? "Face tracking started" : "Face tracking stopped");
-    });
-  }
+  });
+  setup2DCheckbox("chkDropShadow", "params.drop_shadow");
+  setup2DCheckbox("chkExpressionSystem", "expressions.enabled");
+  const setupParamSlider = (id, lblId, paramKey, isMultiplier = false) => {
+    const el = document.getElementById(id);
+    const lbl = document.getElementById(lblId);
+    if (el) {
+      el.addEventListener("input", async () => {
+        const raw = parseFloat(el.value);
+        const val = isMultiplier ? (raw / 100).toFixed(2) : raw.toString();
+        if (lbl) lbl.textContent = parseFloat(val).toFixed(isMultiplier ? 2 : 0);
+        await window.companion.invoke("ai:update-config", {
+          key: `params.values.${paramKey}`,
+          value: val
+        });
+      });
+    }
+  };
+  setupParamSlider("sliderParamAngleX", "lblParamAngleXVal", "angle_x");
+  setupParamSlider("sliderParamAngleY", "lblParamAngleYVal", "angle_y");
+  setupParamSlider("sliderParamAngleZ", "lblParamAngleZVal", "angle_z");
+  setupParamSlider("sliderParamEyeLOpen", "lblParamEyeLOpenVal", "eye_l_open", true);
+  setupParamSlider("sliderParamEyeROpen", "lblParamEyeROpenVal", "eye_r_open", true);
+  setupParamSlider("sliderParamEyeLSmile", "lblParamEyeLSmileVal", "eye_l_smile", true);
+  setupParamSlider("sliderParamEyeRSmile", "lblParamEyeRSmileVal", "eye_r_smile", true);
+  setupParamSlider("sliderParamBrowLX", "lblParamBrowLXVal", "brow_l_x", true);
+  setupParamSlider("sliderParamBrowRX", "lblParamBrowRXVal", "brow_r_x", true);
+  setupParamSlider("sliderParamBrowLY", "lblParamBrowLYVal", "brow_l_y", true);
+  setupParamSlider("sliderParamBrowRY", "lblParamBrowRYVal", "brow_r_y", true);
+  setupParamSlider("sliderParamMouthOpen", "lblParamMouthOpenVal", "mouth_open", true);
+  setupParamSlider("sliderParamMouthForm", "lblParamMouthFormVal", "mouth_form", true);
+  setupParamSlider("sliderParamBodyX", "lblParamBodyXVal", "body_x");
+  setupParamSlider("sliderParamBreath", "lblParamBreathVal", "breath", true);
+  document.getElementById("btnResetParams")?.addEventListener("click", async () => {
+    if (!confirm("Reset all 2D model parameters to default?")) return;
+    const defaults = {
+      angle_x: "0",
+      angle_y: "0",
+      angle_z: "0",
+      eye_l_open: "1.00",
+      eye_r_open: "1.00",
+      eye_l_smile: "0.00",
+      eye_r_smile: "0.00",
+      brow_l_x: "0.00",
+      brow_r_x: "0.00",
+      brow_l_y: "0.00",
+      brow_r_y: "0.00",
+      mouth_open: "0.00",
+      mouth_form: "0.00",
+      body_x: "0",
+      breath: "0.00"
+    };
+    const setUI = (id, lblId, val, isMultiplier = false) => {
+      const el = document.getElementById(id);
+      const lbl = document.getElementById(lblId);
+      if (el) el.value = isMultiplier ? Math.round(parseFloat(val) * 100).toString() : val;
+      if (lbl) lbl.textContent = val;
+    };
+    setUI("sliderParamAngleX", "lblParamAngleXVal", "0");
+    setUI("sliderParamAngleY", "lblParamAngleYVal", "0");
+    setUI("sliderParamAngleZ", "lblParamAngleZVal", "0");
+    setUI("sliderParamEyeLOpen", "lblParamEyeLOpenVal", "1.00", true);
+    setUI("sliderParamEyeROpen", "lblParamEyeROpenVal", "1.00", true);
+    setUI("sliderParamEyeLSmile", "lblParamEyeLSmileVal", "0.00", true);
+    setUI("sliderParamEyeRSmile", "lblParamEyeRSmileVal", "0.00", true);
+    setUI("sliderParamBrowLX", "lblParamBrowLXVal", "0.00", true);
+    setUI("sliderParamBrowRX", "lblParamBrowRXVal", "0.00", true);
+    setUI("sliderParamBrowLY", "lblParamBrowLYVal", "0.00", true);
+    setUI("sliderParamBrowRY", "lblParamBrowRYVal", "0.00", true);
+    setUI("sliderParamMouthOpen", "lblParamMouthOpenVal", "0.00", true);
+    setUI("sliderParamMouthForm", "lblParamMouthFormVal", "0.00", true);
+    setUI("sliderParamBodyX", "lblParamBodyXVal", "0");
+    setUI("sliderParamBreath", "lblParamBreathVal", "0.00", true);
+    for (const key of Object.keys(defaults)) {
+      await window.companion.invoke("ai:update-config", {
+        key: `params.values.${key}`,
+        value: defaults[key]
+      });
+    }
+    showStatus("Parameters reset to default!");
+  });
+  document.getElementById("btnClearCache")?.addEventListener("click", () => {
+    showStatus("Model rendering cache cleared successfully!");
+  });
 }
 function updateModelTypeLayout(modelPath) {
   const isVrm = modelPath.toLowerCase().endsWith(".vrm") || modelPath.toLowerCase().includes("vrm");
   const acc3DVrm = document.getElementById("accordion3DVrm");
   const accExpressions = document.getElementById("accordionExpressions");
   const accParams = document.getElementById("accordionParams");
+  const accAnimation = document.getElementById("accordionAnimation");
   if (acc3DVrm) {
     acc3DVrm.style.display = isVrm ? "block" : "none";
   }
@@ -649,6 +973,9 @@ function updateModelTypeLayout(modelPath) {
   }
   if (accParams) {
     accParams.style.display = isVrm ? "none" : "block";
+  }
+  if (accAnimation) {
+    accAnimation.style.display = isVrm ? "none" : "block";
   }
 }
 export {
