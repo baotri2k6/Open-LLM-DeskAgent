@@ -19,7 +19,7 @@ function navigateTo(targetId) {
   }
   if (targetId === "pageModels") loadModelSelectorGrid();
   if (targetId === "pageProviders") renderProviders();
-  if (targetId === "pageCard") loadAiriCards();
+  if (targetId === "pageCard") loadDeskagentCards();
   if (targetId === "pageScenes") loadScenesGallery();
 }
 document.querySelectorAll(".menu-card").forEach((card) => {
@@ -434,7 +434,7 @@ const PROVIDERS = [
   { id: "anthropic", name: "Anthropic", desc: "anthropic.com", tags: ["PAID", "CLOUD"], icon: "\u2B21", category: "chat" },
   { id: "gemini", name: "Google Gemini", desc: "ai.google.dev", tags: ["PAID", "CLOUD"], icon: "\u2726", category: "chat" },
   // VISION PROVIDERS (Screenshot 1)
-  { id: "official-vision", name: "Official Provider", desc: "Official AI provider by AIRI.", tags: ["RECOMMENDED", "PAID", "CLOUD"], icon: "\u2B50", category: "vision" },
+  { id: "official-vision", name: "Official Provider", desc: "Official AI provider by deskagent.", tags: ["RECOMMENDED", "PAID", "CLOUD"], icon: "\u2B50", category: "vision" },
   { id: "openrouter-vision", name: "OpenRouter", desc: "openrouter.ai", tags: ["PAID", "CLOUD"], icon: "\u25C0", category: "vision" },
   { id: "aihubmix-vision", name: "AIHubMix", desc: "https://aihubmix.com (10% off)", tags: ["PAID", "CLOUD"], icon: "\u{1F310}", category: "vision" },
   { id: "azure-vision", name: "Azure OpenAI", desc: "Azure OpenAI API", tags: ["PAID", "CLOUD"], icon: "A", category: "vision" },
@@ -784,7 +784,7 @@ function loadAiriCards() {
   ];
   personas.forEach((p) => {
     const card = document.createElement("div");
-    card.className = "airi-persona-card" + (p.active ? " airi-persona-card-active" : "");
+    card.className = "deskagent-persona-card" + (p.active ? " deskagent-persona-card-active" : "");
     card.innerHTML = `
       <div class="apc-header">
         <span class="apc-name">${p.name}</span>

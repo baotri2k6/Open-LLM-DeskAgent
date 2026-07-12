@@ -312,7 +312,7 @@ input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.15)}
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   AIRI CARD PAGE
+   Deskagent CARD PAGE
    ═══════════════════════════════════════════════════════════════════ */
 .page-toolbar{
   display:flex;align-items:center;gap:10px;
@@ -347,55 +347,55 @@ input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.15)}
 .card-page-content{
   flex:1;overflow-y:auto;padding:0 16px 30px;
 }
-.airi-card-grid{
+.deskagent-card-grid{
   display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
   margin-bottom:10px;
 }
 /* Upload card */
-.airi-card{
+.deskagent-card{
   border-radius:var(--r-lg);background:var(--surface);
   border:1px solid var(--border);cursor:pointer;
   transition:border-color .14s,box-shadow .14s;
   outline:none;
 }
-.airi-card:hover{border-color:var(--border-hover);box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.airi-card:focus-visible{box-shadow:0 0 0 2px rgba(37,99,235,.2)}
+.deskagent-card:hover{border-color:var(--border-hover);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.deskagent-card:focus-visible{box-shadow:0 0 0 2px rgba(37,99,235,.2)}
 
-.airi-card-upload{
+.deskagent-card-upload{
   border-style:dashed;border-color:#d1d5db;
   display:flex;flex-direction:column;align-items:center;
   justify-content:center;padding:28px 16px;gap:8px;min-height:160px;
 }
-.airi-card-upload:hover{border-color:var(--accent);background:var(--accent-bg)}
-.airi-card-upload-icon{
+.deskagent-card-upload:hover{border-color:var(--accent);background:var(--accent-bg)}
+.deskagent-card-upload-icon{
   width:52px;height:52px;border-radius:10px;
   border:1.5px solid var(--border);background:var(--bg);
   display:flex;align-items:center;justify-content:center;color:var(--text-2);
 }
-.airi-card-upload-label{font-size:13px;font-weight:600;color:var(--text-1)}
-.airi-card-upload-sub{font-size:11px;color:var(--text-2);text-align:center;line-height:1.4}
+.deskagent-card-upload-label{font-size:13px;font-weight:600;color:var(--text-1)}
+.deskagent-card-upload-sub{font-size:11px;color:var(--text-2);text-align:center;line-height:1.4}
 
 /* Create card */
-.airi-card-create{
+.deskagent-card-create{
   display:flex;flex-direction:column;align-items:center;
   justify-content:center;padding:28px 16px;gap:10px;min-height:160px;
 }
-.airi-card-create:hover{background:var(--accent-bg);border-color:var(--border-hover)}
-.airi-card-create-icon{color:var(--text-2)}
-.airi-card-create-label{font-size:13px;font-weight:600;color:var(--text-1);text-align:center}
+.deskagent-card-create:hover{background:var(--accent-bg);border-color:var(--border-hover)}
+.deskagent-card-create-icon{color:var(--text-2)}
+.deskagent-card-create-label{font-size:13px;font-weight:600;color:var(--text-1);text-align:center}
 
 /* Existing persona cards */
-.airi-existing-cards{
+.deskagent-existing-cards{
   display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
 }
-.airi-persona-card{
+.deskagent-persona-card{
   background:var(--surface);border:1px solid var(--border);
   border-radius:var(--r-lg);padding:14px;
   display:flex;flex-direction:column;gap:8px;
   cursor:pointer;transition:border-color .14s,box-shadow .14s;
 }
-.airi-persona-card:hover{border-color:var(--border-hover);box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.airi-persona-card-active{border-color:rgba(37,99,235,.25)}
+.deskagent-persona-card:hover{border-color:var(--border-hover);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.deskagent-persona-card-active{border-color:rgba(37,99,235,.25)}
 .apc-header{display:flex;align-items:center;justify-content:space-between}
 .apc-name{font-size:14px;font-weight:700;color:var(--text-1)}
 .apc-actions{display:flex;align-items:center;gap:5px}
