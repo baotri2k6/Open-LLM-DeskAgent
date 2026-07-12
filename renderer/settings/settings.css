@@ -466,9 +466,77 @@ input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.15)}
   background:radial-gradient(circle,var(--accent) 45%,transparent 45%);
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   PROVIDERS PAGE
-   ═══════════════════════════════════════════════════════════════════ */
+/* Tab Buttons & Filters */
+.provider-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.provider-tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-2);
+  padding: 8px 16px;
+  font-family: var(--font);
+  font-size: 13.5px;
+  font-weight: 500;
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+  outline: none;
+}
+.provider-tab-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-1);
+}
+.provider-tab-btn.active {
+  background: #e0f2fe;
+  color: #0369a1;
+  font-weight: 600;
+}
+
+/* Filters Bar */
+.provider-filters {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 18px;
+  font-size: 12px;
+  color: var(--text-2);
+  font-family: var(--font);
+}
+.filter-group {
+  display: inline-flex;
+  background: var(--bg-hover);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.filter-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-3);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  outline: none;
+}
+.filter-btn:hover {
+  color: var(--text-1);
+}
+.filter-btn.active {
+  background: var(--surface);
+  color: var(--text-1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
 .provider-grid{
   display:grid;grid-template-columns:repeat(3,1fr);
   gap:10px;
@@ -578,6 +646,25 @@ input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.15)}
   background:linear-gradient(transparent,rgba(0,0,0,.6));
   color:#fff;font-size:10px;padding:16px 6px 5px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.scene-thumb.scene-thumb-active {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+.scene-active-check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: #2563eb;
+  color: white;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
 }
 .tip-banner{
   margin-top:10px;background:#f0fdf4;border:1px solid #bbf7d0;

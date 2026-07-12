@@ -408,6 +408,7 @@ export function registerAiIpc(ipcMain: IpcMain, windows: any): void {
             avatar_scale: localConfig.app?.avatarScale || "1.0",
             avatar_x: localConfig.app?.avatarX || "0",
             avatar_y: localConfig.app?.avatarY || "0",
+            background_image: localConfig.app?.backgroundImage || "",
             interaction_mode: localConfig.app?.interactionMode || "streamer",
             llm_provider: localConfig.llm?.provider || "ollama",
             stt_model: localConfig.stt?.model || "base",
@@ -505,6 +506,37 @@ export function registerAiIpc(ipcMain: IpcMain, windows: any): void {
       return response;
     } catch (err: any) {
       return { error: err.message };
+    }
+  });
+
+  ipcMain.handle("avatar:upload-background", async (_e: any, { filePath }: { filePath: string }) => {
+    try {
+      const destDir = path.join(app.getAppPath(), "assets", "backgrounds");
+      if (!fs.existsSync(destDir)) {
+        fs.mkdirSync(destDir, { recursive: true });
+      }
+      const ext = path.extname(filePath);
+      const fileName = `bg_${Date.now()}${ext}`;
+      const destPath = path.join(destDir, fileName);
+      fs.copyFileSync(filePath, destPath);
+      return { success: true, path: `assets/backgrounds/${fileName}` };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle("avatar:get-backgrounds", async () => {
+    try {
+      const dir = path.join(app.getAppPath(), "assets", "backgrounds");
+      if (!fs.existsSync(dir)) return [];
+      const files = fs.readdirSync(dir);
+      const images = files.filter(f => {
+        const ext = path.extname(f).toLowerCase();
+        return [".png", ".jpg", ".jpeg", ".webp", ".gif"].includes(ext);
+      });
+      return images.map(f => `assets/backgrounds/${f}`);
+    } catch {
+      return [];
     }
   });
 

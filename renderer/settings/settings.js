@@ -19,6 +19,7 @@ function navigateTo(targetId) {
   if (targetId === "pageModels") loadModelSelectorGrid();
   if (targetId === "pageProviders") renderProviders();
   if (targetId === "pageCard") loadAiriCards();
+  if (targetId === "pageScenes") loadScenesGallery();
 }
 document.querySelectorAll(".menu-card").forEach((card) => {
   const target = card.dataset.target || "";
@@ -354,72 +355,355 @@ Description: ${m.description || "No description"}`);
   }
 }
 const PROVIDERS = [
-  { id: "official", name: "Official Provider", desc: "Official AI provider by AIRI.", tags: ["RECOMMENDED", "PAID", "CLOUD"], icon: "\u2B50" },
-  { id: "openrouter", name: "OpenRouter", desc: "openrouter.ai", tags: ["PAID", "CLOUD"], icon: "\u25C0" },
-  { id: "aihubmix", name: "AIHubMix", desc: "https://aihubmix.com (10% off)", tags: ["PAID", "CLOUD"], icon: "\u{1F310}" },
-  { id: "azure", name: "Azure OpenAI", desc: "Azure OpenAI API", tags: ["PAID", "CLOUD"], icon: "A" },
-  { id: "ollama", name: "Ollama", desc: "ollama.ai", tags: ["FREE", "LOCAL"], icon: "\u{1F999}" },
-  { id: "lmstudio", name: "LM Studio", desc: "lmstudio.ai", tags: ["FREE", "LOCAL"], icon: "\u2261" },
-  { id: "deepseek", name: "DeepSeek", desc: "deepseek.com", tags: ["PAID", "CLOUD"], icon: "\u{1F40B}" },
-  { id: "openai-compat", name: "OpenAI Compatible", desc: "OpenAI Compatible", tags: [], icon: "\u2699" },
-  { id: "xiaomi", name: "Xiaomi MiMo", desc: "api.xiaomimimo.com", tags: ["PAID", "CLOUD"], icon: "M" },
-  { id: "openai", name: "OpenAI", desc: "openai.com", tags: ["PAID", "CLOUD"], icon: "\u25CE" },
-  { id: "anthropic", name: "Anthropic", desc: "anthropic.com", tags: ["PAID", "CLOUD"], icon: "\u2B21" },
-  { id: "gemini", name: "Google Gemini", desc: "ai.google.dev", tags: ["PAID", "CLOUD"], icon: "\u2726" }
+  // CHAT PROVIDERS
+  { id: "official", name: "Official Provider", desc: "Official AI provider by AIRI.", tags: ["RECOMMENDED", "PAID", "CLOUD"], icon: "\u2B50", category: "chat" },
+  { id: "openrouter", name: "OpenRouter", desc: "openrouter.ai", tags: ["PAID", "CLOUD"], icon: "\u25C0", category: "chat" },
+  { id: "aihubmix", name: "AIHubMix", desc: "https://aihubmix.com (10% off)", tags: ["PAID", "CLOUD"], icon: "\u{1F310}", category: "chat" },
+  { id: "azure", name: "Azure OpenAI", desc: "Azure OpenAI API", tags: ["PAID", "CLOUD"], icon: "A", category: "chat" },
+  { id: "ollama", name: "Ollama", desc: "ollama.ai", tags: ["FREE", "LOCAL"], icon: "\u{1F999}", category: "chat" },
+  { id: "lmstudio", name: "LM Studio", desc: "lmstudio.ai", tags: ["FREE", "LOCAL"], icon: "\u2261", category: "chat" },
+  { id: "deepseek", name: "DeepSeek", desc: "deepseek.com", tags: ["PAID", "CLOUD"], icon: "\u{1F40B}", category: "chat" },
+  { id: "openai-compat", name: "OpenAI Compatible", desc: "OpenAI Compatible", tags: ["CLOUD"], icon: "\u2699", category: "chat" },
+  { id: "xiaomi", name: "Xiaomi MiMo", desc: "api.xiaomimimo.com", tags: ["PAID", "CLOUD"], icon: "M", category: "chat" },
+  { id: "openai", name: "OpenAI", desc: "openai.com", tags: ["PAID", "CLOUD"], icon: "\u25CE", category: "chat" },
+  { id: "anthropic", name: "Anthropic", desc: "anthropic.com", tags: ["PAID", "CLOUD"], icon: "\u2B21", category: "chat" },
+  { id: "gemini", name: "Google Gemini", desc: "ai.google.dev", tags: ["PAID", "CLOUD"], icon: "\u2726", category: "chat" },
+  // VISION PROVIDERS (Screenshot 1)
+  { id: "official-vision", name: "Official Provider", desc: "Official AI provider by AIRI.", tags: ["RECOMMENDED", "PAID", "CLOUD"], icon: "\u2B50", category: "vision" },
+  { id: "openrouter-vision", name: "OpenRouter", desc: "openrouter.ai", tags: ["PAID", "CLOUD"], icon: "\u25C0", category: "vision" },
+  { id: "aihubmix-vision", name: "AIHubMix", desc: "https://aihubmix.com (10% off)", tags: ["PAID", "CLOUD"], icon: "\u{1F310}", category: "vision" },
+  { id: "azure-vision", name: "Azure OpenAI", desc: "Azure OpenAI API", tags: ["PAID", "CLOUD"], icon: "A", category: "vision" },
+  { id: "ollama-vision", name: "Ollama", desc: "ollama.ai", tags: ["FREE", "LOCAL"], icon: "\u{1F999}", category: "vision" },
+  { id: "lmstudio-vision", name: "LM Studio", desc: "lmstudio.ai", tags: ["FREE", "LOCAL"], icon: "\u2261", category: "vision" },
+  // SPEECH PROVIDERS (Screenshot 2)
+  { id: "official-speech", name: "Official Speech Provider", desc: "Official text-to-speech provider by AIRI.", tags: ["RECOMMENDED", "PAID", "CLOUD"], icon: "\u2B50", category: "speech" },
+  { id: "official-streaming-speech", name: "Official Streaming Speech Provider", desc: "Official low-latency text-to-speech provider by AIRI (bidirectional WebSocket).", tags: ["RECOMMENDED", "PAID", "CLOUD"], icon: "\u2B50", category: "speech" },
+  { id: "app-local-speech", name: "App (Local)", desc: "https://github.com/moeru-ai/xsai-transformers", tags: ["FREE", "LOCAL"], icon: "\u2261", category: "speech" },
+  { id: "openai-speech", name: "OpenAI", desc: "openai.com", tags: ["PAID", "CLOUD"], icon: "\u25CE", category: "speech" },
+  { id: "openai-compat-speech", name: "OpenAI Compatible", desc: "OpenAI Compatible", tags: ["CLOUD"], icon: "\u2699", category: "speech" },
+  { id: "elevenlabs", name: "ElevenLabs", desc: "elevenlabs.io", tags: ["PAID", "CLOUD"], icon: "\u2B21", category: "speech" },
+  // TRANSCRIPTION PROVIDERS (Screenshot 3)
+  { id: "official-transcription", name: "Official Transcription Provider", desc: "Official speech-to-text provider by AIRI.", tags: ["CLOUD"], icon: "\u2B50", category: "transcription" },
+  { id: "app-local-transcription", name: "App (Local)", desc: "https://github.com/moeru-ai/xsai-transformers", tags: ["FREE", "LOCAL"], icon: "\u2261", category: "transcription" },
+  { id: "openai-transcription", name: "OpenAI", desc: "openai.com", tags: ["PAID", "CLOUD"], icon: "\u25CE", category: "transcription" },
+  { id: "openai-compat-transcription", name: "OpenAI Compatible", desc: "OpenAI Compatible", tags: ["CLOUD"], icon: "\u2699", category: "transcription" },
+  { id: "aliyun-nls", name: "Aliyun NLS", desc: "Aliyun NLS", tags: ["PAID", "CLOUD"], icon: "[-]", category: "transcription" },
+  { id: "comet-api", name: "Comet API", desc: "CometAPI.com", tags: ["PAID", "CLOUD"], icon: "\u{1FA90}", category: "transcription" },
+  // ARTISTRY PROVIDERS (Screenshot 4)
+  { id: "comfyui", name: "ComfyUI", desc: "Local image generation runner.", tags: ["RECOMMENDED", "FREE", "LOCAL"], icon: "\u{1F3A8}", category: "artistry" },
+  { id: "replicate", name: "Replicate", desc: "Cloud-based model inference service.", tags: ["PAID", "CLOUD"], icon: "\u2B21", category: "artistry" },
+  { id: "nano-banana", name: "Nano Banana", desc: "Google AI Studio Image Preview.", tags: ["FREE", "CLOUD"], icon: "\u{1F34C}", category: "artistry" }
 ];
+const HEADERS = {
+  chat: {
+    icon: "\u{1F4AC}",
+    title: "Chat",
+    desc: "Chat model providers for thinking, and behaving."
+  },
+  vision: {
+    icon: "\u{1F441}\uFE0F",
+    title: "Vision",
+    desc: "Vision model providers for image understanding."
+  },
+  speech: {
+    icon: "\u{1F5E3}\uFE0F",
+    title: "Speech",
+    desc: "Speech (text-to-speech) model providers. e.g. ElevenLabs, Azure Speech."
+  },
+  transcription: {
+    icon: "\u{1F399}\uFE0F",
+    title: "Transcription",
+    desc: "Transcription (speech-to-text) model providers. e.g. Whisper.cpp, OpenAI, Azure Speech"
+  },
+  artistry: {
+    icon: "\u{1F3A8}",
+    title: "Artistry",
+    desc: "Image generation and design model providers. e.g. ComfyUI, Replicate."
+  }
+};
+let activeProviderTab = "chat";
+let activePricingFilter = "all";
+let activeDeploymentFilter = "all";
+let providersInitialized = false;
+const PROVIDER_CONFIG_MAP = {
+  "openai": { key: "llm.openai_api_key" },
+  "gemini": { key: "llm.gemini_api_key" },
+  "deepseek": { key: "llm.deepseek_api_key", url: "llm.deepseek_base_url", urlPlaceholder: "https://api.deepseek.com/v1" },
+  "glm": { key: "llm.glm_api_key", url: "llm.glm_base_url", urlPlaceholder: "https://open.bigmodel.cn/api/paas/v4" },
+  "qwen": { key: "llm.qwen_api_key", url: "llm.qwen_base_url", urlPlaceholder: "https://dashscope.aliyuncs.com/compatible-mode/v1" },
+  // Vision
+  "gemini-vision": { key: "llm.gemini_api_key" },
+  "openai-vision": { key: "llm.openai_api_key" },
+  // Speech
+  "fish-audio": { key: "tts.fish_audio_api_key" },
+  "openai-speech": { key: "llm.openai_api_key" },
+  // Transcription
+  "openai-transcription": { key: "llm.openai_api_key" },
+  // Azure / OpenAI compatible / local
+  "azure": { key: "llm.openai_compatible_api_key", url: "llm.openai_compatible_base_url", urlPlaceholder: "https://.openai.azure.com/" },
+  "openrouter": { key: "llm.openai_compatible_api_key", url: "llm.openai_compatible_base_url", urlPlaceholder: "https://openrouter.ai/api/v1" },
+  "aihubmix": { key: "llm.openai_compatible_api_key", url: "llm.openai_compatible_base_url", urlPlaceholder: "https://aihubmix.com/v1" },
+  "openai-compat": { key: "llm.openai_compatible_api_key", url: "llm.openai_compatible_base_url", urlPlaceholder: "https://api.your-provider.com/v1" },
+  // Local
+  "ollama": { url: "llm.host", urlPlaceholder: "http://localhost:11434", urlLabel: "Host URL" },
+  "lmstudio": { url: "llm.host", urlPlaceholder: "http://localhost:1234/v1", urlLabel: "Host URL" },
+  "ollama-vision": { url: "llm.host", urlPlaceholder: "http://localhost:11434", urlLabel: "Host URL" }
+};
+let currentDetailProviderId = "";
+let providerDetailInitialized = false;
+function validateProviderConfig(providerId, apiKeyValue) {
+  const banner = document.getElementById("validationBanner");
+  const errorText = document.getElementById("validationErrorText");
+  if (!banner || !errorText) return;
+  const mapping = PROVIDER_CONFIG_MAP[providerId];
+  if (mapping && mapping.key && !apiKeyValue) {
+    errorText.textContent = "API key is required.";
+    banner.style.display = "block";
+  } else {
+    banner.style.display = "none";
+  }
+}
+async function openProviderDetail(providerId) {
+  currentDetailProviderId = providerId;
+  const p = PROVIDERS.find((item) => item.id === providerId);
+  if (!p) return;
+  const titleEl = document.getElementById("lblProviderDetailTitle");
+  const keyDescEl = document.getElementById("lblApiKeyDesc");
+  if (titleEl) titleEl.textContent = p.name;
+  if (keyDescEl) keyDescEl.textContent = `API Key for ${p.name}`;
+  let config = {};
+  if (window.companion) {
+    try {
+      config = await window.companion.invoke("ai:get-config", {});
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  const mapping = PROVIDER_CONFIG_MAP[providerId];
+  const basicCard = document.getElementById("providerBasicCard");
+  const basicTitle = document.getElementById("lblApiKeyTitle");
+  const keyInput = document.getElementById("txtProviderApiKey");
+  if (mapping && mapping.key) {
+    if (basicCard) basicCard.style.display = "block";
+    if (basicTitle) basicTitle.style.display = "block";
+    let savedKey = "";
+    const k = mapping.key;
+    if (k === "llm.gemini_api_key") savedKey = config?.gemini_key || "";
+    else if (k === "llm.openai_api_key") savedKey = config?.openai_key || "";
+    else if (k === "llm.deepseek_api_key") savedKey = config?.deepseek_key || "";
+    else if (k === "llm.glm_api_key") savedKey = config?.glm_key || "";
+    else if (k === "llm.qwen_api_key") savedKey = config?.qwen_key || "";
+    else if (k === "llm.openai_compatible_api_key") savedKey = config?.openai_compatible_key || "";
+    else if (k === "tts.fish_audio_api_key") savedKey = config?.fish_api_key || "";
+    if (keyInput) {
+      keyInput.value = savedKey;
+      keyInput.type = "password";
+    }
+    validateProviderConfig(providerId, savedKey);
+  } else {
+    if (basicCard) basicCard.style.display = "none";
+    const banner = document.getElementById("validationBanner");
+    if (banner) banner.style.display = "none";
+  }
+  const advancedCard = document.getElementById("accordionAdvanced");
+  const urlLabel = document.getElementById("lblBaseUrlTitle");
+  const urlDesc = document.getElementById("lblBaseUrlDesc");
+  const urlInput = document.getElementById("txtProviderBaseUrl");
+  if (mapping && (mapping.url || providerId === "openai")) {
+    if (advancedCard) advancedCard.style.display = "block";
+    if (urlLabel) urlLabel.textContent = mapping.urlLabel || "Base URL";
+    if (urlDesc) urlDesc.textContent = mapping.urlLabel ? `Custom host server address` : `Custom base URL (optional)`;
+    if (urlInput) {
+      urlInput.placeholder = mapping.urlPlaceholder || "https://api.openai.com/v1";
+      let savedUrl = "";
+      if (providerId === "openai") {
+        savedUrl = config?.openai_base_url || "https://api.openai.com/v1";
+      } else if (mapping.url === "llm.deepseek_base_url") {
+        savedUrl = config?.deepseek_base_url || "";
+      } else if (mapping.url === "llm.glm_base_url") {
+        savedUrl = config?.glm_base_url || "";
+      } else if (mapping.url === "llm.qwen_base_url") {
+        savedUrl = config?.qwen_base_url || "";
+      } else if (mapping.url === "llm.openai_compatible_base_url") {
+        savedUrl = config?.openai_compatible_base_url || "";
+      } else if (mapping.url === "llm.host") {
+        savedUrl = config?.host || "";
+      }
+      urlInput.value = savedUrl;
+    }
+  } else {
+    if (advancedCard) advancedCard.style.display = "none";
+  }
+  navigateTo("pageProviderDetail");
+  if (providerDetailInitialized) return;
+  providerDetailInitialized = true;
+  document.getElementById("btnBackToProviders")?.addEventListener("click", () => {
+    navigateTo("pageProviders");
+    renderProviders();
+  });
+  document.getElementById("btnToggleProviderKeyVis")?.addEventListener("click", () => {
+    if (keyInput) {
+      const isPass = keyInput.type === "password";
+      keyInput.type = isPass ? "text" : "password";
+      const btn = document.getElementById("btnToggleProviderKeyVis");
+      if (btn) btn.textContent = isPass ? "\u{1F512}" : "\u{1F441}";
+    }
+  });
+  keyInput?.addEventListener("change", async () => {
+    if (!currentDetailProviderId || !window.companion) return;
+    const mapping2 = PROVIDER_CONFIG_MAP[currentDetailProviderId];
+    if (mapping2 && mapping2.key) {
+      const val = keyInput.value.trim();
+      await window.companion.invoke("ai:update-config", {
+        key: mapping2.key,
+        value: val
+      });
+      showStatus("API credential saved");
+      validateProviderConfig(currentDetailProviderId, val);
+    }
+  });
+  urlInput?.addEventListener("change", async () => {
+    if (!currentDetailProviderId || !window.companion) return;
+    const mapping2 = PROVIDER_CONFIG_MAP[currentDetailProviderId];
+    const val = urlInput.value.trim();
+    let configKey = "";
+    if (currentDetailProviderId === "openai") {
+      configKey = "llm.openai_base_url";
+    } else if (mapping2 && mapping2.url) {
+      configKey = mapping2.url;
+    }
+    if (configKey) {
+      await window.companion.invoke("ai:update-config", {
+        key: configKey,
+        value: val
+      });
+      showStatus("Base URL updated");
+    }
+  });
+  document.getElementById("btnContinueAnyway")?.addEventListener("click", () => {
+    const banner = document.getElementById("validationBanner");
+    if (banner) banner.style.display = "none";
+  });
+}
 function renderProviders() {
   const grid = document.getElementById("providerGrid");
-  if (!grid || grid.children.length > 0) return;
-  grid.innerHTML = "";
-  PROVIDERS.forEach((p) => {
-    const card = document.createElement("div");
-    card.className = "provider-card";
-    card.dataset.id = p.id;
-    const tagsHtml = p.tags.map((t) => `<span class="provider-tag provider-tag-${t.toLowerCase()}">${t}</span>`).join("");
-    card.innerHTML = `
-      <div class="provider-card-top">
-        <div class="provider-card-info">
-          <span class="provider-card-name">${p.name}</span>
-          <span class="provider-card-desc">${p.desc}</span>
-        </div>
-        <div class="provider-card-logo">${p.icon}</div>
+  if (!grid) return;
+  const headerEl = document.getElementById("providerHeader");
+  if (headerEl) {
+    const info = HEADERS[activeProviderTab];
+    headerEl.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 10px; margin-top: 14px; margin-bottom: 6px; font-family: var(--font);">
+        <span style="font-size: 26px; line-height: 1;">${info.icon}</span>
+        <h2 style="font-size: 22px; font-weight: 700; margin: 0; color: var(--text-1);">${info.title}</h2>
       </div>
-      ${p.tags.length ? `<div class="provider-tags">${tagsHtml}</div>` : ""}
-      <label class="provider-radio">
-        <input type="radio" name="provider" value="${p.id}"/>
-        <span class="radio-dot"></span>
-      </label>
+      <span style="font-size: 12px; color: var(--text-3); font-weight: 500; display: block; margin-left: 2px; font-family: var(--font);">${info.desc}</span>
     `;
-    card.addEventListener("click", () => {
-      const radio2 = card.querySelector('input[type="radio"]');
-      if (radio2 && !radio2.checked) {
-        radio2.checked = true;
-        radio2.dispatchEvent(new Event("change"));
-      }
-    });
-    const radio = card.querySelector('input[type="radio"]');
-    radio?.addEventListener("change", async () => {
-      if (radio.checked && window.companion) {
-        const res = await window.companion.invoke("ai:update-config", {
-          key: "llm.provider",
-          value: p.id
-        });
-        if (res && !res.error) showStatus(`Provider changed to ${p.name}`);
-      }
-    });
-    grid.appendChild(card);
-  });
+  }
+  const loader = document.getElementById("providerLoadingState");
+  if (loader) loader.style.display = "inline";
+  grid.style.opacity = "0.5";
   setTimeout(async () => {
+    grid.innerHTML = "";
+    grid.style.opacity = "1";
+    if (loader) loader.style.display = "none";
+    const filtered = PROVIDERS.filter((p) => {
+      if (p.category !== activeProviderTab) return false;
+      if (activePricingFilter !== "all") {
+        const isFree = p.tags.includes("FREE");
+        const isPaid = p.tags.includes("PAID");
+        if (activePricingFilter === "free" && !isFree) return false;
+        if (activePricingFilter === "paid" && !isPaid) return false;
+      }
+      if (activeDeploymentFilter !== "all") {
+        const isLocal = p.tags.includes("LOCAL");
+        const isCloud = p.tags.includes("CLOUD");
+        if (activeDeploymentFilter === "local" && !isLocal) return false;
+        if (activeDeploymentFilter === "cloud" && !isCloud) return false;
+      }
+      return true;
+    });
+    if (filtered.length === 0) {
+      grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-3); padding: 30px; font-size: 13px;">No providers match selected filters.</div>';
+      return;
+    }
+    let activeId = "";
     try {
       if (window.companion) {
         const cfg = await window.companion.invoke("ai:get-config", {});
-        const currentProvider = cfg?.llm_provider || "ollama";
-        const targetRadio = grid.querySelector(`input[name="provider"][value="${currentProvider}"]`);
-        if (targetRadio) targetRadio.checked = true;
+        if (activeProviderTab === "chat") activeId = cfg?.llm_provider || "ollama";
+        else if (activeProviderTab === "speech") activeId = cfg?.tts_backend || "edge";
       }
     } catch (_) {
     }
-  }, 100);
+    filtered.forEach((p) => {
+      const card = document.createElement("div");
+      card.className = "provider-card";
+      card.dataset.id = p.id;
+      const tagsHtml = p.tags.map((t) => `<span class="provider-tag provider-tag-${t.toLowerCase()}">${t}</span>`).join("");
+      const isSelected = activeId === p.id;
+      card.innerHTML = `
+        <div class="provider-card-top">
+          <div class="provider-card-info">
+            <span class="provider-card-name">${p.name}</span>
+            <span class="provider-card-desc">${p.desc}</span>
+          </div>
+          <div class="provider-card-logo">${p.icon}</div>
+        </div>
+        ${p.tags.length ? `<div class="provider-tags">${tagsHtml}</div>` : ""}
+        <label class="provider-radio">
+          <input type="radio" name="provider_${activeProviderTab}" value="${p.id}" ${isSelected ? "checked" : ""}/>
+          <span class="radio-dot"></span>
+        </label>
+      `;
+      card.addEventListener("click", () => {
+        const radio2 = card.querySelector('input[type="radio"]');
+        if (radio2 && !radio2.checked) {
+          radio2.checked = true;
+          radio2.dispatchEvent(new Event("change"));
+        }
+        openProviderDetail(p.id);
+      });
+      const radio = card.querySelector('input[type="radio"]');
+      radio?.addEventListener("change", async () => {
+        if (radio.checked && window.companion) {
+          let configKey = "llm.provider";
+          if (activeProviderTab === "speech") configKey = "tts.backend";
+          const res = await window.companion.invoke("ai:update-config", {
+            key: configKey,
+            value: p.id
+          });
+          if (res && !res.error) showStatus(`Provider changed to ${p.name}`);
+        }
+      });
+      grid.appendChild(card);
+    });
+  }, 200);
+  if (providersInitialized) return;
+  providersInitialized = true;
+  document.querySelectorAll(".provider-tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".provider-tab-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      activeProviderTab = btn.dataset.tab;
+      renderProviders();
+    });
+  });
+  document.querySelectorAll("#filterPricing .filter-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#filterPricing .filter-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      activePricingFilter = btn.dataset.val;
+      renderProviders();
+    });
+  });
+  document.querySelectorAll("#filterDeployment .filter-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#filterDeployment .filter-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      activeDeploymentFilter = btn.dataset.val;
+      renderProviders();
+    });
+  });
 }
 function loadAiriCards() {
   const container = document.getElementById("airiExistingCards");
@@ -480,24 +764,71 @@ document.getElementById("btnMoveToCenter")?.addEventListener("click", async () =
     }
   }
 });
+async function loadScenesGallery() {
+  const gallery = document.getElementById("scenesGallery");
+  if (!gallery) return;
+  gallery.innerHTML = "";
+  if (!window.companion) {
+    gallery.innerHTML = '<div class="scene-empty">Not connected to companion.</div>';
+    return;
+  }
+  try {
+    const list = await window.companion.invoke("avatar:get-backgrounds");
+    const cfg = await window.companion.invoke("ai:get-config");
+    const activeBg = cfg?.background_image || "";
+    if (!list || list.length === 0) {
+      gallery.innerHTML = '<div class="scene-empty">No backgrounds uploaded yet.</div>';
+      return;
+    }
+    list.forEach((bgPath) => {
+      const thumb = document.createElement("div");
+      const isActive = activeBg === bgPath;
+      thumb.className = "scene-thumb" + (isActive ? " scene-thumb-active" : "");
+      const fileName = bgPath.split(/[\\/]/).pop() || "";
+      thumb.innerHTML = `
+        <img src="../../${bgPath}" alt="Background" />
+        <span class="scene-thumb-label">${fileName}</span>
+        ${isActive ? '<div class="scene-active-check">\u2713</div>' : ""}
+      `;
+      thumb.addEventListener("click", async () => {
+        const targetValue = isActive ? "" : bgPath;
+        await window.companion.invoke("ai:update-config", {
+          key: "app.backgroundImage",
+          value: targetValue
+        });
+        showStatus(isActive ? "Background cleared" : "Background set successfully");
+        loadScenesGallery();
+      });
+      gallery.appendChild(thumb);
+    });
+  } catch (err) {
+    console.error("Failed to load scenes gallery:", err);
+    gallery.innerHTML = '<div class="scene-empty">Failed to load gallery images.</div>';
+  }
+}
 document.getElementById("btnUploadBackground")?.addEventListener("click", async () => {
   if (!window.companion) return;
-  const fp = await window.companion.showOpenDialog({
-    title: "Select background image",
-    filters: [{ name: "Images", extensions: ["jpg", "jpeg", "png", "gif", "webp"] }]
-  });
-  if (!fp) return;
-  const gallery = document.getElementById("scenesGallery");
-  const empty = gallery?.querySelector(".scene-empty");
-  if (empty) empty.remove();
-  const thumb = document.createElement("div");
-  thumb.className = "scene-thumb";
-  thumb.innerHTML = `
-    <img src="file://${fp}" alt="Background" />
-    <span class="scene-thumb-label">${fp.split(/[\\/]/).pop()}</span>
-  `;
-  gallery?.appendChild(thumb);
-  showStatus("Background uploaded successfully");
+  try {
+    const fp = await window.companion.showOpenDialog({
+      title: "Select background image",
+      filters: [{ name: "Images", extensions: ["jpg", "jpeg", "png", "gif", "webp"] }]
+    });
+    if (!fp) return;
+    const res = await window.companion.invoke("avatar:upload-background", { filePath: fp });
+    if (res && res.success) {
+      await window.companion.invoke("ai:update-config", {
+        key: "app.backgroundImage",
+        value: res.path
+      });
+      showStatus("Background uploaded and applied!");
+      loadScenesGallery();
+    } else {
+      showStatus(res?.error || "Failed to copy background image");
+    }
+  } catch (err) {
+    console.error("Upload background error:", err);
+    showStatus(err.message);
+  }
 });
 async function updateSystemStatus() {
   const statusBackend = document.getElementById("status-backend");

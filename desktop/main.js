@@ -265,7 +265,7 @@ function createAvatarWindow() {
             fs.mkdirSync(logDir, { recursive: true });
         fs.appendFileSync(path.join(logDir, "renderer_error.log"), `${new Date().toISOString()} | AVATAR | [Level ${level}] ${message} (at ${sourceId}:${line})\n`);
     });
-    avatarWin.loadFile(path.join(__dirname, "..", "renderer", "avatar", "avatar.html"));
+    avatarWin.loadFile(path.join(__dirname, "..", "renderer", "overlay", "index.html"));
     avatarWin.on("closed", () => {
         avatarWin = null;
         chatWin = null;
@@ -385,6 +385,20 @@ function setupCrossWindowIpc() {
             return null;
         const result = await electron_1.dialog.showOpenDialog(win, {
             properties: ["openDirectory"]
+        });
+        if (result.canceled || result.filePaths.length === 0) {
+            return null;
+        }
+        return result.filePaths[0];
+    });
+    electron_1.ipcMain.handle("dialog:open-file", async (event, options) => {
+        const win = electron_1.BrowserWindow.fromWebContents(event.sender) || settingsWin || avatarWin;
+        if (!win)
+            return null;
+        const result = await electron_1.dialog.showOpenDialog(win, {
+            properties: ["openFile"],
+            title: options?.title || "Select file",
+            filters: options?.filters || []
         });
         if (result.canceled || result.filePaths.length === 0) {
             return null;

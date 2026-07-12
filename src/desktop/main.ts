@@ -296,7 +296,7 @@ function createAvatarWindow(): BrowserWindow {
       );
     },
   );
-  avatarWin.loadFile(path.join(__dirname, "..", "renderer", "avatar", "avatar.html"));
+  avatarWin.loadFile(path.join(__dirname, "..", "renderer", "overlay", "index.html"));
   avatarWin.on("closed", () => {
     avatarWin = null;
     chatWin = null;
@@ -430,6 +430,20 @@ function setupCrossWindowIpc(): void {
     if (!win) return null;
     const result = await dialog.showOpenDialog(win, {
       properties: ["openDirectory"]
+    });
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+    return result.filePaths[0];
+  });
+
+  ipcMain.handle("dialog:open-file", async (event: any, options: any) => {
+    const win = BrowserWindow.fromWebContents(event.sender) || settingsWin || avatarWin;
+    if (!win) return null;
+    const result = await dialog.showOpenDialog(win, {
+      properties: ["openFile"],
+      title: options?.title || "Select file",
+      filters: options?.filters || []
     });
     if (result.canceled || result.filePaths.length === 0) {
       return null;

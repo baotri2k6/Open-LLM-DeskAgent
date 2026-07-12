@@ -708,6 +708,8 @@ window.companion.on("config:updated", ({ key, value }) => {
         updateAvatarOffset(posX, posY);
       }
     });
+  } else if (key === "app.backgroundImage") {
+    updateAvatarBackground(value || "");
   }
 });
 
@@ -791,6 +793,11 @@ async function applyInitialMode() {
       const posX = parseInt(res.app?.avatarX || "0");
       const posY = parseInt(res.app?.avatarY || "0");
       updateAvatarOffset(posX, posY);
+
+      // Restore avatar background
+      if (res.background_image) {
+        updateAvatarBackground(res.background_image);
+      }
 
       rebuildAccessoryButtons(currentModelId);
       if (currentInteractionMode === "streamer") {
@@ -1227,5 +1234,26 @@ function updateAvatarOffset(x, y) {
   const wrap = document.getElementById("avatarWrap");
   if (wrap) {
     wrap.style.transform = `translate(${x || 0}px, ${y || 0}px)`;
+  }
+}
+
+function updateAvatarBackground(path) {
+  const stage = document.querySelector(".avatar-stage");
+  if (stage) {
+    if (path) {
+      let normalizedPath = path.replace(/\\/g, "/");
+      let url = "";
+      if (normalizedPath.startsWith("http") || normalizedPath.startsWith("file://")) {
+        url = normalizedPath;
+      } else {
+        url = `../../${normalizedPath}`;
+      }
+      stage.style.backgroundImage = `url('${url}')`;
+      stage.style.backgroundSize = "cover";
+      stage.style.backgroundPosition = "center";
+      stage.style.backgroundRepeat = "no-repeat";
+    } else {
+      stage.style.backgroundImage = "";
+    }
   }
 }

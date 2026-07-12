@@ -341,6 +341,27 @@ setTimeout(() => {
 
 
 
+function updateAvatarBackground(path: string) {
+  const stage = document.querySelector(".avatar-stage") as HTMLElement;
+  if (stage) {
+    if (path) {
+      let normalizedPath = path.replace(/\\/g, "/");
+      let url = "";
+      if (normalizedPath.startsWith("http") || normalizedPath.startsWith("file://")) {
+        url = normalizedPath;
+      } else {
+        url = `../../${normalizedPath}`;
+      }
+      stage.style.backgroundImage = `url('${url}')`;
+      stage.style.backgroundSize = "cover";
+      stage.style.backgroundPosition = "center";
+      stage.style.backgroundRepeat = "no-repeat";
+    } else {
+      stage.style.backgroundImage = "";
+    }
+  }
+}
+
 function updateAvatarOffset(x: string | number, y: string | number) {
   const wrap = document.getElementById("avatarWrap");
   if (wrap) {
@@ -360,6 +381,10 @@ async function loadConfig(): Promise<void> {
         }
       }
       if (sttSelect) sttSelect.value = res.stt_model || "base";
+
+      if (res.background_image) {
+        updateAvatarBackground(res.background_image);
+      }
 
       // Load avatar position offsets
       const posX = res.app?.avatarX || res.avatarX || 0;
@@ -590,6 +615,150 @@ if (btnQuitApp) {
       const posY = res.app?.avatarY || res.avatarY || 0;
       updateAvatarOffset(posX, posY);
     });
+  } else if (key === "app.backgroundImage") {
+    updateAvatarBackground(value || "");
+  } else if (key === "app.avatarModel") {
+    (avatar as any).changeModel(value);
+  }
+});
+
+// Speech bubble helpers
+const speechBubble = document.getElementById("thoughtBubble"); // Use thoughtBubble as display caption bubble
+const speechContent = document.getElementById("thoughtContent");
+function setBubbleCaption(msg: string, expression: string = "normal") {
+  if (speechBubble && speechContent) {
+    if (msg) {
+      speechContent.textContent = msg;
+      speechBubble.classList.remove("hidden");
+    } else {
+      speechBubble.classList.add("hidden");
+    }
+  }
+  (avatar as any).setState({ expression: expression, emotion: expression, motion: "idle" });
+}
+
+let isAppDragging = false;
+let isAppBusy = false;
+
+document.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (isAppDragging || isAppBusy || isRecording) return;
+  isAppDragging = true;
+  (avatar as any).setState({ expression: "surprised", emotion: "surprised", motion: "nod" });
+  setBubbleCaption("Ủa, cậu đang định đưa file gì cho tớ thế? [excited]");
+});
+
+document.addEventListener("dragleave", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (!e.relatedTarget) {
+    isAppDragging = false;
+    (avatar as any).setState({ expression: "normal", emotion: "normal", motion: "idle" });
+    setBubbleCaption("");
+  }
+});
+
+document.addEventListener("drop", async (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  isAppDragging = false;
+  if (isAppBusy || isRecording) return;
+
+  const files = e.dataTransfer?.files;
+  if (files && files.length > 0) {
+    const file = files[0];
+    const fileName = file.name;
+    const filePath = (file as any).path;
+
+    if (fileName.toLowerCase().endsWith(".zip")) {
+      try {
+        isAppBusy = true;
+        setBusy(true);
+        (avatar as any).setState({ expression: "thinking", emotion: "thinking", motion: "thinking" });
+        setBubbleCaption("Đang giải nén và nạp model Live2D mới, cậu đợi tớ xíu nha...");
+
+        const res = await (window as any).companion.invoke("avatar:import-zip", { path: filePath });
+
+        if (res && res.success) {
+          const modelPath = res.model.path;
+          await (avatar as any).changeModel(modelPath);
+
+          await (window as any).companion.invoke("ai:update-config", {
+            key: "app.avatarModel",
+            value: modelPath
+          }).catch(() => null);
+
+          setBubbleCaption(`Oa! Đã nạp thành công nhân vật mới "${res.model.name}" rồi nè! [happy]`);
+          (avatar as any).setState({ expression: "happy", emotion: "happy", motion: "excited" });
+
+          setTimeout(() => {
+            if (!isAppBusy && !isRecording) {
+              setBubbleCaption("");
+              (avatar as any).setState({ expression: "smile", emotion: "smile", motion: "idle" });
+            }
+          }, 4000);
+        } else {
+          throw new Error(res?.error || "Unknown import error");
+        }
+      } catch (err: any) {
+        console.error("Failed to import Live2D model ZIP:", err);
+        setBubbleCaption(`Không nạp được model Live2D: ${err.message}. Cậu kiểm tra lại file zip nhé.`);
+        (avatar as any).setState({ expression: "sad", emotion: "sad", motion: "shake" });
+      } finally {
+        isAppBusy = false;
+        setBusy(false);
+      }
+    } else {
+      const ext = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
+      const docExtensions = [".pdf", ".docx", ".doc", ".txt", ".md"];
+
+      if (docExtensions.includes(ext)) {
+        try {
+          isAppBusy = true;
+          setBusy(true);
+          (avatar as any).setState({ expression: "thinking", emotion: "thinking", motion: "thinking" });
+          setBubbleCaption(`Đang đọc tài liệu "${fileName}" để nạp kiến thức, cậu chờ tớ một xíu nhé...`);
+
+          const res = await (window as any).companion.invoke("system:import-document", { path: filePath });
+
+          if (res && res.success) {
+            setBubbleCaption(`Tớ đã học xong tài liệu "${fileName}" rồi nè! Bây giờ cậu có thể hỏi tớ bất cứ điều gì về nó rồi nhé! [happy]`);
+            (avatar as any).setState({ expression: "happy", emotion: "happy", motion: "excited" });
+
+            setTimeout(() => {
+              if (!isAppBusy && !isRecording) {
+                setBubbleCaption("");
+                (avatar as any).setState({ expression: "smile", emotion: "smile", motion: "idle" });
+              }
+            }, 5000);
+          } else {
+            throw new Error(res?.error || "Unknown import error");
+          }
+        } catch (err: any) {
+          console.error("Failed to import document:", err);
+          setBubbleCaption(`Không nạp được tài liệu: ${err.message}. Cậu kiểm tra lại định dạng file nhé.`);
+          (avatar as any).setState({ expression: "sad", emotion: "sad", motion: "shake" });
+        } finally {
+          isAppBusy = false;
+          setBusy(false);
+        }
+      } else {
+        setBubbleCaption(`Oa! Cảm ơn cậu đã gửi file "${fileName}" cho tớ nha! [happy]`);
+      }
+    }
+  } else {
+    (avatar as any).setState({ expression: "normal", emotion: "normal", motion: "idle" });
+    setBubbleCaption("");
+  }
+});
+
+(window as any).companion.on("avatar:registry-updated", async (newModel: any) => {
+  try {
+    setBubbleCaption(`✨ Đã thêm nhân vật: ${newModel?.name || "mới"}`);
+    setTimeout(() => setBubbleCaption(""), 3000);
+  } catch (e) {
+    console.warn("registry-updated reload failed:", e);
   }
 });
 

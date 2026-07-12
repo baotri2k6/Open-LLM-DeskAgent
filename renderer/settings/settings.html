@@ -353,7 +353,7 @@
       </div>
 
       <!-- ========================================================
-           PAGE: AIRI CARD
+           PAGE: Deskagent CARD
            ======================================================== -->
       <div id="pageCard" class="view-panel">
         <div class="page-header">
@@ -401,15 +401,15 @@
           </div>
         </div>
         <section class="card-page-content">
-          <div class="airi-card-grid" id="airiCardGrid">
+          <div class="deskagent-card-grid" id="deskagentCardGrid">
             <!-- Upload card -->
             <div
-              class="airi-card airi-card-upload"
+              class="deskagent-card deskagent-card-upload"
               id="btnUploadCard"
               role="button"
               tabindex="0"
             >
-              <div class="airi-card-upload-icon">
+              <div class="deskagent-card-upload-icon">
                 <svg
                   width="32"
                   height="32"
@@ -425,19 +425,19 @@
                   <line x1="12" y1="8" x2="12" y2="16" />
                 </svg>
               </div>
-              <span class="airi-card-upload-label">Upload</span>
-              <span class="airi-card-upload-sub"
-                >Click or drag an AIRI card package to import</span
+              <span class="deskagent-card-upload-label">Upload</span>
+              <span class="deskagent-card-upload-sub"
+                >Click or drag an Deskagent card package to import</span
               >
             </div>
             <!-- Create new card -->
             <div
-              class="airi-card airi-card-create"
+              class="deskagent-card deskagent-card-create"
               id="btnCreateCard"
               role="button"
               tabindex="0"
             >
-              <div class="airi-card-create-icon">
+              <div class="deskagent-card-create-icon">
                 <svg
                   width="28"
                   height="28"
@@ -453,11 +453,14 @@
                   <line x1="8" y1="12" x2="16" y2="12" />
                 </svg>
               </div>
-              <span class="airi-card-create-label">Create a new Card</span>
+              <span class="deskagent-card-create-label">Create a new Card</span>
             </div>
           </div>
           <!-- Existing character cards loaded by JS -->
-          <div class="airi-existing-cards" id="airiExistingCards"></div>
+          <div
+            class="deskagent-cardexisting-cards"
+            id="deskagentExistingCards"
+          ></div>
         </section>
       </div>
 
@@ -886,19 +889,33 @@
               </div>
 
               <!-- Position X -->
-              <div class="acc-row" style="margin-top: 12px;">
+              <div class="acc-row" style="margin-top: 12px">
                 <label class="acc-label">Position X</label>
                 <div class="slider-container" style="flex: 1">
-                  <input type="range" id="sliderAvatarX" min="-300" max="300" value="0" step="1" />
+                  <input
+                    type="range"
+                    id="sliderAvatarX"
+                    min="-300"
+                    max="300"
+                    value="0"
+                    step="1"
+                  />
                   <span id="lblAvatarXVal" class="slider-bubble">0px</span>
                 </div>
               </div>
 
               <!-- Position Y -->
-              <div class="acc-row" style="margin-top: 12px;">
+              <div class="acc-row" style="margin-top: 12px">
                 <label class="acc-label">Position Y</label>
                 <div class="slider-container" style="flex: 1">
-                  <input type="range" id="sliderAvatarY" min="-300" max="300" value="0" step="1" />
+                  <input
+                    type="range"
+                    id="sliderAvatarY"
+                    min="-300"
+                    max="300"
+                    value="0"
+                    step="1"
+                  />
                   <span id="lblAvatarYVal" class="slider-bubble">0px</span>
                 </div>
               </div>
@@ -906,34 +923,99 @@
           </div>
 
           <!-- Accordion: 3D VRM Settings (Godot Stage) -->
-          <div class="accordion" id="accordion3DVrm" style="display:none; margin-bottom: 8px;">
-            <button class="accordion-hdr" type="button" aria-expanded="false" data-accordion="accordion3DVrm">
-              <svg class="accordion-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          <div
+            class="accordion"
+            id="accordion3DVrm"
+            style="display: none; margin-bottom: 8px"
+          >
+            <button
+              class="accordion-hdr"
+              type="button"
+              aria-expanded="false"
+              data-accordion="accordion3DVrm"
+            >
+              <svg
+                class="accordion-icon-svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+                />
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                <line x1="12" y1="22.08" x2="12" y2="12" />
+              </svg>
               <span class="accordion-label">3D VRM Configuration</span>
-              <svg class="accordion-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+              <svg
+                class="accordion-chevron"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
             </button>
             <div class="accordion-body">
-              
               <!-- SECTION: Scene Model Position -->
-              <div class="acc-subsection-title" style="font-size:11.5px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:0.5px; margin: 4px 0 8px;">Scene & Model Position</div>
+              <div
+                class="acc-subsection-title"
+                style="
+                  font-size: 11.5px;
+                  font-weight: 700;
+                  color: var(--text-3);
+                  text-transform: uppercase;
+                  letter-spacing: 0.5px;
+                  margin: 4px 0 8px;
+                "
+              >
+                Scene & Model Position
+              </div>
               <div class="acc-row">
                 <label class="acc-label">Position X</label>
-                <div class="slider-container" style="flex:1;">
-                  <input type="range" id="slider3DPosX" min="-100" max="100" value="0" step="1" />
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="slider3DPosX"
+                    min="-100"
+                    max="100"
+                    value="0"
+                    step="1"
+                  />
                   <span id="lbl3DPosXVal" class="slider-bubble">0.0000</span>
                 </div>
               </div>
               <div class="acc-row">
                 <label class="acc-label">Position Y</label>
-                <div class="slider-container" style="flex:1;">
-                  <input type="range" id="slider3DPosY" min="-100" max="100" value="0" step="1" />
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="slider3DPosY"
+                    min="-100"
+                    max="100"
+                    value="0"
+                    step="1"
+                  />
                   <span id="lbl3DPosYVal" class="slider-bubble">0.0000</span>
                 </div>
               </div>
               <div class="acc-row">
                 <label class="acc-label">Position Z</label>
-                <div class="slider-container" style="flex:1;">
-                  <input type="range" id="slider3DPosZ" min="-100" max="100" value="0" step="1" />
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="slider3DPosZ"
+                    min="-100"
+                    max="100"
+                    value="0"
+                    step="1"
+                  />
                   <span id="lbl3DPosZVal" class="slider-bubble">0.0000</span>
                 </div>
               </div>
@@ -941,22 +1023,43 @@
               <!-- FOV, Camera Distance, Rotation -->
               <div class="acc-row">
                 <label class="acc-label">FOV (degree)</label>
-                <div class="slider-container" style="flex:1;">
-                  <input type="range" id="slider3DFov" min="10" max="120" value="40" step="1" />
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="slider3DFov"
+                    min="10"
+                    max="120"
+                    value="40"
+                    step="1"
+                  />
                   <span id="lbl3DFovVal" class="slider-bubble">40</span>
                 </div>
               </div>
               <div class="acc-row">
                 <label class="acc-label">Camera distance</label>
-                <div class="slider-container" style="flex:1;">
-                  <input type="range" id="slider3DDist" min="50" max="500" value="145" step="1" />
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="slider3DDist"
+                    min="50"
+                    max="500"
+                    value="145"
+                    step="1"
+                  />
                   <span id="lbl3DDistVal" class="slider-bubble">1.4513</span>
                 </div>
               </div>
               <div class="acc-row">
                 <label class="acc-label">Rotation (Y-axis)</label>
-                <div class="slider-container" style="flex:1;">
-                  <input type="range" id="slider3DRotY" min="-180" max="180" value="0" step="1" />
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="slider3DRotY"
+                    min="-180"
+                    max="180"
+                    value="0"
+                    step="1"
+                  />
                   <span id="lbl3DRotYVal" class="slider-bubble">0</span>
                 </div>
               </div>
@@ -964,7 +1067,20 @@
               <!-- Looking at -->
               <div class="acc-row">
                 <label class="acc-label">Looking at</label>
-                <select id="select3DLookAt" style="flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--r-sm); font-family: var(--font); font-size: 12px; background: var(--surface); color: var(--text-1); outline: none;">
+                <select
+                  id="select3DLookAt"
+                  style="
+                    flex: 1;
+                    padding: 6px 10px;
+                    border: 1px solid var(--border);
+                    border-radius: var(--r-sm);
+                    font-family: var(--font);
+                    font-size: 12px;
+                    background: var(--surface);
+                    color: var(--text-1);
+                    outline: none;
+                  "
+                >
                   <option value="camera">Camera</option>
                   <option value="mouse" selected>Mouse</option>
                   <option value="disabled">Disabled</option>
@@ -972,97 +1088,309 @@
               </div>
 
               <!-- SECTION: Directional Light -->
-              <div class="acc-subsection-title" style="font-size:11.5px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:0.5px; margin: 14px 0 8px;">Directional Light</div>
+              <div
+                class="acc-subsection-title"
+                style="
+                  font-size: 11.5px;
+                  font-weight: 700;
+                  color: var(--text-3);
+                  text-transform: uppercase;
+                  letter-spacing: 0.5px;
+                  margin: 14px 0 8px;
+                "
+              >
+                Directional Light
+              </div>
               <div class="acc-row">
                 <label class="acc-label">Light Rot - X</label>
-                <div class="slider-container" style="flex:1;">
-                  <input type="range" id="slider3DLightRotX" min="-180" max="180" value="0" step="1" />
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="slider3DLightRotX"
+                    min="-180"
+                    max="180"
+                    value="0"
+                    step="1"
+                  />
                   <span id="lbl3DLightRotXVal" class="slider-bubble">0</span>
                 </div>
               </div>
               <div class="acc-row">
                 <label class="acc-label">Light Rot - Y</label>
-                <div class="slider-container" style="flex:1;">
-                  <input type="range" id="slider3DLightRotY" min="-180" max="180" value="0" step="1" />
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="slider3DLightRotY"
+                    min="-180"
+                    max="180"
+                    value="0"
+                    step="1"
+                  />
                   <span id="lbl3DLightRotYVal" class="slider-bubble">0</span>
                 </div>
               </div>
-              <div class="acc-row" style="justify-content: space-between;">
+              <div class="acc-row" style="justify-content: space-between">
                 <label class="acc-label">Light Color</label>
-                <input type="color" id="cp3DLightColor" value="#fffbf5" style="border: 1px solid var(--border); border-radius: 4px; width: 42px; height: 26px; cursor: pointer; background: transparent; padding: 0;" />
+                <input
+                  type="color"
+                  id="cp3DLightColor"
+                  value="#fffbf5"
+                  style="
+                    border: 1px solid var(--border);
+                    border-radius: 4px;
+                    width: 42px;
+                    height: 26px;
+                    cursor: pointer;
+                    background: transparent;
+                    padding: 0;
+                  "
+                />
               </div>
               <div class="acc-row">
                 <label class="acc-label">Light Intensity</label>
-                <div class="slider-container" style="flex:1;">
-                  <input type="range" id="slider3DLightIntensity" min="0" max="500" value="202" step="1" />
-                  <span id="lbl3DLightIntensityVal" class="slider-bubble">2.02</span>
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="slider3DLightIntensity"
+                    min="0"
+                    max="500"
+                    value="202"
+                    step="1"
+                  />
+                  <span id="lbl3DLightIntensityVal" class="slider-bubble"
+                    >2.02</span
+                  >
                 </div>
               </div>
 
               <!-- SECTION: Ambient & Environment -->
-              <div class="acc-subsection-title" style="font-size:11.5px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:0.5px; margin: 14px 0 8px;">Ambient & Environment</div>
+              <div
+                class="acc-subsection-title"
+                style="
+                  font-size: 11.5px;
+                  font-weight: 700;
+                  color: var(--text-3);
+                  text-transform: uppercase;
+                  letter-spacing: 0.5px;
+                  margin: 14px 0 8px;
+                "
+              >
+                Ambient & Environment
+              </div>
               <div class="acc-row">
                 <label class="acc-label">Ambient Intensity</label>
-                <div class="slider-container" style="flex:1;">
-                  <input type="range" id="slider3DAmbientIntensity" min="0" max="200" value="60" step="1" />
-                  <span id="lbl3DAmbientIntensityVal" class="slider-bubble">0.60</span>
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="slider3DAmbientIntensity"
+                    min="0"
+                    max="200"
+                    value="60"
+                    step="1"
+                  />
+                  <span id="lbl3DAmbientIntensityVal" class="slider-bubble"
+                    >0.60</span
+                  >
                 </div>
               </div>
-              <div class="acc-row" style="justify-content: space-between;">
+              <div class="acc-row" style="justify-content: space-between">
                 <label class="acc-label">Ambient Color</label>
-                <input type="color" id="cp3DAmbientColor" value="#ffffff" style="border: 1px solid var(--border); border-radius: 4px; width: 42px; height: 26px; cursor: pointer; background: transparent; padding: 0;" />
+                <input
+                  type="color"
+                  id="cp3DAmbientColor"
+                  value="#ffffff"
+                  style="
+                    border: 1px solid var(--border);
+                    border-radius: 4px;
+                    width: 42px;
+                    height: 26px;
+                    cursor: pointer;
+                    background: transparent;
+                    padding: 0;
+                  "
+                />
               </div>
               <div class="acc-row">
                 <label class="acc-label">Environment</label>
-                <select id="select3DEnvironment" style="flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--r-sm); font-family: var(--font); font-size: 12px; background: var(--surface); color: var(--text-1); outline: none;">
+                <select
+                  id="select3DEnvironment"
+                  style="
+                    flex: 1;
+                    padding: 6px 10px;
+                    border: 1px solid var(--border);
+                    border-radius: var(--r-sm);
+                    font-family: var(--font);
+                    font-size: 12px;
+                    background: var(--surface);
+                    color: var(--text-1);
+                    outline: none;
+                  "
+                >
                   <option value="hemisphere" selected>Hemisphere</option>
                   <option value="skybox">SkyBox</option>
                 </select>
               </div>
               <div class="acc-row">
                 <label class="acc-label">Hemisphere Intensity</label>
-                <div class="slider-container" style="flex:1;">
-                  <input type="range" id="slider3DHemiIntensity" min="0" max="200" value="40" step="1" />
-                  <span id="lbl3DHemiIntensityVal" class="slider-bubble">0.40</span>
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="slider3DHemiIntensity"
+                    min="0"
+                    max="200"
+                    value="40"
+                    step="1"
+                  />
+                  <span id="lbl3DHemiIntensityVal" class="slider-bubble"
+                    >0.40</span
+                  >
                 </div>
               </div>
-              <div class="acc-row" style="justify-content: space-between;">
+              <div class="acc-row" style="justify-content: space-between">
                 <label class="acc-label">Hemi Sky Color</label>
-                <input type="color" id="cp3DHemiSkyColor" value="#ffffff" style="border: 1px solid var(--border); border-radius: 4px; width: 42px; height: 26px; cursor: pointer; background: transparent; padding: 0;" />
+                <input
+                  type="color"
+                  id="cp3DHemiSkyColor"
+                  value="#ffffff"
+                  style="
+                    border: 1px solid var(--border);
+                    border-radius: 4px;
+                    width: 42px;
+                    height: 26px;
+                    cursor: pointer;
+                    background: transparent;
+                    padding: 0;
+                  "
+                />
               </div>
-              <div class="acc-row" style="justify-content: space-between;">
+              <div class="acc-row" style="justify-content: space-between">
                 <label class="acc-label">Hemi Ground Color</label>
-                <input type="color" id="cp3DHemiGroundColor" value="#222222" style="border: 1px solid var(--border); border-radius: 4px; width: 42px; height: 26px; cursor: pointer; background: transparent; padding: 0;" />
+                <input
+                  type="color"
+                  id="cp3DHemiGroundColor"
+                  value="#222222"
+                  style="
+                    border: 1px solid var(--border);
+                    border-radius: 4px;
+                    width: 42px;
+                    height: 26px;
+                    cursor: pointer;
+                    background: transparent;
+                    padding: 0;
+                  "
+                />
               </div>
 
               <!-- SECTION: Model Size Info -->
-              <div class="acc-subsection-title" style="font-size:11.5px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:0.5px; margin: 18px 0 8px;">Model Size Information</div>
-              <div style="background: var(--bg); border: 1px dashed var(--border); border-radius: 8px; padding: 10px; font-size: 11.5px; color: var(--text-2); display: flex; flex-direction: column; gap: 6px; font-family: monospace;">
-                <div style="display:flex; justify-content:space-between;"><span>Width (X):</span><span style="font-weight: 700; color: var(--text-1);">1.3447</span></div>
-                <div style="display:flex; justify-content:space-between;"><span>Height (Y):</span><span style="font-weight: 700; color: var(--text-1);">1.5674</span></div>
-                <div style="display:flex; justify-content:space-between;"><span>Depth (Z):</span><span style="font-weight: 700; color: var(--text-1);">0.5019</span></div>
+              <div
+                class="acc-subsection-title"
+                style="
+                  font-size: 11.5px;
+                  font-weight: 700;
+                  color: var(--text-3);
+                  text-transform: uppercase;
+                  letter-spacing: 0.5px;
+                  margin: 18px 0 8px;
+                "
+              >
+                Model Size Information
+              </div>
+              <div
+                style="
+                  background: var(--bg);
+                  border: 1px dashed var(--border);
+                  border-radius: 8px;
+                  padding: 10px;
+                  font-size: 11.5px;
+                  color: var(--text-2);
+                  display: flex;
+                  flex-direction: column;
+                  gap: 6px;
+                  font-family: monospace;
+                "
+              >
+                <div style="display: flex; justify-content: space-between">
+                  <span>Width (X):</span
+                  ><span style="font-weight: 700; color: var(--text-1)"
+                    >1.3447</span
+                  >
+                </div>
+                <div style="display: flex; justify-content: space-between">
+                  <span>Height (Y):</span
+                  ><span style="font-weight: 700; color: var(--text-1)"
+                    >1.5674</span
+                  >
+                </div>
+                <div style="display: flex; justify-content: space-between">
+                  <span>Depth (Z):</span
+                  ><span style="font-weight: 700; color: var(--text-1)"
+                    >0.5019</span
+                  >
+                </div>
               </div>
 
-              <div class="vrm-tips-box" style="margin-top: 12px; padding: 8px 10px; background: rgba(37,99,235,0.04); border-left: 3px solid #2563eb; font-size: 11px; color: var(--text-2); line-height: 1.4; border-radius: 0 4px 4px 0;">
-                <strong>Tips!</strong> Edit the initial position the VRM model. Coordinate axes are visualised.
+              <div
+                class="vrm-tips-box"
+                style="
+                  margin-top: 12px;
+                  padding: 8px 10px;
+                  background: rgba(37, 99, 235, 0.04);
+                  border-left: 3px solid #2563eb;
+                  font-size: 11px;
+                  color: var(--text-2);
+                  line-height: 1.4;
+                  border-radius: 0 4px 4px 0;
+                "
+              >
+                <strong>Tips!</strong> Edit the initial position the VRM model.
+                Coordinate axes are visualised.
               </div>
             </div>
           </div>
 
-
-
           <!-- Accordion: Animation -->
           <div class="accordion" id="accordionAnimation">
-            <button class="accordion-hdr" type="button" aria-expanded="false" data-accordion="accordionAnimation">
-              <svg class="accordion-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+            <button
+              class="accordion-hdr"
+              type="button"
+              aria-expanded="false"
+              data-accordion="accordionAnimation"
+            >
+              <svg
+                class="accordion-icon-svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+                <line x1="9" y1="9" x2="9.01" y2="9" />
+                <line x1="15" y1="9" x2="15.01" y2="9" />
+              </svg>
               <span class="accordion-label">Animation</span>
-              <svg class="accordion-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+              <svg
+                class="accordion-chevron"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
             </button>
             <div class="accordion-body">
               <div class="form-group-item form-row-between">
                 <div class="form-item-info">
                   <span class="form-item-title">Enable mouse tracking</span>
-                  <span class="form-item-desc">Look at the cursor while it is moving. Idle eye movement resumes after the cursor stops.</span>
+                  <span class="form-item-desc"
+                    >Look at the cursor while it is moving. Idle eye movement
+                    resumes after the cursor stops.</span
+                  >
                 </div>
                 <label class="toggle-switch">
                   <input type="checkbox" id="chkMouseTracking" checked />
@@ -1070,18 +1398,30 @@
                 </label>
               </div>
 
-              <div class="acc-row" style="margin-top: 10px;">
+              <div class="acc-row" style="margin-top: 10px">
                 <label class="acc-label">Eye offset (%)</label>
                 <div class="slider-container" style="flex: 1">
-                  <input type="range" id="sliderEyeOffset" min="0" max="100" value="0" />
+                  <input
+                    type="range"
+                    id="sliderEyeOffset"
+                    min="0"
+                    max="100"
+                    value="0"
+                  />
                   <span id="lblEyeOffsetVal" class="slider-bubble">0.00%</span>
                 </div>
               </div>
 
-              <div class="form-group-item form-row-between" style="margin-top: 10px;">
+              <div
+                class="form-group-item form-row-between"
+                style="margin-top: 10px"
+              >
                 <div class="form-item-info">
                   <span class="form-item-title">Idle eye movement</span>
-                  <span class="form-item-desc">Randomly look around when there is no active cursor focus.</span>
+                  <span class="form-item-desc"
+                    >Randomly look around when there is no active cursor
+                    focus.</span
+                  >
                 </div>
                 <label class="toggle-switch">
                   <input type="checkbox" id="chkIdleEyeMovement" checked />
@@ -1089,7 +1429,10 @@
                 </label>
               </div>
 
-              <div class="form-group-item form-row-between" style="margin-top: 10px;">
+              <div
+                class="form-group-item form-row-between"
+                style="margin-top: 10px"
+              >
                 <div class="form-item-info">
                   <span class="form-item-title">Enable blink</span>
                   <span class="form-item-desc">Let the model blink.</span>
@@ -1100,17 +1443,43 @@
                 </label>
               </div>
 
-              <div class="acc-row" style="margin-top: 10px;">
+              <div class="acc-row" style="margin-top: 10px">
                 <label class="acc-label">Blink mode</label>
-                <select id="selectBlinkMode" style="flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--r-sm); font-family: var(--font); font-size: 12px; background: var(--surface); color: var(--text-1); outline: none;">
+                <select
+                  id="selectBlinkMode"
+                  style="
+                    flex: 1;
+                    padding: 6px 10px;
+                    border: 1px solid var(--border);
+                    border-radius: var(--r-sm);
+                    font-family: var(--font);
+                    font-size: 12px;
+                    background: var(--surface);
+                    color: var(--text-1);
+                    outline: none;
+                  "
+                >
                   <option value="auto">Auto</option>
                   <option value="force">Force</option>
                 </select>
               </div>
 
-              <div class="acc-row" style="margin-top: 10px;">
+              <div class="acc-row" style="margin-top: 10px">
                 <label class="acc-label">Idle animation</label>
-                <select id="selectIdleAnimation" style="flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--r-sm); font-family: var(--font); font-size: 12px; background: var(--surface); color: var(--text-1); outline: none;">
+                <select
+                  id="selectIdleAnimation"
+                  style="
+                    flex: 1;
+                    padding: 6px 10px;
+                    border: 1px solid var(--border);
+                    border-radius: var(--r-sm);
+                    font-family: var(--font);
+                    font-size: 12px;
+                    background: var(--surface);
+                    color: var(--text-1);
+                    outline: none;
+                  "
+                >
                   <option value="idle">Default Idle</option>
                   <option value="breath">Breathing</option>
                 </select>
@@ -1120,31 +1489,132 @@
 
           <!-- Accordion: Model Parameters -->
           <div class="accordion" id="accordionParams">
-            <button class="accordion-hdr" type="button" aria-expanded="false" data-accordion="accordionParams">
-              <svg class="accordion-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-9m3 10H4m10 0h6M4 7h2m0 0v10M20 7v10"/></svg>
+            <button
+              class="accordion-hdr"
+              type="button"
+              aria-expanded="false"
+              data-accordion="accordionParams"
+            >
+              <svg
+                class="accordion-icon-svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M20 7h-9m3 10H4m10 0h6M4 7h2m0 0v10M20 7v10" />
+              </svg>
               <span class="accordion-label">Model Parameters</span>
-              <svg class="accordion-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+              <svg
+                class="accordion-chevron"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
             </button>
             <div class="accordion-body">
-              
               <div class="acc-row">
                 <label class="acc-label">Render scale</label>
                 <div class="slider-container" style="flex: 1">
-                  <input type="range" id="sliderRenderScale" min="50" max="300" value="200" />
-                  <span id="lblRenderScaleVal" class="slider-bubble">2.00x</span>
+                  <input
+                    type="range"
+                    id="sliderRenderScale"
+                    min="50"
+                    max="300"
+                    value="200"
+                  />
+                  <span id="lblRenderScaleVal" class="slider-bubble"
+                    >2.00x</span
+                  >
                 </div>
               </div>
 
               <div class="acc-row">
                 <label class="acc-label">FPS Limit</label>
-                <div class="segment-control" id="fpsLimitSegment" style="display: flex; gap: 4px; background: var(--bg); padding: 2px; border-radius: 6px; border: 1px solid var(--border); flex: 1;">
-                  <button class="segment-btn active" data-value="30" type="button" style="flex: 1; border: none; padding: 4px 8px; font-size: 11px; font-family: var(--font); cursor: pointer; border-radius: 4px; background: transparent; font-weight: 600; color: var(--text-1);">30</button>
-                  <button class="segment-btn" data-value="60" type="button" style="flex: 1; border: none; padding: 4px 8px; font-size: 11px; font-family: var(--font); cursor: pointer; border-radius: 4px; background: transparent; font-weight: 600; color: var(--text-1);">60</button>
-                  <button class="segment-btn" data-value="infinite" type="button" style="flex: 1; border: none; padding: 4px 8px; font-size: 11px; font-family: var(--font); cursor: pointer; border-radius: 4px; background: transparent; font-weight: 600; color: var(--text-1);">∞</button>
+                <div
+                  class="segment-control"
+                  id="fpsLimitSegment"
+                  style="
+                    display: flex;
+                    gap: 4px;
+                    background: var(--bg);
+                    padding: 2px;
+                    border-radius: 6px;
+                    border: 1px solid var(--border);
+                    flex: 1;
+                  "
+                >
+                  <button
+                    class="segment-btn active"
+                    data-value="30"
+                    type="button"
+                    style="
+                      flex: 1;
+                      border: none;
+                      padding: 4px 8px;
+                      font-size: 11px;
+                      font-family: var(--font);
+                      cursor: pointer;
+                      border-radius: 4px;
+                      background: transparent;
+                      font-weight: 600;
+                      color: var(--text-1);
+                    "
+                  >
+                    30
+                  </button>
+                  <button
+                    class="segment-btn"
+                    data-value="60"
+                    type="button"
+                    style="
+                      flex: 1;
+                      border: none;
+                      padding: 4px 8px;
+                      font-size: 11px;
+                      font-family: var(--font);
+                      cursor: pointer;
+                      border-radius: 4px;
+                      background: transparent;
+                      font-weight: 600;
+                      color: var(--text-1);
+                    "
+                  >
+                    60
+                  </button>
+                  <button
+                    class="segment-btn"
+                    data-value="infinite"
+                    type="button"
+                    style="
+                      flex: 1;
+                      border: none;
+                      padding: 4px 8px;
+                      font-size: 11px;
+                      font-family: var(--font);
+                      cursor: pointer;
+                      border-radius: 4px;
+                      background: transparent;
+                      font-weight: 600;
+                      color: var(--text-1);
+                    "
+                  >
+                    ∞
+                  </button>
                 </div>
               </div>
 
-              <div class="form-group-item form-row-between" style="margin-top: 10px;">
+              <div
+                class="form-group-item form-row-between"
+                style="margin-top: 10px"
+              >
                 <div class="form-item-info">
                   <span class="form-item-title">Drop shadow</span>
                 </div>
@@ -1154,101 +1624,349 @@
                 </label>
               </div>
 
-              <div style="display: flex; gap: 8px; margin-top: 12px;">
-                <button class="action-btn" id="btnResetParams" type="button" style="flex: 1; font-size: 11.5px; padding: 6px;">Reset Parameters</button>
-                <button class="action-btn" id="btnClearCache" type="button" style="flex: 1; font-size: 11.5px; padding: 6px; background: var(--bg); border: 1px solid var(--border); color: var(--text-2);">Clear Cache</button>
+              <div style="display: flex; gap: 8px; margin-top: 12px">
+                <button
+                  class="action-btn"
+                  id="btnResetParams"
+                  type="button"
+                  style="flex: 1; font-size: 11.5px; padding: 6px"
+                >
+                  Reset Parameters
+                </button>
+                <button
+                  class="action-btn"
+                  id="btnClearCache"
+                  type="button"
+                  style="
+                    flex: 1;
+                    font-size: 11.5px;
+                    padding: 6px;
+                    background: var(--bg);
+                    border: 1px solid var(--border);
+                    color: var(--text-2);
+                  "
+                >
+                  Clear Cache
+                </button>
               </div>
 
               <!-- Subsection: Head Rotation -->
-              <div class="acc-subsection-title" style="font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; margin: 18px 0 8px;">Head Rotation</div>
+              <div
+                class="acc-subsection-title"
+                style="
+                  font-size: 11px;
+                  font-weight: 700;
+                  color: var(--text-3);
+                  text-transform: uppercase;
+                  margin: 18px 0 8px;
+                "
+              >
+                Head Rotation
+              </div>
               <div class="acc-row">
                 <label class="acc-label">Angle X</label>
-                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamAngleX" min="-30" max="30" value="0" /><span id="lblParamAngleXVal" class="slider-bubble">0</span></div>
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="sliderParamAngleX"
+                    min="-30"
+                    max="30"
+                    value="0"
+                  /><span id="lblParamAngleXVal" class="slider-bubble">0</span>
+                </div>
               </div>
               <div class="acc-row">
                 <label class="acc-label">Angle Y</label>
-                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamAngleY" min="-30" max="30" value="0" /><span id="lblParamAngleYVal" class="slider-bubble">0</span></div>
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="sliderParamAngleY"
+                    min="-30"
+                    max="30"
+                    value="0"
+                  /><span id="lblParamAngleYVal" class="slider-bubble">0</span>
+                </div>
               </div>
               <div class="acc-row">
                 <label class="acc-label">Angle Z</label>
-                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamAngleZ" min="-30" max="30" value="0" /><span id="lblParamAngleZVal" class="slider-bubble">0</span></div>
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="sliderParamAngleZ"
+                    min="-30"
+                    max="30"
+                    value="0"
+                  /><span id="lblParamAngleZVal" class="slider-bubble">0</span>
+                </div>
               </div>
 
               <!-- Subsection: Eyes -->
-              <div class="acc-subsection-title" style="font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; margin: 14px 0 8px;">Eyes</div>
+              <div
+                class="acc-subsection-title"
+                style="
+                  font-size: 11px;
+                  font-weight: 700;
+                  color: var(--text-3);
+                  text-transform: uppercase;
+                  margin: 14px 0 8px;
+                "
+              >
+                Eyes
+              </div>
               <div class="acc-row">
                 <label class="acc-label">Left Eye Open</label>
-                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamEyeLOpen" min="0" max="100" value="100" /><span id="lblParamEyeLOpenVal" class="slider-bubble">1.00</span></div>
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="sliderParamEyeLOpen"
+                    min="0"
+                    max="100"
+                    value="100"
+                  /><span id="lblParamEyeLOpenVal" class="slider-bubble"
+                    >1.00</span
+                  >
+                </div>
               </div>
               <div class="acc-row">
                 <label class="acc-label">Right Eye Open</label>
-                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamEyeROpen" min="0" max="100" value="100" /><span id="lblParamEyeROpenVal" class="slider-bubble">1.00</span></div>
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="sliderParamEyeROpen"
+                    min="0"
+                    max="100"
+                    value="100"
+                  /><span id="lblParamEyeROpenVal" class="slider-bubble"
+                    >1.00</span
+                  >
+                </div>
               </div>
               <div class="acc-row">
                 <label class="acc-label">Left Eye Smile</label>
-                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamEyeLSmile" min="0" max="100" value="0" /><span id="lblParamEyeLSmileVal" class="slider-bubble">0.00</span></div>
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="sliderParamEyeLSmile"
+                    min="0"
+                    max="100"
+                    value="0"
+                  /><span id="lblParamEyeLSmileVal" class="slider-bubble"
+                    >0.00</span
+                  >
+                </div>
               </div>
               <div class="acc-row">
                 <label class="acc-label">Right Eye Smile</label>
-                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamEyeRSmile" min="0" max="100" value="0" /><span id="lblParamEyeRSmileVal" class="slider-bubble">0.00</span></div>
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="sliderParamEyeRSmile"
+                    min="0"
+                    max="100"
+                    value="0"
+                  /><span id="lblParamEyeRSmileVal" class="slider-bubble"
+                    >0.00</span
+                  >
+                </div>
               </div>
 
               <!-- Subsection: Eyebrows -->
-              <div class="acc-subsection-title" style="font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; margin: 14px 0 8px;">Eyebrows</div>
+              <div
+                class="acc-subsection-title"
+                style="
+                  font-size: 11px;
+                  font-weight: 700;
+                  color: var(--text-3);
+                  text-transform: uppercase;
+                  margin: 14px 0 8px;
+                "
+              >
+                Eyebrows
+              </div>
               <div class="acc-row">
                 <label class="acc-label">Left Eyebrow X</label>
-                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamBrowLX" min="-100" max="100" value="0" /><span id="lblParamBrowLXVal" class="slider-bubble">0.00</span></div>
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="sliderParamBrowLX"
+                    min="-100"
+                    max="100"
+                    value="0"
+                  /><span id="lblParamBrowLXVal" class="slider-bubble"
+                    >0.00</span
+                  >
+                </div>
               </div>
               <div class="acc-row">
                 <label class="acc-label">Right Eyebrow X</label>
-                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamBrowRX" min="-100" max="100" value="0" /><span id="lblParamBrowRXVal" class="slider-bubble">0.00</span></div>
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="sliderParamBrowRX"
+                    min="-100"
+                    max="100"
+                    value="0"
+                  /><span id="lblParamBrowRXVal" class="slider-bubble"
+                    >0.00</span
+                  >
+                </div>
               </div>
               <div class="acc-row">
                 <label class="acc-label">Left Eyebrow Y</label>
-                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamBrowLY" min="-100" max="100" value="0" /><span id="lblParamBrowLYVal" class="slider-bubble">0.00</span></div>
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="sliderParamBrowLY"
+                    min="-100"
+                    max="100"
+                    value="0"
+                  /><span id="lblParamBrowLYVal" class="slider-bubble"
+                    >0.00</span
+                  >
+                </div>
               </div>
               <div class="acc-row">
                 <label class="acc-label">Right Eyebrow Y</label>
-                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamBrowRY" min="-100" max="100" value="0" /><span id="lblParamBrowRYVal" class="slider-bubble">0.00</span></div>
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="sliderParamBrowRY"
+                    min="-100"
+                    max="100"
+                    value="0"
+                  /><span id="lblParamBrowRYVal" class="slider-bubble"
+                    >0.00</span
+                  >
+                </div>
               </div>
 
               <!-- Subsection: Mouth -->
-              <div class="acc-subsection-title" style="font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; margin: 14px 0 8px;">Mouth</div>
+              <div
+                class="acc-subsection-title"
+                style="
+                  font-size: 11px;
+                  font-weight: 700;
+                  color: var(--text-3);
+                  text-transform: uppercase;
+                  margin: 14px 0 8px;
+                "
+              >
+                Mouth
+              </div>
               <div class="acc-row">
                 <label class="acc-label">Mouth Open</label>
-                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamMouthOpen" min="0" max="100" value="0" /><span id="lblParamMouthOpenVal" class="slider-bubble">0.00</span></div>
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="sliderParamMouthOpen"
+                    min="0"
+                    max="100"
+                    value="0"
+                  /><span id="lblParamMouthOpenVal" class="slider-bubble"
+                    >0.00</span
+                  >
+                </div>
               </div>
               <div class="acc-row">
                 <label class="acc-label">Mouth Form</label>
-                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamMouthForm" min="-100" max="100" value="0" /><span id="lblParamMouthFormVal" class="slider-bubble">0.00</span></div>
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="sliderParamMouthForm"
+                    min="-100"
+                    max="100"
+                    value="0"
+                  /><span id="lblParamMouthFormVal" class="slider-bubble"
+                    >0.00</span
+                  >
+                </div>
               </div>
 
               <!-- Subsection: Body & Breath -->
-              <div class="acc-subsection-title" style="font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; margin: 14px 0 8px;">Body & Physics</div>
+              <div
+                class="acc-subsection-title"
+                style="
+                  font-size: 11px;
+                  font-weight: 700;
+                  color: var(--text-3);
+                  text-transform: uppercase;
+                  margin: 14px 0 8px;
+                "
+              >
+                Body & Physics
+              </div>
               <div class="acc-row">
                 <label class="acc-label">Body Rot X</label>
-                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamBodyX" min="-10" max="10" value="0" /><span id="lblParamBodyXVal" class="slider-bubble">0</span></div>
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="sliderParamBodyX"
+                    min="-10"
+                    max="10"
+                    value="0"
+                  /><span id="lblParamBodyXVal" class="slider-bubble">0</span>
+                </div>
               </div>
               <div class="acc-row">
                 <label class="acc-label">Breath</label>
-                <div class="slider-container" style="flex: 1"><input type="range" id="sliderParamBreath" min="0" max="100" value="0" /><span id="lblParamBreathVal" class="slider-bubble">0.00</span></div>
+                <div class="slider-container" style="flex: 1">
+                  <input
+                    type="range"
+                    id="sliderParamBreath"
+                    min="0"
+                    max="100"
+                    value="0"
+                  /><span id="lblParamBreathVal" class="slider-bubble"
+                    >0.00</span
+                  >
+                </div>
               </div>
-
             </div>
           </div>
 
           <!-- Accordion: Expressions -->
           <div class="accordion" id="accordionExpressions">
-            <button class="accordion-hdr" type="button" aria-expanded="false" data-accordion="accordionExpressions">
-              <svg class="accordion-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82a2 2 0 0 1-2.83 2.83"/></svg>
+            <button
+              class="accordion-hdr"
+              type="button"
+              aria-expanded="false"
+              data-accordion="accordionExpressions"
+            >
+              <svg
+                class="accordion-icon-svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path
+                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82a2 2 0 0 1-2.83 2.83"
+                />
+              </svg>
               <span class="accordion-label">Expressions</span>
-              <svg class="accordion-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+              <svg
+                class="accordion-chevron"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
             </button>
             <div class="accordion-body">
               <div class="form-group-item form-row-between">
                 <div class="form-item-info">
                   <span class="form-item-title">Expression system</span>
-                  <span class="form-item-desc">SDK expression manager and eye blink are preserved when disabled.</span>
+                  <span class="form-item-desc"
+                    >SDK expression manager and eye blink are preserved when
+                    disabled.</span
+                  >
                 </div>
                 <label class="toggle-switch">
                   <input type="checkbox" id="chkExpressionSystem" checked />
@@ -1283,8 +2001,410 @@
           </div>
         </div>
         <section class="page-content">
+          <!-- Blue Info Banner -->
+          <div
+            class="info-banner info-banner-blue"
+            style="
+              margin-bottom: 16px;
+              background: #f0f9ff;
+              border: 1px solid #bae6fd;
+              border-radius: 12px;
+              padding: 14px 16px;
+              color: #0369a1;
+              font-size: 13px;
+              line-height: 1.5;
+              font-family: var(--font);
+            "
+          >
+            <div
+              style="
+                font-weight: 700;
+                font-size: 14px;
+                margin-bottom: 4px;
+                color: #0369a1;
+              "
+            >
+              First time here?
+            </div>
+            <div>
+              AIRI requires at least one
+              <span
+                style="
+                  background: #e0f2fe;
+                  padding: 2px 6px;
+                  border-radius: 6px;
+                  font-weight: 500;
+                  font-size: 12.5px;
+                "
+                >💬 Chat</span
+              >
+              provider to be configured to think, and behave properly. You could
+              think of it as the brain of the characters living in AIRI system.
+            </div>
+          </div>
+
+          <!-- Provider Tabs Menu -->
+          <div class="provider-tabs">
+            <button
+              class="provider-tab-btn active"
+              data-tab="chat"
+              type="button"
+            >
+              💬 Chat
+            </button>
+            <button class="provider-tab-btn" data-tab="vision" type="button">
+              👁️ Vision
+            </button>
+            <button class="provider-tab-btn" data-tab="speech" type="button">
+              🗣️ Speech
+            </button>
+            <button
+              class="provider-tab-btn"
+              data-tab="transcription"
+              type="button"
+            >
+              🎙️ Transcription
+            </button>
+            <button class="provider-tab-btn" data-tab="artistry" type="button">
+              🎨 Artistry
+            </button>
+          </div>
+
+          <!-- Filters Bar -->
+          <div class="provider-filters">
+            <div style="display: flex; align-items: center; gap: 8px">
+              <span>Pricing:</span>
+              <div class="filter-group" id="filterPricing">
+                <button class="filter-btn active" data-val="all" type="button">
+                  All
+                </button>
+                <button class="filter-btn" data-val="free" type="button">
+                  Free
+                </button>
+                <button class="filter-btn" data-val="paid" type="button">
+                  Paid
+                </button>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px">
+              <span>Deployment:</span>
+              <div class="filter-group" id="filterDeployment">
+                <button class="filter-btn active" data-val="all" type="button">
+                  All
+                </button>
+                <button class="filter-btn" data-val="local" type="button">
+                  Local
+                </button>
+                <button class="filter-btn" data-val="cloud" type="button">
+                  Cloud
+                </button>
+              </div>
+            </div>
+            <span
+              id="providerLoadingState"
+              style="
+                margin-left: auto;
+                color: var(--text-3);
+                font-size: 11px;
+                display: none;
+              "
+              >Loading...</span
+            >
+          </div>
+
+          <div
+            id="providerHeader"
+            style="
+              margin-top: 14px;
+              margin-bottom: 16px;
+              font-family: var(--font);
+            "
+          >
+            <!-- Rendered dynamically by JS -->
+          </div>
+
           <div class="provider-grid" id="providerGrid">
             <!-- Providers rendered by JS or static -->
+          </div>
+        </section>
+      </div>
+
+      <!-- ========================================================
+           PAGE: PROVIDER DETAIL
+           ======================================================== -->
+      <div id="pageProviderDetail" class="view-panel">
+        <div class="page-header">
+          <span class="page-breadcrumb">Providers</span>
+          <div class="page-title-row">
+            <button
+              class="back-button-provider"
+              id="btnBackToProviders"
+              type="button"
+              style="
+                background: transparent;
+                border: none;
+                color: var(--text-1);
+                cursor: pointer;
+                padding: 4px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                width: 32px;
+                height: 32px;
+                transition: background 0.12s;
+                margin-right: 6px;
+              "
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+              >
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <h1 class="page-title" id="lblProviderDetailTitle">OpenAI</h1>
+          </div>
+        </div>
+        <section class="page-content">
+          <!-- Basic Section -->
+          <div
+            class="acc-subsection-title"
+            style="
+              font-size: 13.5px;
+              font-weight: 700;
+              color: var(--text-1);
+              margin: 10px 0 2px;
+              font-family: var(--font);
+            "
+          >
+            Basic
+          </div>
+          <span
+            style="
+              font-size: 11px;
+              color: var(--text-3);
+              display: block;
+              margin-bottom: 12px;
+              font-family: var(--font);
+            "
+            >Essential settings</span
+          >
+
+          <div
+            class="settings-card"
+            id="providerBasicCard"
+            style="
+              padding: 16px;
+              background: var(--bg-card);
+              border: 1px solid var(--border);
+              border-radius: 12px;
+              margin-bottom: 20px;
+            "
+          >
+            <div class="form-group-item">
+              <label
+                class="form-item-title"
+                id="lblApiKeyTitle"
+                style="font-size: 12px; font-weight: 600; color: var(--text-1)"
+                >API Key Input</label
+              >
+              <span
+                class="form-item-desc"
+                id="lblApiKeyDesc"
+                style="
+                  font-size: 11px;
+                  color: var(--text-3);
+                  display: block;
+                  margin-top: 2px;
+                "
+                >API Key for OpenAI</span
+              >
+              <div class="input-with-actions" style="margin-top: 8px">
+                <input
+                  type="password"
+                  id="txtProviderApiKey"
+                  class="styled-input-field"
+                  placeholder="sk-..."
+                  style="
+                    flex: 1;
+                    border: 1px solid var(--border);
+                    border-radius: 8px;
+                    padding: 8px 12px;
+                    background: var(--surface);
+                    color: var(--text-1);
+                  "
+                />
+                <button
+                  class="input-action-btn"
+                  type="button"
+                  id="btnToggleProviderKeyVis"
+                  style="
+                    background: transparent;
+                    border: none;
+                    color: var(--text-2);
+                    cursor: pointer;
+                    padding: 0 10px;
+                  "
+                >
+                  👁
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Advanced Section -->
+          <div
+            class="accordion"
+            id="accordionAdvanced"
+            style="margin-bottom: 20px"
+          >
+            <button
+              class="accordion-hdr"
+              type="button"
+              aria-expanded="true"
+              data-accordion="accordionAdvanced"
+              style="
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                background: transparent;
+                border: none;
+                color: var(--text-1);
+                padding: 12px 4px;
+                cursor: pointer;
+              "
+            >
+              <span
+                class="accordion-label"
+                style="
+                  font-size: 13.5px;
+                  font-weight: 700;
+                  font-family: var(--font);
+                "
+                >Advanced</span
+              >
+              <svg
+                class="accordion-chevron"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+            <div
+              class="accordion-body accordion-body-open"
+              style="padding: 4px"
+            >
+              <div class="form-group-item" style="margin-top: 4px">
+                <label
+                  class="form-item-title"
+                  id="lblBaseUrlTitle"
+                  style="
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: var(--text-1);
+                  "
+                  >Base URL</label
+                >
+                <span
+                  class="form-item-desc"
+                  id="lblBaseUrlDesc"
+                  style="
+                    font-size: 11px;
+                    color: var(--text-3);
+                    display: block;
+                    margin-top: 2px;
+                  "
+                  >Custom base URL (optional)</span
+                >
+                <input
+                  type="text"
+                  id="txtProviderBaseUrl"
+                  class="styled-input-field"
+                  style="
+                    margin-top: 8px;
+                    width: 100%;
+                    border: 1px solid var(--border);
+                    border-radius: 8px;
+                    padding: 8px 12px;
+                    background: var(--surface);
+                    color: var(--text-1);
+                  "
+                  placeholder="https://api.openai.com/v1"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Error/Validation Banner -->
+          <div
+            id="validationBanner"
+            class="info-banner info-banner-red"
+            style="
+              display: none;
+              background: #fff5f5;
+              border: 1px solid #feb2b2;
+              border-radius: 12px;
+              padding: 14px 16px;
+              color: #c53030;
+              font-size: 13px;
+              margin-bottom: 20px;
+              font-family: var(--font);
+            "
+          >
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 6px;
+              "
+            >
+              <span
+                style="
+                  font-weight: 700;
+                  color: #9b2c2c;
+                  display: flex;
+                  align-items: center;
+                  gap: 6px;
+                "
+              >
+                <span>❌ Configuration validation failed</span>
+              </span>
+              <button
+                id="btnContinueAnyway"
+                style="
+                  background: #fed7d7;
+                  border: none;
+                  padding: 4px 10px;
+                  border-radius: 6px;
+                  color: #9b2c2c;
+                  font-size: 11px;
+                  font-weight: 600;
+                  cursor: pointer;
+                  transition: background 0.1s;
+                "
+                type="button"
+              >
+                Continue Anyway
+              </button>
+            </div>
+            <div
+              id="validationErrorText"
+              style="font-size: 12px; margin-top: 4px; color: #c53030"
+            >
+              API key is required.
+            </div>
           </div>
         </section>
       </div>

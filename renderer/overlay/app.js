@@ -289,6 +289,26 @@ setTimeout(() => {
   );
   avatar.setState({ expression: "smile", motion: "idle" });
 }, 300);
+function updateAvatarBackground(path) {
+  const stage = document.querySelector(".avatar-stage");
+  if (stage) {
+    if (path) {
+      let normalizedPath = path.replace(/\\/g, "/");
+      let url = "";
+      if (normalizedPath.startsWith("http") || normalizedPath.startsWith("file://")) {
+        url = normalizedPath;
+      } else {
+        url = `../../${normalizedPath}`;
+      }
+      stage.style.backgroundImage = `url('${url}')`;
+      stage.style.backgroundSize = "cover";
+      stage.style.backgroundPosition = "center";
+      stage.style.backgroundRepeat = "no-repeat";
+    } else {
+      stage.style.backgroundImage = "";
+    }
+  }
+}
 function updateAvatarOffset(x, y) {
   const wrap = document.getElementById("avatarWrap");
   if (wrap) {
@@ -307,6 +327,9 @@ async function loadConfig() {
         }
       }
       if (sttSelect) sttSelect.value = res.stt_model || "base";
+      if (res.background_image) {
+        updateAvatarBackground(res.background_image);
+      }
       const posX = res.app?.avatarX || res.avatarX || 0;
       const posY = res.app?.avatarY || res.avatarY || 0;
       updateAvatarOffset(posX, posY);
@@ -507,5 +530,131 @@ window.companion.on("config:updated", ({ key, value }) => {
       const posY = res.app?.avatarY || res.avatarY || 0;
       updateAvatarOffset(posX, posY);
     });
+  } else if (key === "app.backgroundImage") {
+    updateAvatarBackground(value || "");
+  } else if (key === "app.avatarModel") {
+    avatar.changeModel(value);
+  }
+});
+const speechBubble = document.getElementById("thoughtBubble");
+const speechContent = document.getElementById("thoughtContent");
+function setBubbleCaption(msg, expression = "normal") {
+  if (speechBubble && speechContent) {
+    if (msg) {
+      speechContent.textContent = msg;
+      speechBubble.classList.remove("hidden");
+    } else {
+      speechBubble.classList.add("hidden");
+    }
+  }
+  avatar.setState({ expression, emotion: expression, motion: "idle" });
+}
+let isAppDragging = false;
+let isAppBusy = false;
+document.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (isAppDragging || isAppBusy || isRecording) return;
+  isAppDragging = true;
+  avatar.setState({ expression: "surprised", emotion: "surprised", motion: "nod" });
+  setBubbleCaption("\u1EE6a, c\u1EADu \u0111ang \u0111\u1ECBnh \u0111\u01B0a file g\xEC cho t\u1EDB th\u1EBF? [excited]");
+});
+document.addEventListener("dragleave", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (!e.relatedTarget) {
+    isAppDragging = false;
+    avatar.setState({ expression: "normal", emotion: "normal", motion: "idle" });
+    setBubbleCaption("");
+  }
+});
+document.addEventListener("drop", async (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  isAppDragging = false;
+  if (isAppBusy || isRecording) return;
+  const files = e.dataTransfer?.files;
+  if (files && files.length > 0) {
+    const file = files[0];
+    const fileName = file.name;
+    const filePath = file.path;
+    if (fileName.toLowerCase().endsWith(".zip")) {
+      try {
+        isAppBusy = true;
+        setBusy(true);
+        avatar.setState({ expression: "thinking", emotion: "thinking", motion: "thinking" });
+        setBubbleCaption("\u0110ang gi\u1EA3i n\xE9n v\xE0 n\u1EA1p model Live2D m\u1EDBi, c\u1EADu \u0111\u1EE3i t\u1EDB x\xEDu nha...");
+        const res = await window.companion.invoke("avatar:import-zip", { path: filePath });
+        if (res && res.success) {
+          const modelPath = res.model.path;
+          await avatar.changeModel(modelPath);
+          await window.companion.invoke("ai:update-config", {
+            key: "app.avatarModel",
+            value: modelPath
+          }).catch(() => null);
+          setBubbleCaption(`Oa! \u0110\xE3 n\u1EA1p th\xE0nh c\xF4ng nh\xE2n v\u1EADt m\u1EDBi "${res.model.name}" r\u1ED3i n\xE8! [happy]`);
+          avatar.setState({ expression: "happy", emotion: "happy", motion: "excited" });
+          setTimeout(() => {
+            if (!isAppBusy && !isRecording) {
+              setBubbleCaption("");
+              avatar.setState({ expression: "smile", emotion: "smile", motion: "idle" });
+            }
+          }, 4e3);
+        } else {
+          throw new Error(res?.error || "Unknown import error");
+        }
+      } catch (err) {
+        console.error("Failed to import Live2D model ZIP:", err);
+        setBubbleCaption(`Kh\xF4ng n\u1EA1p \u0111\u01B0\u1EE3c model Live2D: ${err.message}. C\u1EADu ki\u1EC3m tra l\u1EA1i file zip nh\xE9.`);
+        avatar.setState({ expression: "sad", emotion: "sad", motion: "shake" });
+      } finally {
+        isAppBusy = false;
+        setBusy(false);
+      }
+    } else {
+      const ext = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
+      const docExtensions = [".pdf", ".docx", ".doc", ".txt", ".md"];
+      if (docExtensions.includes(ext)) {
+        try {
+          isAppBusy = true;
+          setBusy(true);
+          avatar.setState({ expression: "thinking", emotion: "thinking", motion: "thinking" });
+          setBubbleCaption(`\u0110ang \u0111\u1ECDc t\xE0i li\u1EC7u "${fileName}" \u0111\u1EC3 n\u1EA1p ki\u1EBFn th\u1EE9c, c\u1EADu ch\u1EDD t\u1EDB m\u1ED9t x\xEDu nh\xE9...`);
+          const res = await window.companion.invoke("system:import-document", { path: filePath });
+          if (res && res.success) {
+            setBubbleCaption(`T\u1EDB \u0111\xE3 h\u1ECDc xong t\xE0i li\u1EC7u "${fileName}" r\u1ED3i n\xE8! B\xE2y gi\u1EDD c\u1EADu c\xF3 th\u1EC3 h\u1ECFi t\u1EDB b\u1EA5t c\u1EE9 \u0111i\u1EC1u g\xEC v\u1EC1 n\xF3 r\u1ED3i nh\xE9! [happy]`);
+            avatar.setState({ expression: "happy", emotion: "happy", motion: "excited" });
+            setTimeout(() => {
+              if (!isAppBusy && !isRecording) {
+                setBubbleCaption("");
+                avatar.setState({ expression: "smile", emotion: "smile", motion: "idle" });
+              }
+            }, 5e3);
+          } else {
+            throw new Error(res?.error || "Unknown import error");
+          }
+        } catch (err) {
+          console.error("Failed to import document:", err);
+          setBubbleCaption(`Kh\xF4ng n\u1EA1p \u0111\u01B0\u1EE3c t\xE0i li\u1EC7u: ${err.message}. C\u1EADu ki\u1EC3m tra l\u1EA1i \u0111\u1ECBnh d\u1EA1ng file nh\xE9.`);
+          avatar.setState({ expression: "sad", emotion: "sad", motion: "shake" });
+        } finally {
+          isAppBusy = false;
+          setBusy(false);
+        }
+      } else {
+        setBubbleCaption(`Oa! C\u1EA3m \u01A1n c\u1EADu \u0111\xE3 g\u1EEDi file "${fileName}" cho t\u1EDB nha! [happy]`);
+      }
+    }
+  } else {
+    avatar.setState({ expression: "normal", emotion: "normal", motion: "idle" });
+    setBubbleCaption("");
+  }
+});
+window.companion.on("avatar:registry-updated", async (newModel) => {
+  try {
+    setBubbleCaption(`\u2728 \u0110\xE3 th\xEAm nh\xE2n v\u1EADt: ${newModel?.name || "m\u1EDBi"}`);
+    setTimeout(() => setBubbleCaption(""), 3e3);
+  } catch (e) {
+    console.warn("registry-updated reload failed:", e);
   }
 });

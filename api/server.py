@@ -788,6 +788,7 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                 "interaction_mode": config.get("app.interactionMode",       "streamer"),
                 "avatar_model":     config.get("app.avatarModel",            "assets/live2d/IceGirl/IceGirl.model3.json"),
                 "avatar_scale":     config.get("app.avatarScale",            "1.0"),
+                "background_image":  config.get("app.backgroundImage",        ""),
                 "memory":           config.get("features.memory",           True),
             })
             return
@@ -1057,13 +1058,36 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
         # ── Build relative path for manifest ────────────────────────────────
         rel_path = f"assets/live2d/{stem}/{model3_file.name}"
 
-        # Try to find a thumbnail (first .png in textures/ or root)
+        # Try to find a preview/thumbnail image (priority: root folder preview, then textures)
         thumbnail = ""
-        tex_pngs = sorted((dest_dir / "textures").glob("*.png")) if (dest_dir / "textures").exists() else []
-        if not tex_pngs:
-            tex_pngs = sorted(dest_dir.glob("*.png"))
-        if tex_pngs:
-            thumbnail = f"assets/live2d/{stem}/textures/{tex_pngs[0].name}" if (dest_dir / "textures").exists() else f"assets/live2d/{stem}/{tex_pngs[0].name}"
+        preview_files = []
+        for ext in ["*.png", "*.jpg", "*.jpeg", "*.webp"]:
+            preview_files.extend(list(dest_dir.glob(ext)))
+
+        # Look for files containing preview keywords (case-insensitive)
+        keywords = ["thumbnail", "preview", "avatar", "icon", "show", "portrait"]
+        matched_preview = None
+        for pf in preview_files:
+            name_lower = pf.name.lower()
+            if any(kw in name_lower for kw in keywords):
+                matched_preview = pf
+                break
+
+        # If no keyword match, but we have images at root, pick the first one (usually it is the preview image)
+        if not matched_preview and preview_files:
+            matched_preview = preview_files[0]
+
+        if matched_preview:
+            thumbnail = f"assets/live2d/{stem}/{matched_preview.name}"
+        else:
+            # Fallback: search in textures folder
+            tex_pngs = []
+            if (dest_dir / "textures").exists():
+                for ext in ["*.png", "*.jpg", "*.jpeg", "*.webp"]:
+                    tex_pngs.extend(list((dest_dir / "textures").glob(ext)))
+            if tex_pngs:
+                tex_pngs = sorted(tex_pngs, key=lambda x: x.name)
+                thumbnail = f"assets/live2d/{stem}/textures/{tex_pngs[0].name}"
 
         # ── Load or create models.json ───────────────────────────────────────
         if manifest_path.exists():
