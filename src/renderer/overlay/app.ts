@@ -47,11 +47,20 @@ const webgpuProgressBar = document.getElementById(
 ) as HTMLDivElement;
 
 let attachedImageBase64: string | null = null;
+interface IAvatarController {
+  readyPromise: Promise<void>;
+  changeModel(modelIdOrPath: string): Promise<void>;
+  setState(state: { expression?: string; emotion?: string; motion?: string; lipsync?: boolean }): void;
+  startLipSync(amp: number): void;
+  stopLipSync(): void;
+  containsPoint(x: number, y: number): boolean;
+}
+
 const avatar = new AvatarController({
-  wrap: document.getElementById("avatarWrap"),
-  light: document.getElementById("expressionLight"),
+  wrap: document.getElementById("avatarWrap")!,
+  light: document.getElementById("expressionLight")!,
   img: document.getElementById("avatarImage") as HTMLImageElement,
-});
+}) as unknown as IAvatarController;
 
 const history = new ChatHistory();
 const audioPlayer = new AudioPlayer();
@@ -488,8 +497,8 @@ loadConfig();
 
 // ─── Floating Widgets UI Logic ──────────────────────────────────
 // Hide loading box and fade in avatar after it is fully loaded
-if ((avatar as any).readyPromise) {
-  (avatar as any).readyPromise.then(() => {
+if (avatar.readyPromise) {
+  avatar.readyPromise.then(() => {
     const loadingBox = document.getElementById("loadingBox");
     if (loadingBox) loadingBox.classList.add("hidden");
     const avatarWrap = document.getElementById("avatarWrap");
@@ -627,7 +636,7 @@ if (btnQuitApp) {
   } else if (key === "app.backgroundImage") {
     updateAvatarBackground(value || "");
   } else if (key === "app.avatarModel") {
-    (avatar as any).changeModel(value);
+    avatar.changeModel(value);
   }
 });
 
@@ -643,7 +652,7 @@ function setBubbleCaption(msg: string, expression: string = "normal") {
       speechBubble.classList.add("hidden");
     }
   }
-  (avatar as any).setState({ expression: expression, emotion: expression, motion: "idle" });
+  avatar.setState({ expression: expression, emotion: expression, motion: "idle" });
 }
 
 let isAppDragging = false;
@@ -654,7 +663,7 @@ document.addEventListener("dragover", (e) => {
   e.stopPropagation();
   if (isAppDragging || isAppBusy || isRecording) return;
   isAppDragging = true;
-  (avatar as any).setState({ expression: "surprised", emotion: "surprised", motion: "nod" });
+  avatar.setState({ expression: "surprised", emotion: "surprised", motion: "nod" });
   setBubbleCaption("Ủa, cậu đang định đưa file gì cho tớ thế? [excited]");
 });
 
@@ -663,7 +672,7 @@ document.addEventListener("dragleave", (e) => {
   e.stopPropagation();
   if (!e.relatedTarget) {
     isAppDragging = false;
-    (avatar as any).setState({ expression: "normal", emotion: "normal", motion: "idle" });
+    avatar.setState({ expression: "normal", emotion: "normal", motion: "idle" });
     setBubbleCaption("");
   }
 });
@@ -684,7 +693,7 @@ document.addEventListener("drop", async (e) => {
       try {
         isAppBusy = true;
         setBusy(true);
-        (avatar as any).setState({ expression: "thinking", emotion: "thinking", motion: "thinking" });
+        avatar.setState({ expression: "thinking", emotion: "thinking", motion: "thinking" });
         setBubbleCaption("Đang phân tích cấu trúc tệp ZIP...");
 
         const scanRes = await (window as any).companion.invoke("avatar:scan-zip", { path: filePath });
@@ -702,7 +711,7 @@ document.addEventListener("drop", async (e) => {
       } catch (err: any) {
         console.error("Failed to scan Live2D model ZIP:", err);
         setBubbleCaption(`Không nạp được: ${err.message}`);
-        (avatar as any).setState({ expression: "sad", emotion: "sad", motion: "shake" });
+        avatar.setState({ expression: "sad", emotion: "sad", motion: "shake" });
         isAppBusy = false;
         setBusy(false);
       }
@@ -714,19 +723,19 @@ document.addEventListener("drop", async (e) => {
         try {
           isAppBusy = true;
           setBusy(true);
-          (avatar as any).setState({ expression: "thinking", emotion: "thinking", motion: "thinking" });
+          avatar.setState({ expression: "thinking", emotion: "thinking", motion: "thinking" });
           setBubbleCaption(`Đang đọc tài liệu "${fileName}" để nạp kiến thức, cậu chờ tớ một xíu nhé...`);
 
           const res = await (window as any).companion.invoke("system:import-document", { path: filePath });
 
           if (res && res.success) {
             setBubbleCaption(`Tớ đã học xong tài liệu "${fileName}" rồi nè! Bây giờ cậu có thể hỏi tớ bất cứ điều gì về nó rồi nhé! [happy]`);
-            (avatar as any).setState({ expression: "happy", emotion: "happy", motion: "excited" });
+            avatar.setState({ expression: "happy", emotion: "happy", motion: "excited" });
 
             setTimeout(() => {
               if (!isAppBusy && !isRecording) {
                 setBubbleCaption("");
-                (avatar as any).setState({ expression: "smile", emotion: "smile", motion: "idle" });
+                avatar.setState({ expression: "smile", emotion: "smile", motion: "idle" });
               }
             }, 5000);
           } else {
@@ -735,7 +744,7 @@ document.addEventListener("drop", async (e) => {
         } catch (err: any) {
           console.error("Failed to import document:", err);
           setBubbleCaption(`Không nạp được tài liệu: ${err.message}. Cậu kiểm tra lại định dạng file nhé.`);
-          (avatar as any).setState({ expression: "sad", emotion: "sad", motion: "shake" });
+          avatar.setState({ expression: "sad", emotion: "sad", motion: "shake" });
         } finally {
           isAppBusy = false;
           setBusy(false);
@@ -745,7 +754,7 @@ document.addEventListener("drop", async (e) => {
       }
     }
   } else {
-    (avatar as any).setState({ expression: "normal", emotion: "normal", motion: "idle" });
+    avatar.setState({ expression: "normal", emotion: "normal", motion: "idle" });
     setBubbleCaption("");
   }
 });
@@ -764,7 +773,7 @@ async function executeOverlayImport(filePath: string, selectedConfig?: string) {
   try {
     isAppBusy = true;
     setBusy(true);
-    (avatar as any).setState({ expression: "thinking", emotion: "thinking", motion: "thinking" });
+    avatar.setState({ expression: "thinking", emotion: "thinking", motion: "thinking" });
     setBubbleCaption("Đang giải nén và nạp nhân vật mới...");
 
     const res = await (window as any).companion.invoke("avatar:import-zip", { path: filePath, selectedConfig });
@@ -772,7 +781,7 @@ async function executeOverlayImport(filePath: string, selectedConfig?: string) {
     if (res && res.success) {
       await AssetRegistry.load(true);
       const modelPath = res.model.path;
-      await (avatar as any).changeModel(modelPath);
+      await avatar.changeModel(modelPath);
 
       await (window as any).companion.invoke("ai:update-config", {
         key: "app.avatarModel",
@@ -780,7 +789,7 @@ async function executeOverlayImport(filePath: string, selectedConfig?: string) {
       }).catch(() => null);
 
       setBubbleCaption(`Oa! Đã nạp thành công nhân vật mới "${res.model.name}" rồi nè! [happy]`);
-      (avatar as any).setState({ expression: "happy", emotion: "happy", motion: "excited" });
+      avatar.setState({ expression: "happy", emotion: "happy", motion: "excited" });
 
       // Notify other windows (like settings window) to refresh
       (window as any).companion.invoke("ai:broadcast", {
@@ -791,7 +800,7 @@ async function executeOverlayImport(filePath: string, selectedConfig?: string) {
       setTimeout(() => {
         if (!isAppBusy && !isRecording) {
           setBubbleCaption("");
-          (avatar as any).setState({ expression: "smile", emotion: "smile", motion: "idle" });
+          avatar.setState({ expression: "smile", emotion: "smile", motion: "idle" });
         }
       }, 4000);
     } else {
@@ -800,7 +809,7 @@ async function executeOverlayImport(filePath: string, selectedConfig?: string) {
   } catch (err: any) {
     console.error("Failed to import Live2D model ZIP:", err);
     setBubbleCaption(`Không nạp được: ${err.message}`);
-    (avatar as any).setState({ expression: "sad", emotion: "sad", motion: "shake" });
+    avatar.setState({ expression: "sad", emotion: "sad", motion: "shake" });
   } finally {
     isAppBusy = false;
     setBusy(false);
@@ -903,7 +912,7 @@ function updateMouseInteractivity(clientX: number, clientY: number) {
     }
   }
 
-  const isOverAvatar = (avatar as any).containsPoint(clientX, clientY);
+  const isOverAvatar = avatar.containsPoint(clientX, clientY);
   const totalInteractive = isOverInteractiveElement || isOverAvatar;
 
   if ((window as any).companion && typeof (window as any).companion.setIgnoreMouseEvents === "function") {
