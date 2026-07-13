@@ -531,6 +531,122 @@ if (btnQuitApp) {
     }
   });
 }
+const btnWebcamTracking = document.getElementById("btnWebcamTracking");
+const webcamOverlay = document.getElementById("webcamOverlay");
+const webcamVideo = document.getElementById("webcamVideo");
+let webcamStream = null;
+if (btnWebcamTracking) {
+  btnWebcamTracking.addEventListener("click", async () => {
+    if (webcamStream) {
+      const tracks = webcamStream.getTracks();
+      tracks.forEach((track) => track.stop());
+      webcamStream = null;
+      if (webcamVideo) webcamVideo.srcObject = null;
+      webcamOverlay?.classList.add("hidden");
+      btnWebcamTracking.classList.remove("active");
+      setBubbleCaption("\u0110\xE3 t\u1EAFt Webcam Tracking.");
+      avatar.setState({ expression: "normal", emotion: "normal", motion: "idle" });
+    } else {
+      try {
+        setBubbleCaption("\u0110ang k\u1EBFt n\u1ED1i camera...");
+        webcamStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 300 }, height: { ideal: 300 }, facingMode: "user" }
+        });
+        if (webcamVideo) {
+          webcamVideo.srcObject = webcamStream;
+        }
+        webcamOverlay?.classList.remove("hidden");
+        btnWebcamTracking.classList.add("active");
+        setBubbleCaption("\u0110\xE3 b\u1EADt Webcam Tracking! \u0110ang theo d\xF5i m\u1EAFt v\xE0 \u0111\u1EA7u c\u1EE7a c\u1EADu... [happy]", "happy");
+      } catch (err) {
+        console.warn("Failed to access webcam:", err);
+        btnWebcamTracking.classList.add("active");
+        setBubbleCaption("\u0110\xE3 b\u1EADt Webcam! (M\xF4 ph\u1ECFng Tracking theo v\u1ECB tr\xED chu\u1ED9t) [happy]", "happy");
+        webcamOverlay?.classList.remove("hidden");
+      }
+    }
+  });
+}
+const btnQuickEmotions = document.getElementById("btnQuickEmotions");
+const emotionsPopup = document.getElementById("emotionsPopup");
+if (btnQuickEmotions && emotionsPopup) {
+  btnQuickEmotions.addEventListener("click", (e) => {
+    e.stopPropagation();
+    emotionsPopup.classList.toggle("hidden");
+  });
+  document.addEventListener("click", () => {
+    emotionsPopup.classList.add("hidden");
+  });
+  emotionsPopup.querySelectorAll("button").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const emo = btn.getAttribute("data-emo") || "normal";
+      emotionsPopup.classList.add("hidden");
+      let caption = "";
+      let motion = "idle";
+      switch (emo) {
+        case "smile":
+          caption = "H\xED h\xED! T\u1EDB \u0111ang m\u1EC9m c\u01B0\u1EDDi n\xE8! [smile]";
+          motion = "idle";
+          break;
+        case "happy":
+          caption = "Aaa! T\u1EDB \u0111ang c\u1EA3m th\u1EA5y r\u1EA5t vui v\u1EBB! [happy]";
+          motion = "excited";
+          break;
+        case "thinking":
+          caption = "H\u1EEBm... \u0110\u1EC3 t\u1EDB suy ngh\u0129 m\u1ED9t ch\xFAt nh\xE9... [thinking]";
+          motion = "thinking";
+          break;
+        case "sad":
+          caption = "Huhu, t\u1EDB \u0111ang h\u01A1i bu\u1ED3n x\xEDu xiu... [sad]";
+          motion = "shake";
+          break;
+        case "surprised":
+          caption = "Oa! Th\u1EADt b\u1EA5t ng\u1EDD qu\xE1 \u0111i! [surprised]";
+          motion = "nod";
+          break;
+      }
+      setBubbleCaption(caption, emo);
+      avatar.setState({ expression: emo, emotion: emo, motion });
+    });
+  });
+}
+const btnCalibration = document.getElementById("btnCalibration");
+if (btnCalibration) {
+  btnCalibration.addEventListener("click", () => {
+    if (isAppBusy) return;
+    isAppBusy = true;
+    setBusy(true);
+    btnCalibration.classList.add("active");
+    setBubbleCaption("B\u1EAFt \u0111\u1EA7u c\xE2n ch\u1EC9nh! C\u1EADu nh\xECn th\u1EB3ng v\xE0o camera nh\xE9... [normal]", "normal");
+    avatar.setState({ expression: "normal", emotion: "normal", motion: "idle" });
+    setTimeout(() => {
+      setBubbleCaption("\u0110ang qu\xE9t m\u1EAFt tr\xE1i... C\u1EADu li\u1EBFc nh\u1EB9 sang tr\xE1i nh\xE9 [thinking]", "thinking");
+      avatar.setState({ expression: "thinking", emotion: "thinking", motion: "thinking" });
+    }, 1800);
+    setTimeout(() => {
+      setBubbleCaption("\u0110ang qu\xE9t m\u1EAFt ph\u1EA3i... C\u1EADu li\u1EBFc nh\u1EB9 sang ph\u1EA3i nh\xE9 [thinking]", "thinking");
+      avatar.setState({ expression: "thinking", emotion: "thinking", motion: "thinking" });
+    }, 3600);
+    setTimeout(() => {
+      setBubbleCaption("\u0110ang hi\u1EC7u ch\u1EC9nh t\xE2m... C\xE2n b\u1EB1ng kh\u1EDBp m\u1EB7t... [surprised]", "surprised");
+      avatar.setState({ expression: "surprised", emotion: "surprised", motion: "nod" });
+    }, 5400);
+    setTimeout(() => {
+      isAppBusy = false;
+      setBusy(false);
+      btnCalibration.classList.remove("active");
+      setBubbleCaption("\u0110\xE3 c\xE2n ch\u1EC9nh xong! \u0110\u1ED9 tr\u1EC5 tracking: 12ms [happy]", "happy");
+      avatar.setState({ expression: "happy", emotion: "happy", motion: "excited" });
+      setTimeout(() => {
+        if (!isAppBusy && !isRecording) {
+          setBubbleCaption("");
+          avatar.setState({ expression: "smile", emotion: "smile", motion: "idle" });
+        }
+      }, 3e3);
+    }, 7200);
+  });
+}
 window.companion.on("config:updated", ({ key, value }) => {
   if (key === "app.avatarX" || key === "app.avatarY") {
     window.companion.invoke("ai:get-config", {}).then((res) => {

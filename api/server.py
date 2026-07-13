@@ -45,6 +45,29 @@ from runtime.eventbus.message_router import MessageRouter
 logger = get_logger("ai-companion.server")
 router = MessageRouter()
 
+def is_safe_zip_path(zip_path: str) -> bool:
+    if not zip_path:
+        return False
+    normalized = zip_path.replace("\\", "/")
+    if ".." in normalized or "/../" in normalized:
+        return False
+    try:
+        p = Path(zip_path).resolve()
+        if p.suffix.lower() != ".zip":
+            return False
+        return p.is_file()
+    except Exception:
+        return False
+
+def safe_extract_zip(zf, extract_to):
+    extract_to_path = Path(extract_to).resolve()
+    for member in zf.infolist():
+        # Prevent Directory Traversal (Zip Slip)
+        member_path = (extract_to_path / member.filename).resolve()
+        if not member_path.as_posix().startswith(extract_to_path.as_posix()):
+            raise Exception(f"Security Warning: Path Traversal detected in ZIP member: {member.filename}")
+        zf.extract(member, extract_to_path)
+
 # Lazy-init để không block startup
 import threading
 _init_lock = threading.Lock()
@@ -991,17 +1014,18 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
         if path == "/model/scan-zip":
             try:
                 zip_path = payload.get("zip_path", "").strip()
-                if not zip_path:
-                    self._send_json({"success": False, "error": "zip_path is required"})
+                if not is_safe_zip_path(zip_path):
+                    self._send_json({"success": False, "error": "Đường dẫn tệp ZIP không hợp lệ hoặc không an toàn."})
                     return
                 
                 import zipfile as _zipfile
-                zip_path_obj = pathlib.Path(zip_path)
-                if not zip_path_obj.exists() or zip_path_obj.suffix.lower() != ".zip":
-                    self._send_json({"success": False, "error": f"File not found or not a .zip: {zip_path}"})
-                    return
+                zip_path_obj = pathlib.Path(zip_path).resolve()
                 
                 with _zipfile.ZipFile(zip_path_obj, "r") as zf:
+                    for name in zf.namelist():
+                        if ".." in name or name.startswith("/") or name.startswith("\\"):
+                            self._send_json({"success": False, "error": f"Phát hiện Zip Slip (Path Traversal) trong tệp ZIP: {name}"})
+                            return
                     namelist = zf.namelist()
                 
                 # Find all model3.json or json config files
@@ -1050,12 +1074,10 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
 
         zip_path = payload.get("zip_path", "").strip()
         selected_config = payload.get("selected_config", "").strip()
-        if not zip_path:
-            return {"success": False, "error": "zip_path is required"}
+        if not is_safe_zip_path(zip_path):
+            return {"success": False, "error": "Đường dẫn tệp ZIP không hợp lệ hoặc không an toàn."}
 
-        zip_path = pathlib.Path(zip_path)
-        if not zip_path.exists() or zip_path.suffix.lower() != ".zip":
-            return {"success": False, "error": f"File not found or not a .zip: {zip_path}"}
+        zip_path = pathlib.Path(zip_path).resolve()
 
         live2d_dir = PROJECT_ROOT / "assets" / "live2d"
         live2d_dir.mkdir(parents=True, exist_ok=True)
@@ -1066,9 +1088,9 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
             tmp = pathlib.Path(tmp)
             try:
                 with _zipfile.ZipFile(zip_path, "r") as zf:
-                    zf.extractall(tmp)
-            except _zipfile.BadZipFile as exc:
-                return {"success": False, "error": f"Invalid ZIP: {exc}"}
+                    safe_extract_zip(zf, tmp)
+            except Exception as exc:
+                return {"success": False, "error": f"Lỗi giải nén tệp ZIP an toàn: {exc}"}
 
             if selected_config:
                 # Find the specified config file in extracted files

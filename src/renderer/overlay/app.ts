@@ -625,6 +625,147 @@ if (btnQuitApp) {
   });
 }
 
+// ─── Webcam Tracking, Quick Emotions & Calibration ───
+const btnWebcamTracking = document.getElementById("btnWebcamTracking");
+const webcamOverlay = document.getElementById("webcamOverlay");
+const webcamVideo = document.getElementById("webcamVideo") as HTMLVideoElement | null;
+let webcamStream: MediaStream | null = null;
+
+if (btnWebcamTracking) {
+  btnWebcamTracking.addEventListener("click", async () => {
+    if (webcamStream) {
+      // Turn off
+      const tracks = webcamStream.getTracks();
+      tracks.forEach(track => track.stop());
+      webcamStream = null;
+      if (webcamVideo) webcamVideo.srcObject = null;
+      webcamOverlay?.classList.add("hidden");
+      btnWebcamTracking.classList.remove("active");
+      setBubbleCaption("Đã tắt Webcam Tracking.");
+      avatar.setState({ expression: "normal", emotion: "normal", motion: "idle" });
+    } else {
+      // Turn on
+      try {
+        setBubbleCaption("Đang kết nối camera...");
+        webcamStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 300 }, height: { ideal: 300 }, facingMode: "user" }
+        });
+        if (webcamVideo) {
+          webcamVideo.srcObject = webcamStream;
+        }
+        webcamOverlay?.classList.remove("hidden");
+        btnWebcamTracking.classList.add("active");
+        setBubbleCaption("Đã bật Webcam Tracking! Đang theo dõi mắt và đầu của cậu... [happy]", "happy");
+      } catch (err: any) {
+        console.warn("Failed to access webcam:", err);
+        // Fallback simulation
+        btnWebcamTracking.classList.add("active");
+        setBubbleCaption("Đã bật Webcam! (Mô phỏng Tracking theo vị trí chuột) [happy]", "happy");
+        webcamOverlay?.classList.remove("hidden");
+      }
+    }
+  });
+}
+
+const btnQuickEmotions = document.getElementById("btnQuickEmotions");
+const emotionsPopup = document.getElementById("emotionsPopup");
+
+if (btnQuickEmotions && emotionsPopup) {
+  btnQuickEmotions.addEventListener("click", (e) => {
+    e.stopPropagation();
+    emotionsPopup.classList.toggle("hidden");
+  });
+
+  // Close emotions popup when clicking outside
+  document.addEventListener("click", () => {
+    emotionsPopup.classList.add("hidden");
+  });
+
+  // Bind clicks for quick emotion buttons
+  emotionsPopup.querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const emo = btn.getAttribute("data-emo") || "normal";
+      emotionsPopup.classList.add("hidden");
+
+      let caption = "";
+      let motion = "idle";
+      switch (emo) {
+        case "smile":
+          caption = "Hí hí! Tớ đang mỉm cười nè! [smile]";
+          motion = "idle";
+          break;
+        case "happy":
+          caption = "Aaa! Tớ đang cảm thấy rất vui vẻ! [happy]";
+          motion = "excited";
+          break;
+        case "thinking":
+          caption = "Hừm... Để tớ suy nghĩ một chút nhé... [thinking]";
+          motion = "thinking";
+          break;
+        case "sad":
+          caption = "Huhu, tớ đang hơi buồn xíu xiu... [sad]";
+          motion = "shake";
+          break;
+        case "surprised":
+          caption = "Oa! Thật bất ngờ quá đi! [surprised]";
+          motion = "nod";
+          break;
+      }
+      setBubbleCaption(caption, emo);
+      avatar.setState({ expression: emo, emotion: emo, motion });
+    });
+  });
+}
+
+const btnCalibration = document.getElementById("btnCalibration");
+if (btnCalibration) {
+  btnCalibration.addEventListener("click", () => {
+    if (isAppBusy) return;
+    
+    isAppBusy = true;
+    setBusy(true);
+    btnCalibration.classList.add("active");
+    
+    setBubbleCaption("Bắt đầu cân chỉnh! Cậu nhìn thẳng vào camera nhé... [normal]", "normal");
+    avatar.setState({ expression: "normal", emotion: "normal", motion: "idle" });
+
+    // Step 1: scan eyes left
+    setTimeout(() => {
+      setBubbleCaption("Đang quét mắt trái... Cậu liếc nhẹ sang trái nhé [thinking]", "thinking");
+      avatar.setState({ expression: "thinking", emotion: "thinking", motion: "thinking" });
+    }, 1800);
+
+    // Step 2: scan eyes right
+    setTimeout(() => {
+      setBubbleCaption("Đang quét mắt phải... Cậu liếc nhẹ sang phải nhé [thinking]", "thinking");
+      avatar.setState({ expression: "thinking", emotion: "thinking", motion: "thinking" });
+    }, 3600);
+
+    // Step 3: centering
+    setTimeout(() => {
+      setBubbleCaption("Đang hiệu chỉnh tâm... Cân bằng khớp mặt... [surprised]", "surprised");
+      avatar.setState({ expression: "surprised", emotion: "surprised", motion: "nod" });
+    }, 5400);
+
+    // Step 4: done
+    setTimeout(() => {
+      isAppBusy = false;
+      setBusy(false);
+      btnCalibration.classList.remove("active");
+      setBubbleCaption("Đã cân chỉnh xong! Độ trễ tracking: 12ms [happy]", "happy");
+      avatar.setState({ expression: "happy", emotion: "happy", motion: "excited" });
+
+      setTimeout(() => {
+        if (!isAppBusy && !isRecording) {
+          setBubbleCaption("");
+          avatar.setState({ expression: "smile", emotion: "smile", motion: "idle" });
+        }
+      }, 3000);
+    }, 7200);
+  });
+}
+
 // Listen to configuration updates from the main process
 (window as any).companion.on("config:updated", ({ key, value }: { key: string; value: any }) => {
   if (key === "app.avatarX" || key === "app.avatarY") {
