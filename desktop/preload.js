@@ -48,6 +48,7 @@ electron_1.contextBridge.exposeInMainWorld("companion", {
             "chat:request-approval",
             "workspace:set-folder",
             "window:cursor-move",
+            "avatar:registry-updated",
         ];
         if (ALLOWED.includes(channel)) {
             electron_1.ipcRenderer.on(channel, (_e, ...args) => cb(...args));

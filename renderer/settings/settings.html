@@ -9,6 +9,12 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <style>
+      .import-dropdown button:hover {
+        background: rgba(255, 255, 255, 0.08) !important;
+        color: #00f0ff !important;
+      }
+    </style>
   </head>
   <body>
     <main class="settings-shell">
@@ -784,9 +790,15 @@
             <button class="action-btn" id="btnSelectModel" type="button">
               Select model
             </button>
-            <button class="action-btn" id="btnBrowseZip" type="button">
-              Import from ZIP
-            </button>
+            <div style="position: relative; display: inline-block;">
+              <button class="action-btn" id="btnBrowseZip" type="button">
+                Import
+              </button>
+              <div id="importDropdownPage" class="import-dropdown" style="display: none; position: absolute; top: 100%; left: 0; margin-top: 5px; background: rgba(255, 255, 255, 0.96); border: 1px solid rgba(0, 0, 0, 0.12); border-radius: 8px; z-index: 100; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); min-width: 160px; overflow: hidden;">
+                <button id="btnImportLive2DPage" type="button" style="display: block; width: 100%; padding: 10px 16px; text-align: left; background: transparent; color: #1e293b; border: none; font-size: 11px; font-weight: 600; cursor: pointer; transition: background 0.2s;">Live2D (ZIP)</button>
+                <button id="btnImportVRMPage" type="button" style="display: block; width: 100%; padding: 10px 16px; text-align: left; background: transparent; color: #1e293b; border: none; font-size: 11px; font-weight: 600; cursor: pointer; transition: background 0.2s; border-top: 1px solid rgba(0, 0, 0, 0.06);">VRM (.vrm)</button>
+              </div>
+            </div>
           </div>
           <!-- Progress / Result -->
           <div
@@ -2698,8 +2710,8 @@
           <div class="form-group-item">
             <label class="form-item-title">Expose On Network</label>
             <span class="form-item-desc"
-              >Choose whether the AIRI gateway only listens on this device or
-              can be reached from your local network.</span
+              >Choose whether the gateway only listens on this device or can be
+              reached from your local network.</span
             >
             <div class="segment-control" id="networkExposure">
               <button
@@ -3017,23 +3029,16 @@
       <div class="modal-container">
         <header class="modal-header">
           <h2 class="modal-title">Model Selector</h2>
-          <div class="modal-header-actions">
-            <button class="modal-import-btn" id="modalBtnImport" type="button">
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              Import
-            </button>
+          <div class="modal-header-actions" style="display: flex; gap: 8px; align-items: center;">
+            <div style="position: relative; display: inline-block;">
+              <button class="modal-import-btn" id="modalBtnImport" type="button">
+                Import
+              </button>
+              <div id="importDropdownModal" class="import-dropdown" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 5px; background: rgba(255, 255, 255, 0.96); border: 1px solid rgba(0, 0, 0, 0.12); border-radius: 8px; z-index: 100; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); min-width: 160px; overflow: hidden;">
+                <button id="btnImportLive2DModal" type="button" style="display: block; width: 100%; padding: 10px 16px; text-align: left; background: transparent; color: #1e293b; border: none; font-size: 11px; font-weight: 600; cursor: pointer; transition: background 0.2s;">Live2D (ZIP)</button>
+                <button id="btnImportVRMModal" type="button" style="display: block; width: 100%; padding: 10px 16px; text-align: left; background: transparent; color: #1e293b; border: none; font-size: 11px; font-weight: 600; cursor: pointer; transition: background 0.2s; border-top: 1px solid rgba(0, 0, 0, 0.06);">VRM (.vrm)</button>
+              </div>
+            </div>
             <button class="modal-close-btn" id="modalBtnClose" type="button">
               &times;
             </button>

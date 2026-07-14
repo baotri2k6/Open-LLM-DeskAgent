@@ -1023,7 +1023,8 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                     return
                 
                 import zipfile as _zipfile
-                zip_path_obj = pathlib.Path(zip_path).resolve()
+                import pathlib as _pathlib
+                zip_path_obj = _pathlib.Path(zip_path).resolve()
                 
                 with _zipfile.ZipFile(zip_path_obj, "r") as zf:
                     for name in zf.namelist():
@@ -1084,6 +1085,7 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
         """
         import zipfile as _zipfile
         import shutil
+        import pathlib
 
         zip_path = payload.get("zip_path", "").strip()
         selected_config = payload.get("selected_config", "").strip()

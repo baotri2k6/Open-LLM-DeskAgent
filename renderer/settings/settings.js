@@ -1,4 +1,3 @@
-import { AssetRegistry } from "../../live2d/asset-registry.js";
 console.log("[settings] settings.ts loaded.");
 const saveStatus = document.getElementById("saveStatus");
 let toastTimer = null;
@@ -201,7 +200,6 @@ async function executeImport(filePath, selectedConfig) {
       setImportProgress(true, "Done!", 100);
       showImportResult("success", `"${res.model.name}" imported successfully!`);
       setTimeout(() => setImportProgress(false), 1200);
-      await AssetRegistry.load(true);
       loadModelSelectorGrid();
       window.companion.invoke("ai:broadcast", {
         event: "avatar:registry-updated",
@@ -254,16 +252,80 @@ function showZipConfigModal(filePath, files) {
 document.getElementById("zipConfigBtnClose")?.addEventListener("click", () => {
   document.getElementById("zipConfigModal")?.classList.remove("active");
 });
-document.getElementById("btnBrowseZip")?.addEventListener("click", async () => {
+async function importVrmFile(filePath) {
+  if (!window.companion) {
+    showImportResult("error", "Not connected to desktop backend.");
+    return;
+  }
+  setImportProgress(true, "Registering VRM 3D model...", 35);
+  let pct = 35;
+  const tick = setInterval(() => {
+    pct = Math.min(pct + 15, 90);
+    const fill = document.getElementById("importProgressFill");
+    if (fill) fill.style.width = pct + "%";
+  }, 250);
+  try {
+    const res = await window.companion.invoke("avatar:import-vrm", { filePath });
+    clearInterval(tick);
+    if (res && res.success) {
+      setImportProgress(true, "Done!", 100);
+      showImportResult("success", `"${res.model.name}" VRM model imported successfully!`);
+      setTimeout(() => setImportProgress(false), 1200);
+      loadModelSelectorGrid();
+      window.companion.invoke("ai:broadcast", {
+        event: "avatar:registry-updated",
+        data: res.model
+      }).catch(() => null);
+    } else {
+      throw new Error(res?.error || "Unknown VRM import error");
+    }
+  } catch (err) {
+    clearInterval(tick);
+    setImportProgress(false);
+    showImportResult("error", err.message);
+  }
+}
+const btnBrowseZip = document.getElementById("btnBrowseZip");
+const importDropdownPage = document.getElementById("importDropdownPage");
+const modalBtnImport = document.getElementById("modalBtnImport");
+const importDropdownModal = document.getElementById("importDropdownModal");
+btnBrowseZip?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (importDropdownPage) {
+    importDropdownPage.style.display = importDropdownPage.style.display === "none" ? "block" : "none";
+  }
+});
+modalBtnImport?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (importDropdownModal) {
+    importDropdownModal.style.display = importDropdownModal.style.display === "none" ? "block" : "none";
+  }
+});
+document.addEventListener("click", () => {
+  if (importDropdownPage) importDropdownPage.style.display = "none";
+  if (importDropdownModal) importDropdownModal.style.display = "none";
+});
+document.getElementById("btnImportLive2DPage")?.addEventListener("click", async () => {
   if (!window.companion) {
     showImportResult("error", "Not connected.");
     return;
   }
   const fp = await window.companion.showOpenDialog({
-    title: "Select ZIP",
+    title: "Select Live2D ZIP",
     filters: [{ name: "ZIP Archives", extensions: ["zip"] }]
   });
   if (fp) await importZipFile(fp);
+});
+document.getElementById("btnImportVRMPage")?.addEventListener("click", async () => {
+  if (!window.companion) {
+    showImportResult("error", "Not connected.");
+    return;
+  }
+  const fp = await window.companion.showOpenDialog({
+    title: "Select VRM Character",
+    filters: [{ name: "VRM 3D Model", extensions: ["vrm"] }]
+  });
+  if (fp) await importVrmFile(fp);
 });
 document.getElementById("btnSelectModel")?.addEventListener("click", () => {
   const modal = document.getElementById("modelSelectorModal");
@@ -275,20 +337,31 @@ document.getElementById("btnSelectModel")?.addEventListener("click", () => {
 document.getElementById("modalBtnClose")?.addEventListener("click", () => {
   document.getElementById("modelSelectorModal")?.classList.remove("active");
 });
-document.getElementById("modalBtnImport")?.addEventListener("click", async () => {
+document.getElementById("btnImportLive2DModal")?.addEventListener("click", async () => {
   if (!window.companion) {
     showImportResult("error", "Not connected.");
     return;
   }
   const fp = await window.companion.showOpenDialog({
-    title: "Select model",
-    filters: [
-      { name: "Model files", extensions: ["zip", "vrm"] },
-      { name: "All files", extensions: ["*"] }
-    ]
+    title: "Select Live2D ZIP",
+    filters: [{ name: "ZIP Archives", extensions: ["zip"] }]
   });
   if (fp) {
     await importZipFile(fp);
+    loadModelSelectorGrid();
+  }
+});
+document.getElementById("btnImportVRMModal")?.addEventListener("click", async () => {
+  if (!window.companion) {
+    showImportResult("error", "Not connected.");
+    return;
+  }
+  const fp = await window.companion.showOpenDialog({
+    title: "Select VRM Character",
+    filters: [{ name: "VRM 3D Model", extensions: ["vrm"] }]
+  });
+  if (fp) {
+    await importVrmFile(fp);
     loadModelSelectorGrid();
   }
 });
@@ -321,6 +394,81 @@ document.addEventListener("drop", async (e) => {
   }
   await importZipFile(file.path);
 });
+function buildModelCard(m, activePath, emojis) {
+  const isActive = m.path === activePath;
+  const card = document.createElement("div");
+  card.className = "selector-card" + (isActive ? " active" : "");
+  const emoji = emojis[m.id] || "\u2728";
+  const isVrm = m.path.toLowerCase().endsWith(".vrm") || m.id.toLowerCase().includes("vrm");
+  const typeLabel = isVrm ? "VRM" : "Live2D";
+  const typeIcon = isVrm ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>` : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="21" y1="9" x2="3" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>`;
+  card.innerHTML = `
+    <div class="selector-card-thumb-wrap">
+      <button class="selector-thumb-action" type="button" title="Info">\u2022\u2022\u2022</button>
+      ${m.thumbnail ? `<img src="../../${m.thumbnail}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><span class="mre" style="display:none">${emoji}</span>` : `<span class="mre" style="font-size: 48px;">${emoji}</span>`}
+    </div>
+    <div class="selector-card-info">
+      <div class="selector-title-row">
+        <span class="selector-name" title="${m.name}">${m.name}</span>
+        <button class="selector-btn-edit" type="button" title="Rename">\u270F</button>
+        ${isActive ? "" : '<button class="selector-btn-delete" type="button" title="Delete">\u{1F5D1}\uFE0F</button>'}
+      </div>
+      <span class="selector-badge">
+        ${typeIcon}
+        ${typeLabel}
+      </span>
+      <button class="pick-btn" type="button">
+        ${isActive ? '<span class="pick-btn-active-text">Picked</span>' : "Pick"}
+      </button>
+    </div>
+  `;
+  card.querySelector(".pick-btn")?.addEventListener("click", async () => {
+    if (isActive) return;
+    if (window.companion) {
+      const resUpdate = await window.companion.invoke("ai:update-config", {
+        key: "app.avatarModel",
+        value: m.path
+      });
+      if (resUpdate && !resUpdate.error) {
+        showStatus(`Changed character to ${m.name}`);
+        updateModelTypeLayout(m.path);
+        loadModelSelectorGrid();
+      }
+    }
+  });
+  card.querySelector(".selector-btn-edit")?.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const newName = prompt(`Rename "${m.name}" to:`, m.name);
+    if (newName && newName.trim() && newName.trim() !== m.name) {
+      showStatus(`Renamed to ${newName}`);
+    }
+  });
+  card.querySelector(".selector-btn-delete")?.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    if (!confirm(`Are you sure you want to delete "${m.name}"?
+(This action cannot be undone)`)) return;
+    if (window.companion) {
+      const r = await window.companion.deleteCharacter(m.id);
+      if (r?.success) {
+        card.remove();
+        showStatus(`Deleted "${m.name}"`);
+        loadModelSelectorGrid();
+      } else {
+        showStatus(r?.error || "Failed to delete.");
+      }
+    }
+  });
+  card.querySelector(".selector-thumb-action")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    alert(`Model details:
+
+ID: ${m.id}
+Name: ${m.name}
+Path: ${m.path}
+Description: ${m.description || "No description"}`);
+  });
+  return card;
+}
 async function loadModelSelectorGrid() {
   const grid = document.getElementById("modalSelectorGrid");
   if (!grid) return;
@@ -339,82 +487,45 @@ async function loadModelSelectorGrid() {
       return;
     }
     grid.innerHTML = "";
-    const emojis = { icegirl: "\u{1F9CA}", hiyori: "\u{1F338}", mao: "\u{1F431}", huohuo: "\u{1F98B}" };
-    models.forEach((m) => {
-      const isActive = m.path === activePath;
-      const card = document.createElement("div");
-      card.className = "selector-card" + (isActive ? " active" : "");
-      const emoji = emojis[m.id] || "\u2728";
-      const isVrm = m.path.toLowerCase().endsWith(".vrm") || m.id.toLowerCase().includes("vrm");
-      const typeLabel = isVrm ? "VRM" : "Live2D";
-      const typeIcon = isVrm ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>` : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="21" y1="9" x2="3" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>`;
-      card.innerHTML = `
-        <div class="selector-card-thumb-wrap">
-          <button class="selector-thumb-action" type="button" title="Info">\u2022\u2022\u2022</button>
-          ${m.thumbnail ? `<img src="../../${m.thumbnail}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><span class="mre" style="display:none">${emoji}</span>` : `<span class="mre" style="font-size: 48px;">${emoji}</span>`}
-        </div>
-        <div class="selector-card-info">
-          <div class="selector-title-row">
-            <span class="selector-name" title="${m.name}">${m.name}</span>
-            <button class="selector-btn-edit" type="button" title="Rename">\u270F</button>
-            ${isActive ? "" : '<button class="selector-btn-delete" type="button" title="Delete">\u{1F5D1}\uFE0F</button>'}
-          </div>
-          <span class="selector-badge">
-            ${typeIcon}
-            ${typeLabel}
-          </span>
-          <button class="pick-btn" type="button">
-            ${isActive ? '<span class="pick-btn-active-text">Picked</span>' : "Pick"}
-          </button>
-        </div>
-      `;
-      card.querySelector(".pick-btn")?.addEventListener("click", async () => {
-        if (isActive) return;
-        if (window.companion) {
-          const resUpdate = await window.companion.invoke("ai:update-config", {
-            key: "app.avatarModel",
-            value: m.path
-          });
-          if (resUpdate && !resUpdate.error) {
-            showStatus(`Changed character to ${m.name}`);
-            updateModelTypeLayout(m.path);
-            loadModelSelectorGrid();
-          }
-        }
+    const emojis = { icegirl: "\u{1F9CA}", hiyori: "\u{1F338}", mao: "\u{1F431}", huohuo: "\u{1F98B}", himemori_luna: "\u{1F36C}" };
+    const live2dModels = models.filter((m) => !(m.path.toLowerCase().endsWith(".vrm") || m.id.toLowerCase().includes("vrm")));
+    const vrmModels = models.filter((m) => m.path.toLowerCase().endsWith(".vrm") || m.id.toLowerCase().includes("vrm"));
+    if (live2dModels.length > 0) {
+      const h3 = document.createElement("h3");
+      h3.style.gridColumn = "1 / -1";
+      h3.style.fontSize = "13px";
+      h3.style.fontWeight = "800";
+      h3.style.color = "#00f0ff";
+      h3.style.margin = "12px 0 4px 0";
+      h3.style.borderLeft = "3px solid #00f0ff";
+      h3.style.paddingLeft = "8px";
+      h3.style.textTransform = "uppercase";
+      h3.style.letterSpacing = "0.05em";
+      h3.textContent = "Live2D Characters (2D)";
+      grid.appendChild(h3);
+      live2dModels.forEach((m) => {
+        const card = buildModelCard(m, activePath, emojis);
+        grid.appendChild(card);
       });
-      card.querySelector(".selector-btn-edit")?.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        const newName = prompt(`Rename "${m.name}" to:`, m.name);
-        if (newName && newName.trim() && newName.trim() !== m.name) {
-          showStatus(`Renamed to ${newName}`);
-        }
+    }
+    if (vrmModels.length > 0) {
+      const h3 = document.createElement("h3");
+      h3.style.gridColumn = "1 / -1";
+      h3.style.fontSize = "13px";
+      h3.style.fontWeight = "800";
+      h3.style.color = "#ccff00";
+      h3.style.margin = "24px 0 4px 0";
+      h3.style.borderLeft = "3px solid #ccff00";
+      h3.style.paddingLeft = "8px";
+      h3.style.textTransform = "uppercase";
+      h3.style.letterSpacing = "0.05em";
+      h3.textContent = "VRM 3D Characters (3D)";
+      grid.appendChild(h3);
+      vrmModels.forEach((m) => {
+        const card = buildModelCard(m, activePath, emojis);
+        grid.appendChild(card);
       });
-      card.querySelector(".selector-btn-delete")?.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        if (!confirm(`Are you sure you want to delete "${m.name}"?
-(This action cannot be undone)`)) return;
-        if (window.companion) {
-          const r = await window.companion.deleteCharacter(m.id);
-          if (r?.success) {
-            card.remove();
-            showStatus(`Deleted "${m.name}"`);
-            loadModelSelectorGrid();
-          } else {
-            showStatus(r?.error || "Failed to delete.");
-          }
-        }
-      });
-      card.querySelector(".selector-thumb-action")?.addEventListener("click", (e) => {
-        e.stopPropagation();
-        alert(`Model details:
-
-ID: ${m.id}
-Name: ${m.name}
-Path: ${m.path}
-Description: ${m.description || "No description"}`);
-      });
-      grid.appendChild(card);
-    });
+    }
   } catch (err) {
     grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-3); padding: 30px;">Error loading: ${err.message}</div>`;
   }
@@ -1387,7 +1498,6 @@ function updateModelTypeLayout(modelPath) {
 }
 window.companion?.on?.("avatar:registry-updated", async () => {
   try {
-    await AssetRegistry.load(true);
     loadModelSelectorGrid();
   } catch (e) {
     console.warn("[settings] Failed to reload model selector:", e);
