@@ -425,11 +425,11 @@ function setupCrossWindowIpc(): void {
     return { width: newW, height: newH, scale };
   });
 
-  ipcMain.on("window:open-settings", () => {
+  ipcMain.handle("win:open-settings", () => {
     createSettingsWindow();
   });
 
-  ipcMain.on("window:toggle-chat", () => {
+  ipcMain.handle("win:toggle-chat", () => {
     createChatWindow();
   });
 

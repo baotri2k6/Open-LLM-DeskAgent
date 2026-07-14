@@ -379,10 +379,10 @@ function setupCrossWindowIpc() {
         avatarWin.setResizable(wasResizable);
         return { width: newW, height: newH, scale };
     });
-    electron_1.ipcMain.on("window:open-settings", () => {
+    electron_1.ipcMain.handle("win:open-settings", () => {
         createSettingsWindow();
     });
-    electron_1.ipcMain.on("window:toggle-chat", () => {
+    electron_1.ipcMain.handle("win:toggle-chat", () => {
         createChatWindow();
     });
     electron_1.ipcMain.handle("win:minimize-chat", () => {
