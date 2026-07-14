@@ -6,7 +6,7 @@ let voiceActive = false;
 function getAvatarWindow() {
     return electron_1.BrowserWindow.getAllWindows().find(win => {
         try {
-            return win.webContents.getURL().includes("avatar.html");
+            return win.webContents.getURL().includes("avatar.html") || win.webContents.getURL().includes("overlay");
         }
         catch {
             return false;

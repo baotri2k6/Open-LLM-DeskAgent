@@ -421,7 +421,7 @@ document.getElementById("btnImportVRMPage")?.addEventListener("click", async () 
   }
   const fp = await (window as any).companion.showOpenDialog({
     title: "Select VRM Character",
-    filters: [{ name: "VRM 3D Model", extensions: ["vrm"] }]
+    filters: [{ name: "VRM 3D Model / ZIP Archive", extensions: ["vrm", "zip"] }]
   });
   if (fp) await importVrmFile(fp);
 });
@@ -463,7 +463,7 @@ document.getElementById("btnImportVRMModal")?.addEventListener("click", async ()
   }
   const fp = await (window as any).companion.showOpenDialog({
     title: "Select VRM Character",
-    filters: [{ name: "VRM 3D Model", extensions: ["vrm"] }]
+    filters: [{ name: "VRM 3D Model / ZIP Archive", extensions: ["vrm", "zip"] }]
   });
   if (fp) {
     await importVrmFile(fp);
@@ -611,7 +611,7 @@ async function loadModelSelectorGrid(): Promise<void> {
       return;
     }
     grid.innerHTML = "";
-    const emojis: Record<string, string> = { icegirl: "🧊", hiyori: "🌸", mao: "🐱", huohuo: "🦋", himemori_luna: "🍬" };
+    const emojis: Record<string, string> = { icegirl: "🧊", hiyori: "🌸", mao: "🐱", huohuo: "🦋", himemori_luna: "🍬", steam_punk_dress_set_free: "⚙️", hatsune_miku_nt: "🎤" };
 
     const live2dModels = models.filter(m => !(m.path.toLowerCase().endsWith(".vrm") || m.id.toLowerCase().includes("vrm")));
     const vrmModels = models.filter(m => (m.path.toLowerCase().endsWith(".vrm") || m.id.toLowerCase().includes("vrm")));

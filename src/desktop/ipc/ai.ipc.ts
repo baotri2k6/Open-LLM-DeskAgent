@@ -446,7 +446,7 @@ export function registerAiIpc(ipcMain: IpcMain, windows: any): void {
         const AVATAR_WINDOW_HEIGHT = 640;
         const avatarWin = BrowserWindow.getAllWindows().find(win => {
           try {
-            return win.webContents.getURL().includes("avatar.html");
+            return win.webContents.getURL().includes("avatar.html") || win.webContents.getURL().includes("overlay");
           } catch {
             return false;
           }

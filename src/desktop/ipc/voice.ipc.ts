@@ -5,7 +5,7 @@ let voiceActive = false;
 function getAvatarWindow(): BrowserWindow | undefined {
   return BrowserWindow.getAllWindows().find(win => {
     try {
-      return win.webContents.getURL().includes("avatar.html");
+      return win.webContents.getURL().includes("avatar.html") || win.webContents.getURL().includes("overlay");
     } catch {
       return false;
     }

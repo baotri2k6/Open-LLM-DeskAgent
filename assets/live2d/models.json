@@ -308,6 +308,35 @@
         "surprised": "surprised",
         "wink": "excited"
       }
+    },
+    {
+      "id": "hatsunemikunt",
+      "name": "HatsuneMikuNT",
+      "description": "Imported VRM 3D character",
+      "path": "assets/live2d/vrm/HatsuneMikuNT.vrm",
+      "thumbnail": null,
+      "scale": 1,
+      "default": false,
+      "tags": [
+        "vrm",
+        "imported"
+      ],
+      "accessories": [],
+      "hitReactions": {},
+      "expressionFallback": {}
+    },
+    {
+      "id": "hatsune_miku_nt",
+      "name": "Hatsune Miku NT",
+      "description": "止丸式 Hatsune Miku NT ver1.1.2 — Official VRM 3D model",
+      "path": "assets/live2d/vrm/HatsuneMikuNT.vrm",
+      "thumbnail": null,
+      "scale": 1.0,
+      "default": false,
+      "tags": ["vrm", "imported", "vocaloid"],
+      "accessories": [],
+      "hitReactions": {},
+      "expressionFallback": {}
     }
   ]
 }

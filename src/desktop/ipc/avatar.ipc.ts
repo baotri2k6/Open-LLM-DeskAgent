@@ -2,6 +2,11 @@ import { BrowserWindow, IpcMain } from "electron";
 import * as http from "http";
 import * as fs from "fs";
 import * as path from "path";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const _admZipMod = require("adm-zip");
+// adm-zip may export as CJS or as ESM default — handle both
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const AdmZip: any = _admZipMod.default || _admZipMod;
 
 interface AvatarState {
   expression: string;
@@ -157,13 +162,12 @@ export function registerAvatarIpc(ipcMain: IpcMain, avatarWin: any): void {
       return { success: false, error: err.message };
     }
   });
-
-  // 6. avatar:import-vrm
+  // 6. avatar:import-vrm (supports .vrm directly and .zip containing .vrm)
   ipcMain.handle("avatar:import-vrm", async (_e: any, { filePath }: { filePath: string }) => {
     try {
       const ext = path.extname(filePath).toLowerCase();
-      if (ext !== ".vrm") {
-        return { success: false, error: "Chỉ hỗ trợ tệp tin định dạng .vrm" };
+      if (ext !== ".vrm" && ext !== ".zip") {
+        return { success: false, error: "Chỉ hỗ trợ tệp tin định dạng .vrm hoặc .zip chứa model VRM" };
       }
 
       const vrmDir = path.join(process.cwd(), "assets", "live2d", "vrm");
@@ -171,11 +175,38 @@ export function registerAvatarIpc(ipcMain: IpcMain, avatarWin: any): void {
         fs.mkdirSync(vrmDir, { recursive: true });
       }
 
-      const stem = path.basename(filePath, ext);
-      const destPath = path.join(vrmDir, path.basename(filePath));
-      
-      // Copy file vrm
-      fs.copyFileSync(filePath, destPath);
+      let finalVrmName = "";
+      let finalVrmPath = "";
+
+      if (ext === ".vrm") {
+        const stem = path.basename(filePath, ext);
+        const destPath = path.join(vrmDir, path.basename(filePath));
+        
+        // Copy file vrm
+        fs.copyFileSync(filePath, destPath);
+        finalVrmName = stem;
+        finalVrmPath = `assets/live2d/vrm/${path.basename(filePath)}`;
+      } else {
+        // Handle ZIP file
+        const zip = new AdmZip(filePath);
+        const zipEntries = zip.getEntries();
+        
+        // Find .vrm entry
+        const vrmEntry = zipEntries.find((entry: any) => entry.entryName.toLowerCase().endsWith(".vrm"));
+        if (!vrmEntry) {
+          return { success: false, error: "Không tìm thấy tệp tin định dạng .vrm bên trong tệp ZIP" };
+        }
+
+        const vrmFileName = path.basename(vrmEntry.entryName);
+        const destPath = path.join(vrmDir, vrmFileName);
+        
+        // Extract vrm file directly
+        const vrmData = vrmEntry.getData();
+        fs.writeFileSync(destPath, vrmData);
+
+        finalVrmName = path.basename(vrmFileName, ".vrm");
+        finalVrmPath = `assets/live2d/vrm/${vrmFileName}`;
+      }
 
       // Register in models.json
       const manifestPath = path.join(process.cwd(), "assets", "live2d", "models.json");
@@ -190,17 +221,16 @@ export function registerAvatarIpc(ipcMain: IpcMain, avatarWin: any): void {
 
       if (!manifest.models) manifest.models = [];
 
-      const modelId = stem.toLowerCase().replace(/[^a-z0-9]/g, "_");
-      const relPath = `assets/live2d/vrm/${path.basename(filePath)}`;
+      const modelId = finalVrmName.toLowerCase().replace(/[^a-z0-9]/g, "_");
 
       // Remove old entry with same path or id
-      manifest.models = manifest.models.filter(m => m.id !== modelId && m.path !== relPath);
+      manifest.models = manifest.models.filter(m => m.id !== modelId && m.path !== finalVrmPath);
 
       const newEntry = {
         id: modelId,
-        name: stem,
+        name: finalVrmName,
         description: `Imported VRM 3D character`,
-        path: relPath,
+        path: finalVrmPath,
         thumbnail: null,
         scale: 1.0,
         default: false,

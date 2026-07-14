@@ -323,7 +323,7 @@ document.getElementById("btnImportVRMPage")?.addEventListener("click", async () 
   }
   const fp = await window.companion.showOpenDialog({
     title: "Select VRM Character",
-    filters: [{ name: "VRM 3D Model", extensions: ["vrm"] }]
+    filters: [{ name: "VRM 3D Model / ZIP Archive", extensions: ["vrm", "zip"] }]
   });
   if (fp) await importVrmFile(fp);
 });
@@ -358,7 +358,7 @@ document.getElementById("btnImportVRMModal")?.addEventListener("click", async ()
   }
   const fp = await window.companion.showOpenDialog({
     title: "Select VRM Character",
-    filters: [{ name: "VRM 3D Model", extensions: ["vrm"] }]
+    filters: [{ name: "VRM 3D Model / ZIP Archive", extensions: ["vrm", "zip"] }]
   });
   if (fp) {
     await importVrmFile(fp);
@@ -487,7 +487,7 @@ async function loadModelSelectorGrid() {
       return;
     }
     grid.innerHTML = "";
-    const emojis = { icegirl: "\u{1F9CA}", hiyori: "\u{1F338}", mao: "\u{1F431}", huohuo: "\u{1F98B}", himemori_luna: "\u{1F36C}" };
+    const emojis = { icegirl: "\u{1F9CA}", hiyori: "\u{1F338}", mao: "\u{1F431}", huohuo: "\u{1F98B}", himemori_luna: "\u{1F36C}", steam_punk_dress_set_free: "\u2699\uFE0F", hatsune_miku_nt: "\u{1F3A4}" };
     const live2dModels = models.filter((m) => !(m.path.toLowerCase().endsWith(".vrm") || m.id.toLowerCase().includes("vrm")));
     const vrmModels = models.filter((m) => m.path.toLowerCase().endsWith(".vrm") || m.id.toLowerCase().includes("vrm"));
     if (live2dModels.length > 0) {

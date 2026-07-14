@@ -19,6 +19,7 @@ import {
   getMotionForEmotion,
 } from "./motions/motion.js";
 import { SpineBackend } from "./runtime/spine-manager.js";
+import { VRMBackend } from "./runtime/vrm-manager.js";
 import { AssetRegistry } from "./asset-registry.js";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -492,13 +493,6 @@ export class AvatarController {
         if (res && res.avatar_model && !res.error) {
           let path = res.avatar_model;
           console.log("[AvatarController] Config saved avatar_model:", path);
-          if (path.endsWith(".vrm")) {
-            // VRM not supported — reset to default
-            path = AssetRegistry.getDefault()?.path ?? "assets/live2d/IceGirl/IceGirl.model3.json";
-            window.companion
-              .invoke("ai:update-config", { key: "app.avatarModel", value: path })
-              .catch(() => null);
-          }
           this._modelPath = "../../" + path;
           console.log("[AvatarController] Updated _modelPath to:", this._modelPath);
         } else {
@@ -522,6 +516,20 @@ export class AvatarController {
     const pathLower = this._modelPath.toLowerCase();
     const isSpine =
       pathLower.endsWith(".json") && !pathLower.endsWith(".model3.json");
+    const isVRM = pathLower.endsWith(".vrm");
+
+    // ── VRM 3D ────────────────────────────────────────────────────
+    if (isVRM) {
+      if (this._spineCanvas) this._spineCanvas.style.display = "none";
+      const vrmBackend = new VRMBackend(this._wrap, this._modelPath);
+      const vrmOk = await vrmBackend.init().catch(() => false);
+      if (vrmOk) {
+        this._backend = vrmBackend;
+        if (this._img) this._img.style.display = "none";
+        return;
+      }
+      console.warn("[AvatarController] VRM failed to load, falling back to CSS");
+    }
 
     if (isSpine) {
       if (this._spineCanvas) {
