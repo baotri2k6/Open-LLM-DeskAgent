@@ -35,6 +35,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.registerSystemIpc = registerSystemIpc;
 const os = __importStar(require("os"));
+const electron_1 = require("electron");
 function registerSystemIpc(ipcMain) {
     ipcMain.handle("system:info", async () => ({
         platform: os.platform(),
@@ -45,4 +46,18 @@ function registerSystemIpc(ipcMain) {
         memoryFree: os.freemem(),
         cpus: os.cpus().length,
     }));
+    ipcMain.handle("system:open-file-dialog", async (event, options) => {
+        const win = electron_1.BrowserWindow.fromWebContents(event.sender);
+        if (!win)
+            return null;
+        const result = await electron_1.dialog.showOpenDialog(win, {
+            properties: ["openFile"],
+            title: options?.title || "Select file",
+            filters: options?.filters || []
+        });
+        if (result.canceled || result.filePaths.length === 0) {
+            return null;
+        }
+        return result.filePaths[0];
+    });
 }
