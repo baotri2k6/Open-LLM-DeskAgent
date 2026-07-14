@@ -469,19 +469,9 @@ if (btnToggleMic && svgMicNormal && svgMicMuted) {
   });
 }
 const btnToggleChat = document.getElementById("btnToggleChat");
-const chatPanel = document.getElementById("chatPanel");
-const btnCloseChat = document.getElementById("btnCloseChat");
-if (btnToggleChat && chatPanel) {
+if (btnToggleChat) {
   btnToggleChat.addEventListener("click", () => {
-    const isHidden = chatPanel.style.display === "none" || chatPanel.style.display === "";
-    chatPanel.style.display = isHidden ? "flex" : "none";
-    btnToggleChat.classList.toggle("active", isHidden);
-  });
-}
-if (btnCloseChat && chatPanel) {
-  btnCloseChat.addEventListener("click", () => {
-    chatPanel.style.display = "none";
-    if (btnToggleChat) btnToggleChat.classList.remove("active");
+    window.companion.invoke("win:toggle-chat").catch(() => null);
   });
 }
 const btnReloadAvatar = document.getElementById("btnReloadAvatar");

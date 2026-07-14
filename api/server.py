@@ -855,6 +855,10 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": str(exc)}, status=500)
             return
 
+        if path == "/model/list":
+            self._handle_GET_model_list()
+            return
+
         self._send_json({"type": "error", "message": "Not found"}, status=404)
 
 
@@ -1053,6 +1057,15 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": f"Lỗi giải nén nhân vật: {str(e)}"})
             return
 
+        if path == "/model/remove":
+            try:
+                result = self._handle_model_remove(payload)
+                self._send_json(result)
+            except Exception as e:
+                logger.error("[ModelRemove] Error: %s", e, exc_info=True)
+                self._send_json({"success": False, "error": str(e)})
+            return
+
         self._send_json({"type": "error", "message": "Not found"}, status=404)
 
 
@@ -1082,7 +1095,8 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
         live2d_dir = PROJECT_ROOT / "assets" / "live2d"
         live2d_dir.mkdir(parents=True, exist_ok=True)
         manifest_path = live2d_dir / "models.json"
-
+        
+    
         # ── Extract ZIP to a temp folder, then inspect ──────────────────────
         with tempfile.TemporaryDirectory() as tmp:
             tmp = pathlib.Path(tmp)
@@ -1208,6 +1222,74 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
         logger.info("[ModelImport] Registered model '%s' in models.json", model_id)
 
         return {"success": True, "model": new_entry}
+
+    def _handle_GET_model_list(self):
+        """
+        GET /model/list
+        Đọc assets/live2d/models.json và trả về danh sách model.
+        Nếu file chưa tồn tại, trả về list rỗng.
+        """
+        import json as _json
+        import pathlib as _pathlib
+
+        manifest_path = _pathlib.Path(__file__).resolve().parent.parent / "assets" / "live2d" / "models.json"
+
+        if not manifest_path.exists():
+            self._send_json({"success": True, "models": []})
+            return
+
+        try:
+            data = _json.loads(manifest_path.read_text(encoding="utf-8"))
+            models = data.get("models", [])
+            # Thêm trường 'thumbnail_url' để renderer không cần resolve path
+            for m in models:
+                if m.get("thumbnail"):
+                    m["thumbnail_url"] = m["thumbnail"]
+            self._send_json({"success": True, "models": models})
+        except Exception as e:
+            logger.error("[ModelList] Failed to read models.json: %s", e)
+            self._send_json({"success": False, "models": [], "error": str(e)})
+
+    def _handle_model_remove(self, payload: dict) -> dict:
+        """
+        POST /model/remove
+        Payload: { "model_id": "<id>" }
+        Xóa entry khỏi models.json. Không xóa file trên disk.
+        """
+        import json as _json
+        import pathlib as _pathlib
+
+        model_id = (payload.get("model_id") or "").strip()
+        if not model_id:
+            return {"success": False, "error": "model_id is required"}
+
+        manifest_path = _pathlib.Path(__file__).resolve().parent.parent / "assets" / "live2d" / "models.json"
+
+        if not manifest_path.exists():
+            return {"success": False, "error": "models.json not found"}
+
+        try:
+            data = _json.loads(manifest_path.read_text(encoding="utf-8"))
+            models = data.get("models", [])
+
+            before = len(models)
+            models = [m for m in models if m.get("id") != model_id]
+            after = len(models)
+
+            if before == after:
+                return {"success": False, "error": f"Model '{model_id}' not found in registry"}
+
+            data["models"] = models
+            manifest_path.write_text(
+                _json.dumps(data, ensure_ascii=False, indent=2),
+                encoding="utf-8"
+            )
+            logger.info("[ModelRemove] Removed model '%s' from registry", model_id)
+            return {"success": True, "removed": model_id, "remaining": after}
+
+        except Exception as e:
+            logger.error("[ModelRemove] Failed: %s", e)
+            return {"success": False, "error": str(e)}
 
     def _send_chunk(self, data: dict) -> None:
         chunk_data = (json.dumps(data, ensure_ascii=False) + "\n").encode('utf-8')

@@ -429,6 +429,18 @@ function setupCrossWindowIpc(): void {
     createSettingsWindow();
   });
 
+  ipcMain.on("window:toggle-chat", () => {
+    createChatWindow();
+  });
+
+  ipcMain.handle("win:minimize-chat", () => {
+    chatWin?.minimize();
+  });
+
+  ipcMain.handle("win:close-chat", () => {
+    chatWin?.hide();
+  });
+
   ipcMain.handle("dialog:select-folder", async (event: any) => {
     const win = BrowserWindow.fromWebContents(event.sender) || settingsWin || avatarWin;
     if (!win) return null;
@@ -487,6 +499,60 @@ function createSettingsWindow(): void {
   settingsWin.loadFile(path.join(__dirname, "..", "renderer", "settings", "settings.html"));
   settingsWin.on("closed", () => {
     settingsWin = null;
+  });
+}
+
+function createChatWindow(): void {
+  if (chatWin) {
+    if (chatWin.isVisible()) {
+      chatWin.hide();
+    } else {
+      chatWin.show();
+      chatWin.focus();
+    }
+    return;
+  }
+
+  const { width: sw, height: sh } = screen.getPrimaryDisplay().workArea;
+  const wWidth = 400;
+  const wHeight = 600;
+
+  chatWin = new BrowserWindow({
+    width: wWidth,
+    height: wHeight,
+    x: sw - wWidth - 450, // Positioned slightly to the left of the avatar window
+    y: sh - wHeight - 20,
+    transparent: true,
+    frame: false,
+    resizable: true,
+    alwaysOnTop: true,
+    backgroundColor: "#00000000",
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      webSecurity: false,
+    },
+  });
+
+  chatWin.setBackgroundColor("#00000000");
+
+  chatWin.webContents.on(
+    "console-message",
+    (event: any, level: number, message: string, line: number, sourceId: string) => {
+      const logDir = getLogDirectory();
+      if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+      fs.appendFileSync(
+        path.join(logDir, "renderer_error.log"),
+        `${new Date().toISOString()} | CHAT | [Level ${level}] ${message} (at ${sourceId}:${line})\n`,
+      );
+    },
+  );
+
+  chatWin.loadFile(path.join(__dirname, "..", "renderer", "chat", "chat.html"));
+  
+  chatWin.on("closed", () => {
+    chatWin = null;
   });
 }
 

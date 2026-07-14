@@ -382,6 +382,15 @@ function setupCrossWindowIpc() {
     electron_1.ipcMain.on("window:open-settings", () => {
         createSettingsWindow();
     });
+    electron_1.ipcMain.on("window:toggle-chat", () => {
+        createChatWindow();
+    });
+    electron_1.ipcMain.handle("win:minimize-chat", () => {
+        chatWin?.minimize();
+    });
+    electron_1.ipcMain.handle("win:close-chat", () => {
+        chatWin?.hide();
+    });
     electron_1.ipcMain.handle("dialog:select-folder", async (event) => {
         const win = electron_1.BrowserWindow.fromWebContents(event.sender) || settingsWin || avatarWin;
         if (!win)
@@ -435,6 +444,49 @@ function createSettingsWindow() {
     settingsWin.loadFile(path.join(__dirname, "..", "renderer", "settings", "settings.html"));
     settingsWin.on("closed", () => {
         settingsWin = null;
+    });
+}
+function createChatWindow() {
+    if (chatWin) {
+        if (chatWin.isVisible()) {
+            chatWin.hide();
+        }
+        else {
+            chatWin.show();
+            chatWin.focus();
+        }
+        return;
+    }
+    const { width: sw, height: sh } = electron_1.screen.getPrimaryDisplay().workArea;
+    const wWidth = 400;
+    const wHeight = 600;
+    chatWin = new electron_1.BrowserWindow({
+        width: wWidth,
+        height: wHeight,
+        x: sw - wWidth - 450, // Positioned slightly to the left of the avatar window
+        y: sh - wHeight - 20,
+        transparent: true,
+        frame: false,
+        resizable: true,
+        alwaysOnTop: true,
+        backgroundColor: "#00000000",
+        webPreferences: {
+            preload: path.join(__dirname, "preload.js"),
+            contextIsolation: true,
+            nodeIntegration: false,
+            webSecurity: false,
+        },
+    });
+    chatWin.setBackgroundColor("#00000000");
+    chatWin.webContents.on("console-message", (event, level, message, line, sourceId) => {
+        const logDir = getLogDirectory();
+        if (!fs.existsSync(logDir))
+            fs.mkdirSync(logDir, { recursive: true });
+        fs.appendFileSync(path.join(logDir, "renderer_error.log"), `${new Date().toISOString()} | CHAT | [Level ${level}] ${message} (at ${sourceId}:${line})\n`);
+    });
+    chatWin.loadFile(path.join(__dirname, "..", "renderer", "chat", "chat.html"));
+    chatWin.on("closed", () => {
+        chatWin = null;
     });
 }
 electron_1.app.whenReady().then(() => {
