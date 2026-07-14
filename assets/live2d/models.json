@@ -308,19 +308,6 @@
         "surprised": "surprised",
         "wink": "excited"
       }
-    },
-    {
-      "id": "himemori_luna",
-      "name": "Himemori Luna",
-      "description": "Imported VRM 3D character",
-      "path": "assets/live2d/vrm/Himemori Luna.vrm",
-      "thumbnail": null,
-      "scale": 1.0,
-      "default": false,
-      "tags": ["vrm", "imported"],
-      "accessories": [],
-      "hitReactions": {},
-      "expressionFallback": {}
     }
   ]
 }
