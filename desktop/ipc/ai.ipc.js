@@ -508,24 +508,6 @@ function registerAiIpc(ipcMain, windows) {
     ipcMain.on("ai:broadcast", (_e, { event, data }) => {
         (0, websocket_server_1.broadcast)(event, data);
     });
-    ipcMain.handle("avatar:scan-zip", async (_e, { path }) => {
-        try {
-            const response = await requestJSON("POST", "/model/scan-zip", { zip_path: path });
-            return response;
-        }
-        catch (err) {
-            return { error: err.message };
-        }
-    });
-    ipcMain.handle("avatar:import-zip", async (_e, { path, selectedConfig }) => {
-        try {
-            const response = await requestJSON("POST", "/model/import", { zip_path: path, selected_config: selectedConfig });
-            return response;
-        }
-        catch (err) {
-            return { error: err.message };
-        }
-    });
     ipcMain.handle("avatar:upload-background", async (_e, { filePath }) => {
         try {
             const destDir = path.join(electron_1.app.getAppPath(), "assets", "backgrounds");

@@ -417,6 +417,20 @@ function setupCrossWindowIpc() {
         }
         return result.filePaths[0];
     });
+    electron_1.ipcMain.handle("system:open-file-dialog", async (event, options) => {
+        const win = electron_1.BrowserWindow.fromWebContents(event.sender) || settingsWin || avatarWin;
+        if (!win)
+            return null;
+        const result = await electron_1.dialog.showOpenDialog(win, {
+            properties: ["openFile"],
+            title: options?.title || "Select file",
+            filters: options?.filters || []
+        });
+        if (result.canceled || result.filePaths.length === 0) {
+            return null;
+        }
+        return result.filePaths[0];
+    });
 }
 function createSettingsWindow() {
     if (settingsWin) {

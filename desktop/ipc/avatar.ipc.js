@@ -1,16 +1,103 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.registerAvatarIpc = registerAvatarIpc;
 const electron_1 = require("electron");
+const http = __importStar(require("http"));
 let state = { expression: "normal", motion: "idle", lipsync: false };
+const API_HOST = "127.0.0.1";
+const API_PORT = 8765;
 function getAvatarWindow() {
     return electron_1.BrowserWindow.getAllWindows().find(win => {
         try {
-            return win.webContents.getURL().includes("avatar.html");
+            return win.webContents.getURL().includes("avatar.html") || win.webContents.getURL().includes("overlay");
         }
         catch {
             return false;
         }
+    });
+}
+function sendToTargets(channel, payload) {
+    const wins = electron_1.BrowserWindow.getAllWindows().filter(win => win && !win.isDestroyed());
+    for (const win of wins) {
+        win.webContents.send(channel, payload);
+    }
+}
+function requestJSON(method, path, payload = null) {
+    return new Promise((resolve, reject) => {
+        const body = payload ? JSON.stringify(payload) : null;
+        const req = http.request({
+            hostname: API_HOST,
+            port: API_PORT,
+            path,
+            method,
+            headers: {
+                Accept: "application/json",
+                ...(body
+                    ? {
+                        "Content-Type": "application/json; charset=utf-8",
+                        "Content-Length": Buffer.byteLength(body),
+                    }
+                    : {}),
+            },
+            timeout: 30000,
+        }, res => {
+            const chunks = [];
+            res.on("data", chunk => chunks.push(chunk));
+            res.on("end", () => {
+                const raw = Buffer.concat(chunks).toString("utf8");
+                let data = {};
+                try {
+                    data = raw ? JSON.parse(raw) : {};
+                }
+                catch {
+                    data = { raw };
+                }
+                if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+                    resolve(data);
+                }
+                else {
+                    reject(new Error(data.message || data.error || `HTTP ${res.statusCode}`));
+                }
+            });
+        });
+        req.on("timeout", () => req.destroy(new Error("request timeout")));
+        req.on("error", reject);
+        if (body)
+            req.write(body);
+        req.end();
     });
 }
 function registerAvatarIpc(ipcMain, avatarWin) {
@@ -21,4 +108,63 @@ function registerAvatarIpc(ipcMain, avatarWin) {
         return state;
     });
     ipcMain.handle("avatar:get-state", async () => state);
+    // 1. avatar:list-models
+    ipcMain.handle("avatar:list-models", async () => {
+        try {
+            const res = await requestJSON("GET", "/model/list");
+            return res;
+        }
+        catch (err) {
+            return { success: false, error: err.message };
+        }
+    });
+    // 2. avatar:scan-zip
+    ipcMain.handle("avatar:scan-zip", async (_e, { path }) => {
+        try {
+            const res = await requestJSON("POST", "/model/scan-zip", { zip_path: path });
+            return res;
+        }
+        catch (err) {
+            return { success: false, error: err.message };
+        }
+    });
+    // 3. avatar:import-zip
+    ipcMain.handle("avatar:import-zip", async (_e, { path, selectedConfig }) => {
+        try {
+            const res = await requestJSON("POST", "/model/import", {
+                zip_path: path,
+                model_path: selectedConfig || "",
+            });
+            // Broadcast update to reload grids in other windows
+            sendToTargets("avatar:registry-updated", {});
+            return res;
+        }
+        catch (err) {
+            return { success: false, error: err.message };
+        }
+    });
+    // 4. avatar:delete-model
+    ipcMain.handle("avatar:delete-model", async (_e, { modelId }) => {
+        try {
+            const res = await requestJSON("POST", "/model/remove", { model_id: modelId });
+            sendToTargets("avatar:registry-updated", {});
+            return res;
+        }
+        catch (err) {
+            return { success: false, error: err.message };
+        }
+    });
+    // 5. avatar:set-model
+    ipcMain.handle("avatar:set-model", async (_e, { modelId, modelPath }) => {
+        try {
+            // Update config on backend
+            const res = await requestJSON("POST", "/config/update", { key: "app.avatarModel", value: modelPath });
+            // Broadcast update to all windows (overlay app.ts relies on config:updated to dynamically swap models)
+            sendToTargets("config:updated", { key: "app.avatarModel", value: modelPath });
+            return { success: true, ...res };
+        }
+        catch (err) {
+            return { success: false, error: err.message };
+        }
+    });
 }
