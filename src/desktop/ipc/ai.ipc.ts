@@ -216,7 +216,6 @@ export function registerAiIpc(ipcMain: IpcMain, windows: any): void {
   ipcMain.handle("ai:health", async () => {
     try {
       await requestJSON("GET", "/health");
-      sendToTargets("python:ready", null);
       return { status: "ok" };
     } catch (err: any) {
       return { status: "offline", error: err.message };

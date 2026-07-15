@@ -777,7 +777,13 @@ class LLMService:
 
 
 
-        force_eng = not self._is_vietnamese(plain_text)
+        locale = config.get("app.locale", "vi-VN")
+        stt_lang = config.get("stt.language", "vi")
+        force_eng = (
+            locale.lower().startswith("en") or 
+            stt_lang.lower().startswith("en") or 
+            not self._is_vietnamese(plain_text)
+        )
         system_prompt = self._build_system_prompt(rel_level, mood, time_note, force_english=force_eng, activity=activity)
 
         # ── Inject dynamic companion state block ──────────────────────────

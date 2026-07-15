@@ -157,6 +157,20 @@ class _EdgeTTS:
         tts_cfg = _get_active_persona_tts_config()
         
         voice = tts_cfg.get("voice") or config.get("tts.voice", self.DEFAULT_VOICE)
+        
+        # Dynamic voice language switching based on text content and config
+        stt_lang = config.get("stt.language", "vi")
+        app_locale = config.get("app.locale", "vi-VN")
+        is_english_mode = stt_lang.lower().startswith("en") or app_locale.lower().startswith("en")
+        
+        if voice.lower().startswith("vi-"):
+            if is_english_mode or not is_vietnamese(text):
+                config_voice = config.get("tts.voice", self.DEFAULT_VOICE)
+                voice = config_voice if not config_voice.lower().startswith("vi-") else self.DEFAULT_VOICE
+        else:
+            if is_vietnamese(text) and not is_english_mode:
+                voice = "vi-VN-HoaiMyNeural"
+
         pitch = tts_cfg.get("pitch") or config.get("tts.pitch", "+20Hz")
         
         # Sanitize rate (must match r"^[+-]\d+%$")
