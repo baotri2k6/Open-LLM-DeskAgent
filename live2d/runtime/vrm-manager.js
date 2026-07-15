@@ -4,9 +4,10 @@
  * VRM 3D character renderer using Three.js + @pixiv/three-vrm.
  * Features:
  *  - Mouse head/eye tracking (character looks at cursor)
- *  - Breathing idle with 3D body sway
- *  - Auto-blink
- *  - Expression system
+ *  - Breathing idle with 3D body sway & micro-jitter
+ *  - Auto-blink (speeds up during thinking state)
+ *  - Smooth expression transition (lerping & blending)
+ *  - AnimationMixer with procedural clips (nod, wave, shake) and external .vrma loader
  *  - Pixel-accurate click-through
  */
 
@@ -14,6 +15,7 @@
 const THREE_URL = "three";
 const THREE_VRM_URL = "@pixiv/three-vrm";
 const GLTF_LOADER_URL = "three/examples/jsm/loaders/GLTFLoader.js";
+const THREE_VRM_ANIM_URL = "@pixiv/three-vrm-animation";
 
 let _loadedModules = null;
 
@@ -22,7 +24,8 @@ async function ensureModules() {
   const THREE = await import(THREE_URL);
   const { GLTFLoader } = await import(GLTF_LOADER_URL);
   const { VRMLoaderPlugin, VRMUtils } = await import(THREE_VRM_URL);
-  _loadedModules = { THREE, GLTFLoader, VRMLoaderPlugin, VRMUtils };
+  const { VRMAnimationLoaderPlugin, createVRMAnimationClip } = await import(THREE_VRM_ANIM_URL);
+  _loadedModules = { THREE, GLTFLoader, VRMLoaderPlugin, VRMUtils, VRMAnimationLoaderPlugin, createVRMAnimationClip };
   console.log("[VRM] Modules loaded OK");
   return _loadedModules;
 }
@@ -60,6 +63,13 @@ export class VRMBackend {
     this._blinkInterval = 3.5 + Math.random() * 2;
     this._blinking = false;
     this._blinkPhase = 0;
+    this._isThinking = false;
+
+    // Expression target and transition states
+    this._exprTarget = "neutral";
+    this._exprSecondary = null;
+    this._exprSecondaryWeight = 0.4;
+    this._exprValues = {};
 
     // Bind mouse handler
     this._onMouseMove = this._onMouseMove.bind(this);
@@ -73,6 +83,23 @@ export class VRMBackend {
     this._dragStartY = 0;
     this._baseTheta = 0;
     this._basePhi = Math.PI / 2;
+
+    // Camera orbit parameters
+    this._cameraTarget = null;
+    this._cameraRadius = 3.5;
+    this._theta = 0; // horizontal angle
+    this._phi = Math.PI / 2; // vertical angle
+
+    // Light and model offset references
+    this._modelOffset = null;
+    this._dirLight = null;
+    this._ambientLight = null;
+    this._hemiLight = null;
+
+    // Animation references
+    this._mixer = null;
+    this._currentAction = null;
+    this._gltfLoader = null;
   }
 
   _onMouseDown(e) {
@@ -182,7 +209,7 @@ export class VRMBackend {
 
   async init() {
     try {
-      const { THREE, GLTFLoader, VRMLoaderPlugin, VRMUtils } = await ensureModules();
+      const { THREE, GLTFLoader, VRMLoaderPlugin, VRMUtils, VRMAnimationLoaderPlugin } = await ensureModules();
       this._THREE = THREE;
       this._VRMUtils = VRMUtils;
 
@@ -276,6 +303,8 @@ export class VRMBackend {
       // ── Load VRM ────────────────────────────────────────────────
       const loader = new GLTFLoader();
       loader.register((parser) => new VRMLoaderPlugin(parser));
+      loader.register((parser) => new VRMAnimationLoaderPlugin(parser));
+      this._gltfLoader = loader;
 
       let resolvedPath = this._modelPath;
       if (resolvedPath.startsWith("assets/")) {
@@ -295,8 +324,6 @@ export class VRMBackend {
       this._vrm = vrm;
 
       // ── Fix facing direction ────────────────────────────────────
-      // VRM0: specVersion exists → faces +Z (toward camera) → no rotation
-      // VRM1: no specVersion → faces -Z (away) → rotate π
       const isVRM0 = typeof vrm.meta?.specVersion === "string";
       console.log("[VRM] version:", isVRM0 ? "VRM0" : "VRM1", vrm.meta);
       if (!isVRM0) vrm.scene.rotation.y = Math.PI;
@@ -306,6 +333,10 @@ export class VRMBackend {
       try { VRMUtils.combineSkeletons(gltf.scene); } catch {}
 
       this._scene.add(vrm.scene);
+
+      // ── Initialize AnimationMixer ────────────────────────────────
+      this._mixer = new THREE.AnimationMixer(vrm.scene);
+      this._currentAction = null;
 
       // ── Resize observer ─────────────────────────────────────────
       this._resizeObserver = new ResizeObserver(() => this._onResize());
@@ -350,6 +381,11 @@ export class VRMBackend {
       const delta = Math.min(this._clock.getDelta(), 0.05); // cap at 50ms
       const t = performance.now() / 1000;
 
+      // Update AnimationMixer
+      if (this._mixer) {
+        this._mixer.update(delta);
+      }
+
       if (this._vrm && this._vrm.humanoid) {
         const humanoid = this._vrm.humanoid;
 
@@ -391,21 +427,29 @@ export class VRMBackend {
         applyBone("hips", breatheSlow, 0, -sway * 0.4);
         // Neck: intermediate between body and head
         applyBone("neck", this._smoothHeadY * 0.3, this._smoothHeadX * 0.4, 0);
-        // Head: main tracking
+        
+        // P1 — Idle Micro-Jitter (Head Noise)
+        // Multi-frequency sine noises for head to make it look alive when idle
+        const jitterX = Math.sin(t * 0.5) * 0.012 + Math.sin(t * 1.7) * 0.005;
+        const jitterY = Math.sin(t * 1.3) * 0.010 + Math.sin(t * 2.3) * 0.004;
+        const jitterZ = Math.sin(t * 0.7) * 0.006 + Math.sin(t * 1.1) * 0.003;
+
+        // Head: main tracking + jitter noise
         applyBone("head",
-          this._smoothHeadY * 0.7 + Math.sin(t * 0.5) * 0.01,
-          this._smoothHeadX * 0.6,
-          Math.sin(t * 0.4) * 0.008
+          this._smoothHeadY * 0.7 + jitterX,
+          this._smoothHeadX * 0.6 + jitterY,
+          jitterZ
         );
 
         // Arms default standing pose (A-pose)
-        // Inverting Z rotations: positive Z for left upper arm, negative Z for right upper arm
-        applyBone("leftUpperArm", 0, 0, 1.15);
-        applyBone("rightUpperArm", 0, 0, -1.15);
-        
-        // Lower arms bent slightly forward/inward
-        applyBone("leftLowerArm", 0.25, 0.1, 0);
-        applyBone("rightLowerArm", 0.25, -0.1, 0);
+        // Only override arms rotation if not playing an arm animation
+        const isArmPlaying = this._currentAction && (this._currentAction.getClip().name === "wave" || this._currentAction.getClip().name.includes("arm") || this._currentAction.getClip().name.includes("dance"));
+        if (!isArmPlaying) {
+          applyBone("leftUpperArm", 0, 0, 1.15);
+          applyBone("rightUpperArm", 0, 0, -1.15);
+          applyBone("leftLowerArm", 0.25, 0.1, 0);
+          applyBone("rightLowerArm", 0.25, -0.1, 0);
+        }
 
         // Apply positions
         if (this._vrm.scene && this._modelOffset) {
@@ -415,17 +459,20 @@ export class VRMBackend {
 
         // ── Eye gaze tracking ──────────────────────────────────
         if (this._vrm.lookAt) {
-          // Make character look at the camera (user) so they maintain eye contact during rotation
           this._vrm.lookAt.target = this._camera;
         }
 
-        // ── Auto blink ─────────────────────────────────────────
+        // ── Auto blink (Thinking-aware frequency) ───────────────
         this._blinkTimer += delta;
         if (!this._blinking && this._blinkTimer >= this._blinkInterval) {
           this._blinking = true;
           this._blinkPhase = 0;
           this._blinkTimer = 0;
-          this._blinkInterval = 2.5 + Math.random() * 3.5;
+          
+          // Reset interval: blink faster if thinking
+          this._blinkInterval = this._isThinking
+            ? 0.8 + Math.random() * 0.7   // thinking: 0.8s - 1.5s
+            : 2.5 + Math.random() * 3.5;  // normal: 2.5s - 6s
         }
         if (this._blinking && this._vrm.expressionManager) {
           this._blinkPhase += delta * 8; // blink speed
@@ -438,6 +485,26 @@ export class VRMBackend {
             try { this._vrm.expressionManager.setValue("blink", 0); } catch {}
           }
         }
+
+        // ── P0/P2 — Smooth Expression Transition (Lerping & Blending) ──
+        if (this._vrm.expressionManager) {
+          const EXPRS = ["happy", "sad", "angry", "surprised", "relaxed", "neutral"];
+          const factor = 1 - Math.pow(0.01, delta); // ~200ms transition settle
+          for (const e of EXPRS) {
+            const current = this._exprValues[e] ?? 0;
+            // Support secondary blending
+            const target = e === this._exprTarget
+              ? 1.0
+              : e === this._exprSecondary
+                ? this._exprSecondaryWeight
+                : 0.0;
+            const next = current + (target - current) * factor;
+            this._exprValues[e] = next;
+            try {
+              this._vrm.expressionManager.setValue(e, next);
+            } catch {}
+          }
+        }
       }
 
       if (this._vrm) this._vrm.update(delta);
@@ -446,32 +513,154 @@ export class VRMBackend {
     tick();
   }
 
-  setExpression(expr) {
+  setExpression(expr, secondary = null, secondaryWeight = 0.4) {
     if (!this._vrm?.expressionManager) return;
-    const em = this._vrm.expressionManager;
-    ["happy", "sad", "angry", "surprised", "relaxed", "neutral"].forEach(
-      (e) => { try { em.setValue(e, 0); } catch {} }
-    );
     const MAP = {
       smile: "happy", excited: "happy", friendly: "happy", happy: "happy",
       sad: "sad", angry: "angry", surprised: "surprised",
       thinking: "relaxed", focused: "relaxed", normal: "neutral", wink: "happy",
+      blush: "relaxed",
     };
-    try { em.setValue(MAP[expr] || "neutral", 1.0); } catch {}
+    this._exprTarget = MAP[expr] || "neutral";
+    this._exprSecondary = secondary ? (MAP[secondary] || null) : null;
+    this._exprSecondaryWeight = secondaryWeight;
   }
 
-  playMotion(_motion) { /* Motion via AnimationMixer — future enhancement */ }
+  setThinking(active) {
+    this._isThinking = active;
+    if (active) {
+      this._blinkInterval = 0.8 + Math.random() * 0.7; // instantly shorten blink interval when AI starts thinking
+    }
+  }
 
-  startLipSync() {
+  // ── P1 — Procedural Motion Clips ──
+  _buildNodClip() {
+    const humanoid = this._vrm?.humanoid;
+    const head = humanoid?.getNormalizedBoneNode("head");
+    if (!head) return null;
+    const times = [0, 0.2, 0.5, 0.7, 1.0];
+    const values = [0, -0.25, 0.1, -0.1, 0]; // nod down and return
+    const track = new this._THREE.NumberKeyframeTrack(
+      `${head.name}.rotation[x]`, times, values
+    );
+    return new this._THREE.AnimationClip("nod", 1.0, [track]);
+  }
+
+  _buildWaveClip() {
+    const humanoid = this._vrm?.humanoid;
+    const arm = humanoid?.getNormalizedBoneNode("rightUpperArm");
+    if (!arm) return null;
+    const times = [0, 0.3, 0.6, 0.9, 1.2];
+    const rz = [-1.15, -0.6, -1.0, -0.65, -1.15]; // wave hand
+    const track = new this._THREE.NumberKeyframeTrack(
+      `${arm.name}.rotation[z]`, times, rz
+    );
+    return new this._THREE.AnimationClip("wave", 1.2, [track]);
+  }
+
+  _buildShakeClip() {
+    const humanoid = this._vrm?.humanoid;
+    const head = humanoid?.getNormalizedBoneNode("head");
+    if (!head) return null;
+    const times = [0, 0.15, 0.35, 0.55, 0.7];
+    const ry = [0, 0.2, -0.2, 0.15, 0]; // shake head
+    const track = new this._THREE.NumberKeyframeTrack(
+      `${head.name}.rotation[y]`, times, ry
+    );
+    return new this._THREE.AnimationClip("shake", 0.7, [track]);
+  }
+
+  playMotion(motionName) {
+    if (!this._mixer) return;
+
+    const builders = {
+      nod: () => this._buildNodClip(),
+      wave: () => this._buildWaveClip(),
+      shake: () => this._buildShakeClip(),
+      excited: () => this._buildWaveClip(),
+    };
+
+    const builder = builders[motionName];
+    if (!builder) return;
+
+    const clip = builder();
+    if (!clip) return;
+
+    if (this._currentAction) {
+      this._currentAction.fadeOut(0.2);
+    }
+
+    const action = this._mixer.clipAction(clip);
+    action.setLoop(this._THREE.LoopOnce, 1);
+    action.clampWhenFinished = false;
+    action.reset().fadeIn(0.2).play();
+    this._currentAction = action;
+
+    // Cleanup when done
+    const onFinished = (e) => {
+      if (e.action === action) {
+        action.stop();
+        if (this._currentAction === action) this._currentAction = null;
+        this._mixer.removeEventListener("finished", onFinished);
+      }
+    };
+    this._mixer.addEventListener("finished", onFinished);
+  }
+
+  // ── P2 — External VRMA Animation Loader ──
+  async loadMotionFile(url) {
+    if (!this._mixer || !this._vrm || !this._gltfLoader) return;
+    try {
+      const gltf = await this._gltfLoader.loadAsync(url);
+      const vrmAnim = gltf.userData.vrmAnimations?.[0];
+      if (!vrmAnim) {
+        console.warn("[VRM] No animations found in file:", url);
+        return;
+      }
+      const { createVRMAnimationClip } = _loadedModules;
+      const clip = createVRMAnimationClip(vrmAnim, this._vrm);
+      
+      if (this._currentAction) {
+        this._currentAction.fadeOut(0.2);
+      }
+
+      const action = this._mixer.clipAction(clip);
+      action.setLoop(this._THREE.LoopOnce, 1);
+      action.clampWhenFinished = false;
+      action.reset().fadeIn(0.2).play();
+      this._currentAction = action;
+
+      const onFinished = (e) => {
+        if (e.action === action) {
+          action.stop();
+          if (this._currentAction === action) this._currentAction = null;
+          this._mixer.removeEventListener("finished", onFinished);
+        }
+      };
+      this._mixer.addEventListener("finished", onFinished);
+      console.log("[VRM] Played external motion file:", url);
+    } catch (err) {
+      console.warn("[VRM] Failed to load motion file:", err);
+    }
+  }
+
+  // P0 — Real Audio Amplitude Lip-Sync
+  startLipSync(amp = 0.55) {
     this._lipSyncActive = true;
     if (!this._vrm?.expressionManager) return;
-    try { this._vrm.expressionManager.setValue("aa", 0.55); } catch {}
+    // Map RMS amplitude dynamically to aa value (capped 0.0 to 1.0)
+    const val = Math.max(0, Math.min(1.0, amp * 0.9));
+    try {
+      this._vrm.expressionManager.setValue("aa", val);
+    } catch {}
   }
 
   stopLipSync() {
     this._lipSyncActive = false;
     if (!this._vrm?.expressionManager) return;
-    try { this._vrm.expressionManager.setValue("aa", 0); } catch {}
+    try {
+      this._vrm.expressionManager.setValue("aa", 0);
+    } catch {}
   }
 
   containsPoint(x, y) {
@@ -506,6 +695,7 @@ export class VRMBackend {
     window.removeEventListener("mouseup", this._onMouseUp);
     if (window.companion) {
       window.companion.off("config:updated", this._onConfigUpdated);
+      window.companion.off("avatar:play-motion-file", this.loadMotionFile);
     }
     if (this._canvas?.parentNode) this._canvas.parentNode.removeChild(this._canvas);
     this._canvas = null;
@@ -522,5 +712,6 @@ export class VRMBackend {
     this._scene = null;
     this._camera = null;
     this._clock = null;
+    this._mixer = null;
   }
 }

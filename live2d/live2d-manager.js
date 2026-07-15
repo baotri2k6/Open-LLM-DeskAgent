@@ -609,16 +609,31 @@ export class AvatarController {
     if (mot !== this._state.motion) {
       this._state.motion = mot;
       this._backend?.playMotion(mot);
+      if (this._backend?.setThinking) {
+        this._backend.setThinking(mot === "thinking");
+      }
     }
 
-    if (lipsync === true) this.startLipSync();
-    else if (lipsync === false) this.stopLipSync();
+    if (typeof lipsync === "number") {
+      this.startLipSync(lipsync);
+    } else if (lipsync === true) {
+      this.startLipSync();
+    } else if (lipsync === false) {
+      this.stopLipSync();
+    }
   }
 
-  startLipSync(durationMs = 0) {
-    this._backend?.startLipSync();
-    if (durationMs > 0) {
-      setTimeout(() => this.stopLipSync(), durationMs);
+  startLipSync(ampOrDuration = 0.55) {
+    if (typeof ampOrDuration === "number" && ampOrDuration <= 1.0) {
+      // It is audio amplitude
+      this._backend?.startLipSync(ampOrDuration);
+    } else {
+      // It is duration in milliseconds
+      this._backend?.startLipSync();
+      const duration = typeof ampOrDuration === "number" ? ampOrDuration : 0;
+      if (duration > 0) {
+        setTimeout(() => this.stopLipSync(), duration);
+      }
     }
   }
 

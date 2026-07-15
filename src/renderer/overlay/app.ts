@@ -126,6 +126,12 @@ setInterval(checkStatus, 5000);
   avatar.setState({ lipsync: Boolean(active) });
 });
 
+(window as any).companion.on("avatar:play-motion-file", (filePath: string) => {
+  if (avatar && (avatar as any)._backend && typeof (avatar as any)._backend.loadMotionFile === "function") {
+    (avatar as any)._backend.loadMotionFile(filePath);
+  }
+});
+
 (window as any).companion.on("chat:chunk", (chunk: string) => {
   if (!streamEl) {
     streamEl = renderChunk();

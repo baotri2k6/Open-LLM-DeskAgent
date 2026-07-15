@@ -261,4 +261,9 @@ function registerAvatarIpc(ipcMain, avatarWin) {
             return { success: false, error: err.message };
         }
     });
+    // 7. avatar:play-motion-file (plays an external .vrma animation)
+    ipcMain.handle("avatar:play-motion-file", async (_e, { filePath }) => {
+        sendToTargets("avatar:play-motion-file", filePath);
+        return { success: true };
+    });
 }

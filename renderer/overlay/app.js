@@ -100,6 +100,11 @@ window.companion.on("set:lipsync", (active) => {
   }
   avatar.setState({ lipsync: Boolean(active) });
 });
+window.companion.on("avatar:play-motion-file", (filePath) => {
+  if (avatar && avatar._backend && typeof avatar._backend.loadMotionFile === "function") {
+    avatar._backend.loadMotionFile(filePath);
+  }
+});
 window.companion.on("chat:chunk", (chunk) => {
   if (!streamEl) {
     streamEl = renderChunk();
