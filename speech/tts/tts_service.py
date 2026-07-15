@@ -75,6 +75,34 @@ def is_vietnamese(text: str) -> bool:
     return False
 
 
+def detect_language_voice(text: str, current_voice: str) -> str:
+    import re
+    # 1. Check Japanese (Hiragana or Katakana)
+    if re.search(r"[\u3040-\u309f\u30a0-\u30ff]", text):
+        return "ja-JP-NanamiNeural"
+        
+    # 2. Check Korean (Hangul)
+    if re.search(r"[\uac00-\ud7a3]", text):
+        return "ko-KR-SunHiNeural"
+        
+    # 3. Check Vietnamese
+    vi_chars = "áàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ" \
+               "ÁÀẢÃẠĂẮẰClarẴẶÂẤẦẨẪẬÉÈẺẼẸÊẾỀỂỄỆÍÌỈĨỊÓÒỎÕỌÔỐỒỔỖỘƠỚỜỞỠỢÚÙỦŨỤƯỨỪỬỮỰÝỲỶỸỴĐ"
+    if any(c in vi_chars for c in text):
+        return "vi-VN-HoaiMyNeural"
+        
+    # 4. Check Chinese (Hanzi)
+    if re.search(r"[\u4e00-\u9fa5]", text):
+        return "zh-CN-XiaoxiaoNeural"
+        
+    # 5. Fallback to English if current voice is Vietnamese but text is English
+    if current_voice.lower().startswith("vi-"):
+        config_voice = config.get("tts.voice", "en-US-AriaNeural")
+        return config_voice if not config_voice.lower().startswith("vi-") else "en-US-AriaNeural"
+        
+    return current_voice
+
+
 # ─── Fish Audio api ───────────────────────────────────────────────────────
 
 class _FishAudioTTS:
@@ -159,17 +187,7 @@ class _EdgeTTS:
         voice = tts_cfg.get("voice") or config.get("tts.voice", self.DEFAULT_VOICE)
         
         # Dynamic voice language switching based on text content and config
-        stt_lang = config.get("stt.language", "vi")
-        app_locale = config.get("app.locale", "vi-VN")
-        is_english_mode = stt_lang.lower().startswith("en") or app_locale.lower().startswith("en")
-        
-        if voice.lower().startswith("vi-"):
-            if is_english_mode or not is_vietnamese(text):
-                config_voice = config.get("tts.voice", self.DEFAULT_VOICE)
-                voice = config_voice if not config_voice.lower().startswith("vi-") else self.DEFAULT_VOICE
-        else:
-            if is_vietnamese(text) and not is_english_mode:
-                voice = "vi-VN-HoaiMyNeural"
+        voice = detect_language_voice(text, voice)
 
         pitch = tts_cfg.get("pitch") or config.get("tts.pitch", "+20Hz")
         

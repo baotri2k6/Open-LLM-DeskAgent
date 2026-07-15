@@ -1,14 +1,10 @@
 {
-  "server": {
-    "host": "127.0.0.1",
-    "port": 8765
-  },
   "app": {
-    "name": "AI Companion Desktop 2D",
-    "locale": "vi-VN",
-    "avatarModel": "assets/live2d/hiyori_en/hiyori_pro/runtime/hiyori_pro_t11.model3.json",
+    "avatarY": "0",
+    "avatarX": "0",
     "avatarScale": "1.75",
-    "interactionMode": "streamer"
+    "avatarModel": "assets/live2d/huohuo2/huohuo/huohuo.model3.json",
+    "backgroundImage": ""
   },
   "llm": {
     "provider": "gemini",
@@ -30,7 +26,7 @@
   },
   "stt": {
     "model": "base",
-    "language": "en",
+    "language": "auto",
     "funasr_model": "iic/SenseVoiceSmall"
   },
   "tts": {
@@ -72,5 +68,14 @@
   "telegram": {
     "bot_token": "",
     "allowed_chat_id": ""
+  },
+  "3d": {
+    "pos_x": "0.0000",
+    "pos_z": "0.0000",
+    "pos_y": "0.0000",
+    "distance": "2.1500",
+    "rotation_y": "14.0000",
+    "look_at": "mouse",
+    "fov": "40.0000"
   }
 }

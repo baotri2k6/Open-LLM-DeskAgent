@@ -88,8 +88,12 @@ class _FunASRSTT:
         logger.info("FunASR ready")
 
     def transcribe(self, audio_path: str, language: str = "vi") -> str:
+        lang = None if language in ("auto", None) else language
         try:
-            res = self._model.generate(input=audio_path, cache={}, language=language)
+            if lang:
+                res = self._model.generate(input=audio_path, cache={}, language=lang)
+            else:
+                res = self._model.generate(input=audio_path, cache={})
         except Exception:
             res = self._model.generate(input=audio_path)
             
@@ -114,7 +118,7 @@ class STTService:
         if getattr(self, "_initialized", False):
             return
         model_size: str = config.get("stt.model", "base")
-        language: str = config.get("stt.language", "vi")
+        language: str = config.get("stt.language", "auto")
         self._language = language
         self._backend = self._load_backend(model_size)
         self._lock = threading.Lock()
