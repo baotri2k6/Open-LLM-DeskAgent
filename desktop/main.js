@@ -80,11 +80,9 @@ function getCompanionConfig() {
     return {};
 }
 function getAvatarWindowSize() {
-    const conf = getCompanionConfig();
-    const scale = parseFloat(conf.app && conf.app.avatarScale) || 1.0;
     return {
-        width: Math.round(AVATAR_WINDOW_WIDTH * scale),
-        height: Math.round(AVATAR_WINDOW_HEIGHT * scale),
+        width: AVATAR_WINDOW_WIDTH,
+        height: AVATAR_WINDOW_HEIGHT,
     };
 }
 function getPythonCommand() {

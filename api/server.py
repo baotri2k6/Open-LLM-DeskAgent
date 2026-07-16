@@ -855,6 +855,8 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                 "interaction_mode": config.get("app.interactionMode",       "streamer"),
                 "avatar_model":     config.get("app.avatarModel",            "assets/live2d/IceGirl/IceGirl.model3.json"),
                 "avatar_scale":     config.get("app.avatarScale",            "1.0"),
+                "avatar_x":         config.get("app.avatarX",                "0"),
+                "avatar_y":         config.get("app.avatarY",                "0"),
                 "background_image":  config.get("app.backgroundImage",        ""),
                 "memory":           config.get("features.memory",           True),
             })

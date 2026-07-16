@@ -322,10 +322,11 @@ function updateAvatarBackground(path) {
     }
   }
 }
-function updateAvatarOffset(x, y) {
+function updateAvatarOffset(x, y, scale = 1) {
   const wrap = document.getElementById("avatarWrap");
   if (wrap) {
-    wrap.style.transform = `translate(${x || 0}px, ${y || 0}px)`;
+    wrap.style.transform = `translate(${x || 0}px, ${y || 0}px) scale(${scale || 1})`;
+    wrap.style.transformOrigin = "bottom center";
   }
 }
 async function loadConfig() {
@@ -343,9 +344,10 @@ async function loadConfig() {
       if (res.background_image) {
         updateAvatarBackground(res.background_image);
       }
-      const posX = res.app?.avatarX || res.avatarX || 0;
-      const posY = res.app?.avatarY || res.avatarY || 0;
-      updateAvatarOffset(posX, posY);
+      const posX = res.app?.avatarX || res.avatar_x || 0;
+      const posY = res.app?.avatarY || res.avatar_y || 0;
+      const scale = res.app?.avatarScale || res.avatar_scale || 1;
+      updateAvatarOffset(posX, posY, scale);
     }
   } catch (err) {
     console.warn("[config] Failed to load initial configuration:", err);
@@ -695,11 +697,12 @@ if (btnCalibration) {
   });
 }
 window.companion.on("config:updated", ({ key, value }) => {
-  if (key === "app.avatarX" || key === "app.avatarY") {
+  if (key === "app.avatarX" || key === "app.avatarY" || key === "app.avatarScale") {
     window.companion.invoke("ai:get-config", {}).then((res) => {
-      const posX = res.app?.avatarX || res.avatarX || 0;
-      const posY = res.app?.avatarY || res.avatarY || 0;
-      updateAvatarOffset(posX, posY);
+      const posX = res.app?.avatarX || res.avatar_x || 0;
+      const posY = res.app?.avatarY || res.avatar_y || 0;
+      const scale = res.app?.avatarScale || res.avatar_scale || 1;
+      updateAvatarOffset(posX, posY, scale);
     });
   } else if (key === "app.backgroundImage") {
     updateAvatarBackground(value || "");

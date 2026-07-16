@@ -386,10 +386,11 @@ function updateAvatarBackground(path: string) {
   }
 }
 
-function updateAvatarOffset(x: string | number, y: string | number) {
+function updateAvatarOffset(x: string | number, y: string | number, scale: string | number = 1.0) {
   const wrap = document.getElementById("avatarWrap");
   if (wrap) {
-    wrap.style.transform = `translate(${x || 0}px, ${y || 0}px)`;
+    wrap.style.transform = `translate(${x || 0}px, ${y || 0}px) scale(${scale || 1.0})`;
+    wrap.style.transformOrigin = "bottom center";
   }
 }
 
@@ -410,10 +411,11 @@ async function loadConfig(): Promise<void> {
         updateAvatarBackground(res.background_image);
       }
 
-      // Load avatar position offsets
-      const posX = res.app?.avatarX || res.avatarX || 0;
-      const posY = res.app?.avatarY || res.avatarY || 0;
-      updateAvatarOffset(posX, posY);
+      // Load avatar position offsets and scale
+      const posX = res.app?.avatarX || res.avatar_x || 0;
+      const posY = res.app?.avatarY || res.avatar_y || 0;
+      const scale = res.app?.avatarScale || res.avatar_scale || 1.0;
+      updateAvatarOffset(posX, posY, scale);
     }
   } catch (err) {
     console.warn("[config] Failed to load initial configuration:", err);
@@ -833,11 +835,12 @@ if (btnCalibration) {
 
 // Listen to configuration updates from the main process
 (window as any).companion.on("config:updated", ({ key, value }: { key: string; value: any }) => {
-  if (key === "app.avatarX" || key === "app.avatarY") {
+  if (key === "app.avatarX" || key === "app.avatarY" || key === "app.avatarScale") {
     (window as any).companion.invoke("ai:get-config", {}).then((res: any) => {
-      const posX = res.app?.avatarX || res.avatarX || 0;
-      const posY = res.app?.avatarY || res.avatarY || 0;
-      updateAvatarOffset(posX, posY);
+      const posX = res.app?.avatarX || res.avatar_x || 0;
+      const posY = res.app?.avatarY || res.avatar_y || 0;
+      const scale = res.app?.avatarScale || res.avatar_scale || 1.0;
+      updateAvatarOffset(posX, posY, scale);
     });
   } else if (key === "app.backgroundImage") {
     updateAvatarBackground(value || "");

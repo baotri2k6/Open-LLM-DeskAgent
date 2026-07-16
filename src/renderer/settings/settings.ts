@@ -160,40 +160,52 @@ if (slScale && slLbl) {
     }
   }, 200);
 
-  slScale.addEventListener("input", async () => {
+  let scaleDebounce: any = null;
+  slScale.addEventListener("input", () => {
     const val = (parseInt(slScale.value) / 100).toFixed(2);
     slLbl.textContent = val + "x";
-    if ((window as any).companion) {
-      await (window as any).companion.invoke("ai:update-config", {
-        key: "app.avatarScale",
-        value: val
-      });
-    }
-  });
-
-  if (slX && slXLbl) {
-    slX.addEventListener("input", async () => {
-      const val = slX.value;
-      slXLbl.textContent = val + "px";
+    if (scaleDebounce) clearTimeout(scaleDebounce);
+    scaleDebounce = setTimeout(async () => {
       if ((window as any).companion) {
         await (window as any).companion.invoke("ai:update-config", {
-          key: "app.avatarX",
+          key: "app.avatarScale",
           value: val
         });
       }
+    }, 50);
+  });
+
+  let xDebounce: any = null;
+  if (slX && slXLbl) {
+    slX.addEventListener("input", () => {
+      const val = slX.value;
+      slXLbl.textContent = val + "px";
+      if (xDebounce) clearTimeout(xDebounce);
+      xDebounce = setTimeout(async () => {
+        if ((window as any).companion) {
+          await (window as any).companion.invoke("ai:update-config", {
+            key: "app.avatarX",
+            value: val
+          });
+        }
+      }, 50);
     });
   }
 
+  let yDebounce: any = null;
   if (slY && slYLbl) {
-    slY.addEventListener("input", async () => {
+    slY.addEventListener("input", () => {
       const val = slY.value;
       slYLbl.textContent = val + "px";
-      if ((window as any).companion) {
-        await (window as any).companion.invoke("ai:update-config", {
-          key: "app.avatarY",
-          value: val
-        });
-      }
+      if (yDebounce) clearTimeout(yDebounce);
+      yDebounce = setTimeout(async () => {
+        if ((window as any).companion) {
+          await (window as any).companion.invoke("ai:update-config", {
+            key: "app.avatarY",
+            value: val
+          });
+        }
+      }, 50);
     });
   }
 }
@@ -1431,9 +1443,9 @@ if ((window as any).companion) {
         };
 
         const config3d = cfg?.["3d"] || {};
-        bindVal("slider3DPosX", "lbl3DPosXVal", config3d.pos_x ?? "0.0000", 10000);
-        bindVal("slider3DPosY", "lbl3DPosYVal", config3d.pos_y ?? "0.0000", 10000);
-        bindVal("slider3DPosZ", "lbl3DPosZVal", config3d.pos_z ?? "0.0000", 10000);
+        bindVal("slider3DPosX", "lbl3DPosXVal", config3d.pos_x ?? "0.00", 100);
+        bindVal("slider3DPosY", "lbl3DPosYVal", config3d.pos_y ?? "0.00", 100);
+        bindVal("slider3DPosZ", "lbl3DPosZVal", config3d.pos_z ?? "0.00", 100);
 
         bindVal("slider3DFov", "lbl3DFovVal", config3d.fov ?? "40", 1);
         bindVal("slider3DDist", "lbl3DDistVal", config3d.distance ?? "1.4513", 100);
@@ -1461,8 +1473,9 @@ if ((window as any).companion) {
   const setup3DListener = (id: string, lblId: string, configKey: string, factor = 1) => {
     const el = document.getElementById(id) as HTMLInputElement;
     const lbl = document.getElementById(lblId);
+    let debounceTimer: any = null;
     if (el) {
-      el.addEventListener("input", async () => {
+      el.addEventListener("input", () => {
         const raw = parseFloat(el.value);
         const val = (raw / factor).toFixed(4);
         if (lbl) {
@@ -1472,10 +1485,13 @@ if ((window as any).companion) {
             lbl.textContent = parseFloat(val).toFixed(4);
           }
         }
-        await (window as any).companion.invoke("ai:update-config", {
-          key: configKey,
-          value: val
-        });
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(async () => {
+          await (window as any).companion.invoke("ai:update-config", {
+            key: configKey,
+            value: val
+          });
+        }, 50);
       });
     }
   };
@@ -1505,9 +1521,9 @@ if ((window as any).companion) {
   };
 
   // Bind Listeners
-  setup3DListener("slider3DPosX", "lbl3DPosXVal", "3d.pos_x", 10000);
-  setup3DListener("slider3DPosY", "lbl3DPosYVal", "3d.pos_y", 10000);
-  setup3DListener("slider3DPosZ", "lbl3DPosZVal", "3d.pos_z", 10000);
+  setup3DListener("slider3DPosX", "lbl3DPosXVal", "3d.pos_x", 100);
+  setup3DListener("slider3DPosY", "lbl3DPosYVal", "3d.pos_y", 100);
+  setup3DListener("slider3DPosZ", "lbl3DPosZVal", "3d.pos_z", 100);
 
   setup3DListener("slider3DFov", "lbl3DFovVal", "3d.fov", 1);
   setup3DListener("slider3DDist", "lbl3DDistVal", "3d.distance", 100);
