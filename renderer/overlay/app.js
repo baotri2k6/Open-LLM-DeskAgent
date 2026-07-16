@@ -606,6 +606,58 @@ if (btnQuickEmotions && emotionsPopup) {
     });
   });
 }
+const btnQuickAccessories = document.getElementById("btnQuickAccessories");
+const accessoriesPopup = document.getElementById("accessoriesPopup");
+if (btnQuickAccessories && accessoriesPopup) {
+  btnQuickAccessories.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const mId = avatar.getModelId?.() || "icegirl";
+    const accessories = AssetRegistry.getAccessories(mId);
+    if (accessories && accessories.length > 0) {
+      accessoriesPopup.innerHTML = "";
+      const activeStates = avatar.getActiveAccessories?.() || {};
+      accessories.forEach((acc) => {
+        const btn = document.createElement("button");
+        btn.textContent = acc.label || acc.id;
+        btn.style.textAlign = "left";
+        btn.style.paddingLeft = "12px";
+        let isCurrentlyActive = false;
+        if (acc.paramId) {
+          const checkParam = Array.isArray(acc.paramId) ? acc.paramId[0] : acc.paramId;
+          if (activeStates[checkParam] === (acc.activeValue || 1)) {
+            isCurrentlyActive = true;
+          }
+        }
+        btn.style.background = isCurrentlyActive ? "rgba(37, 99, 235, 0.08)" : "transparent";
+        btn.style.color = isCurrentlyActive ? "#2563eb" : "";
+        btn.onclick = (ev) => {
+          ev.stopPropagation();
+          isCurrentlyActive = !isCurrentlyActive;
+          const newVal = isCurrentlyActive ? acc.activeValue || 1 : acc.defaultValue || 0;
+          btn.style.background = isCurrentlyActive ? "rgba(37, 99, 235, 0.08)" : "transparent";
+          btn.style.color = isCurrentlyActive ? "#2563eb" : "";
+          if (acc.paramId) {
+            if (Array.isArray(acc.paramId)) {
+              acc.paramId.forEach((pid) => avatar.setAccessory(pid, newVal));
+            } else {
+              avatar.setAccessory(acc.paramId, newVal);
+            }
+          }
+        };
+        accessoriesPopup.appendChild(btn);
+      });
+    } else {
+      accessoriesPopup.innerHTML = '<div style="padding:12px; font-size:12px; color:#999; text-align:center;">Kh\xF4ng c\xF3 ph\u1EE5 ki\u1EC7n</div>';
+    }
+    accessoriesPopup.classList.toggle("hidden");
+    if (!emotionsPopup?.classList.contains("hidden")) {
+      emotionsPopup?.classList.add("hidden");
+    }
+  });
+  document.addEventListener("click", () => {
+    accessoriesPopup.classList.add("hidden");
+  });
+}
 const btnCalibration = document.getElementById("btnCalibration");
 if (btnCalibration) {
   btnCalibration.addEventListener("click", () => {
@@ -873,7 +925,9 @@ function updateMouseInteractivity(clientX, clientY) {
     document.getElementById("controlPanel"),
     document.getElementById("chatPanel"),
     document.querySelector(".right-floating-stack"),
-    document.getElementById("loadingBox")
+    document.getElementById("loadingBox"),
+    document.getElementById("emotionsPopup"),
+    document.getElementById("accessoriesPopup")
   ];
   for (const el of elementsToCheck) {
     if (el && el.style.display !== "none" && !el.classList.contains("hidden")) {

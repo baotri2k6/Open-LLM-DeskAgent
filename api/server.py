@@ -1222,29 +1222,35 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
                 tex_pngs = sorted(tex_pngs, key=lambda x: x.name)
                 thumbnail = f"assets/live2d/{stem}/textures/{tex_pngs[0].name}"
 
-        # ── Load or create models.json ───────────────────────────────────────
-        if manifest_path.exists():
-            try:
-                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-            except Exception:
-                manifest = {"models": []}
-        else:
-            manifest = {"models": []}
-
-        models_list = manifest.get("models", [])
-
-        # Remove old entry with same id or same path (overwrite)
-        models_list = [m for m in models_list if m.get("id") != model_id and m.get("path") != rel_path]
-
-        new_entry = {
+        # ── Register in Character Registry ────────────────────────────────────
+        characters_dir = _pathlib.Path(__file__).resolve().parent.parent / "characters"
+        characters_dir.mkdir(parents=True, exist_ok=True)
+        
+        char_dir = characters_dir / model_id
+        char_dir.mkdir(parents=True, exist_ok=True)
+        img_dir = char_dir / "images"
+        img_dir.mkdir(parents=True, exist_ok=True)
+        
+        char_json_path = char_dir / "character.json"
+        
+        char_data = {
             "id": model_id,
             "name": stem,
+            "version": "1.0.0",
             "description": f"Imported from {zip_path.name}",
-            "path": rel_path,
-            "thumbnail": thumbnail,
-            "scale": 0.85,
-            "default": False,
             "tags": ["live2d", "imported"],
+            "model": {
+                "type": "live2d",
+                "path": rel_path,
+                "scale": 0.85
+            },
+            "images": {
+                "avatar": thumbnail,
+                "card": thumbnail
+            },
+            "persona": {
+                "name": stem
+            },
             "accessories": [],
             "hitReactions": {
                 "head": [
@@ -1258,84 +1264,84 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
             },
             "expressionFallback": {}
         }
-        models_list.append(new_entry)
-        manifest["models"] = models_list
-
-        manifest_path.write_text(
-            json.dumps(manifest, ensure_ascii=False, indent=2),
-            encoding="utf-8"
-        )
-        logger.info("[ModelImport] Registered model '%s' in models.json", model_id)
+        
+        char_json_path.write_text(json.dumps(char_data, ensure_ascii=False, indent=2), encoding="utf-8")
+        
+        registry_path = characters_dir / "registry.json"
+        if registry_path.exists():
+            try:
+                registry = json.loads(registry_path.read_text(encoding="utf-8"))
+            except Exception:
+                registry = {"version": "2.0.0", "characters": []}
+        else:
+            registry = {"version": "2.0.0", "characters": []}
+            
+        chars_list = registry.get("characters", [])
+        chars_list = [c for c in chars_list if c.get("id") != model_id]
+        
+        new_entry = {
+            "id": model_id,
+            "path": f"characters/{model_id}/character.json",
+            "default": False
+        }
+        chars_list.append(new_entry)
+        registry["characters"] = chars_list
+        registry_path.write_text(json.dumps(registry, ensure_ascii=False, indent=2), encoding="utf-8")
+        
+        # Sync via character registry
+        try:
+            from api.character_registry import character_registry
+            character_registry.reload()
+        except Exception as e:
+            logger.error("Failed to reload character registry: %s", e)
+        
+        logger.info("[ModelImport] Registered model '%s' in character registry", model_id)
 
         return {"success": True, "model": new_entry}
 
     def _handle_GET_model_list(self):
         """
         GET /model/list
-        Đọc assets/live2d/models.json và trả về danh sách model.
-        Nếu file chưa tồn tại, trả về list rỗng.
+        Trả về danh sách model từ CharacterRegistry (cấu trúc mới).
         """
-        import json as _json
-        import pathlib as _pathlib
-
-        manifest_path = _pathlib.Path(__file__).resolve().parent.parent / "assets" / "live2d" / "models.json"
-
-        if not manifest_path.exists():
-            self._send_json({"success": True, "models": []})
-            return
-
         try:
-            data = _json.loads(manifest_path.read_text(encoding="utf-8"))
-            models = data.get("models", [])
-            # Thêm trường 'thumbnail_url' để renderer không cần resolve path
+            from api.character_registry import character_registry
+            # Reload to pick up any changes
+            character_registry.reload()
+            models = character_registry.get_all()
+            
+            # Thêm trường 'thumbnail_url' để backward compatibility nếu frontend cũ cần
             for m in models:
-                if m.get("thumbnail"):
+                if "images" in m and m["images"].get("avatar"):
+                    m["thumbnail_url"] = m["images"]["avatar"]
+                elif "thumbnail" in m:
                     m["thumbnail_url"] = m["thumbnail"]
+                    
             self._send_json({"success": True, "models": models})
         except Exception as e:
-            logger.error("[ModelList] Failed to read models.json: %s", e)
+            logger.error("[ModelList] Failed to read from registry: %s", e)
             self._send_json({"success": False, "models": [], "error": str(e)})
+
 
     def _handle_model_remove(self, payload: dict) -> dict:
         """
         POST /model/remove
         Payload: { "model_id": "<id>" }
-        Xóa entry khỏi models.json. Không xóa file trên disk.
+        Xóa character khỏi character registry (characters/) và đồng bộ lại models.json.
         """
-        import json as _json
-        import pathlib as _pathlib
-
         model_id = (payload.get("model_id") or "").strip()
         if not model_id:
             return {"success": False, "error": "model_id is required"}
 
-        manifest_path = _pathlib.Path(__file__).resolve().parent.parent / "assets" / "live2d" / "models.json"
+        from api.character_registry import character_registry
 
-        if not manifest_path.exists():
-            return {"success": False, "error": "models.json not found"}
-
-        try:
-            data = _json.loads(manifest_path.read_text(encoding="utf-8"))
-            models = data.get("models", [])
-
-            before = len(models)
-            models = [m for m in models if m.get("id") != model_id]
-            after = len(models)
-
-            if before == after:
-                return {"success": False, "error": f"Model '{model_id}' not found in registry"}
-
-            data["models"] = models
-            manifest_path.write_text(
-                _json.dumps(data, ensure_ascii=False, indent=2),
-                encoding="utf-8"
-            )
-            logger.info("[ModelRemove] Removed model '%s' from registry", model_id)
-            return {"success": True, "removed": model_id, "remaining": after}
-
-        except Exception as e:
-            logger.error("[ModelRemove] Failed: %s", e)
-            return {"success": False, "error": str(e)}
+        success = character_registry.remove_character(model_id)
+        if success:
+            logger.info(f"[ModelRemove] Removed model '{model_id}' from character registry")
+            return {"success": True, "removed": model_id}
+        else:
+            logger.warning(f"[ModelRemove] Model '{model_id}' not found or could not be removed")
+            return {"success": False, "error": f"Model '{model_id}' not found or failed to remove"}
 
     def _send_chunk(self, data: dict) -> None:
         chunk_data = (json.dumps(data, ensure_ascii=False) + "\n").encode('utf-8')
@@ -2012,6 +2018,10 @@ def main() -> None:
         global screen_watcher
         try:
             logger.info("Starting background services initialization...")
+            # P0: Khởi tạo CharacterRegistry để sync models.json
+            from api.character_registry import character_registry
+            character_registry.reload()
+
             # Khởi động ScreenWatcher
             from perception.screen.screen_watcher import ScreenWatcher
             screen_watcher = ScreenWatcher()

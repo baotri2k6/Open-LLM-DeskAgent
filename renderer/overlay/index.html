@@ -62,6 +62,9 @@
           <button class="grid-opt-btn" id="btnQuickEmotions" type="button" title="Quick Emotions">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
           </button>
+          <button class="grid-opt-btn" id="btnQuickAccessories" type="button" title="Accessories">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z"/></svg>
+          </button>
           <button class="grid-opt-btn" id="btnToggleChat" type="button" title="Toggle Chat Panel">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           </button>
@@ -97,6 +100,11 @@
         <button data-emo="thinking">🤔 Suy tư</button>
         <button data-emo="sad">😢 U sầu</button>
         <button data-emo="surprised">😮 Kinh ngạc</button>
+      </div>
+
+      <!-- Quick Accessories Popup -->
+      <div id="accessoriesPopup" class="emotions-popup hidden" style="min-width: 150px; left: 160px; top: 110px;">
+        <!-- Dynamically populated based on model -->
       </div>
 
       <!-- Webcam Overlay Mini -->

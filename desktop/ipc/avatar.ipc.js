@@ -223,39 +223,56 @@ function registerAvatarIpc(ipcMain, avatarWin) {
                 finalVrmName = path.basename(vrmFileName, ".vrm");
                 finalVrmPath = `assets/live2d/vrm/${vrmFileName}`;
             }
-            // Register in models.json
-            const manifestPath = path.join(process.cwd(), "assets", "live2d", "models.json");
-            let manifest = { models: [] };
-            if (fs.existsSync(manifestPath)) {
-                try {
-                    manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-                }
-                catch {
-                    // ignore
-                }
-            }
-            if (!manifest.models)
-                manifest.models = [];
+            // Register in characters/
+            const charactersDir = path.join(process.cwd(), "characters");
+            if (!fs.existsSync(charactersDir))
+                fs.mkdirSync(charactersDir, { recursive: true });
             const modelId = finalVrmName.toLowerCase().replace(/[^a-z0-9]/g, "_");
-            // Remove old entry with same path or id
-            manifest.models = manifest.models.filter(m => m.id !== modelId && m.path !== finalVrmPath);
-            const newEntry = {
+            const charDir = path.join(charactersDir, modelId);
+            if (!fs.existsSync(charDir))
+                fs.mkdirSync(charDir, { recursive: true });
+            const imgDir = path.join(charDir, "images");
+            if (!fs.existsSync(imgDir))
+                fs.mkdirSync(imgDir, { recursive: true });
+            const charJsonPath = path.join(charDir, "character.json");
+            const charJson = {
                 id: modelId,
                 name: finalVrmName,
+                version: "1.0.0",
                 description: `Imported VRM 3D character`,
-                path: finalVrmPath,
-                thumbnail: null,
-                scale: 1.0,
-                default: false,
                 tags: ["vrm", "imported"],
+                model: {
+                    type: "vrm",
+                    path: finalVrmPath,
+                    scale: 1.0
+                },
+                images: { avatar: "", card: "" },
+                persona: { name: finalVrmName },
                 accessories: [],
                 hitReactions: {},
                 expressionFallback: {}
             };
-            manifest.models.push(newEntry);
-            fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), "utf8");
+            fs.writeFileSync(charJsonPath, JSON.stringify(charJson, null, 2), "utf8");
+            const registryPath = path.join(charactersDir, "registry.json");
+            let registry = { version: "2.0.0", characters: [] };
+            if (fs.existsSync(registryPath)) {
+                try {
+                    registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
+                }
+                catch { }
+            }
+            if (!registry.characters)
+                registry.characters = [];
+            registry.characters = registry.characters.filter((c) => c.id !== modelId);
+            registry.characters.push({ id: modelId, path: `characters/${modelId}/character.json`, default: false });
+            fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2), "utf8");
+            // Notify backend to reload registry and sync models.json
+            try {
+                await requestJSON("GET", "/model/list");
+            }
+            catch { }
             sendToTargets("avatar:registry-updated", {});
-            return { success: true, model: newEntry };
+            return { success: true, model: charJson };
         }
         catch (err) {
             return { success: false, error: err.message };

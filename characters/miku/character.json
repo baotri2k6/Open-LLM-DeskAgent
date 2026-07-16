@@ -1,0 +1,22 @@
+{
+  "id": "miku",
+  "name": "Hatsune Miku NT",
+  "version": "1.0.0",
+  "description": "Imported VRM 3D character - Official VRM 3D model",
+  "tags": ["vrm", "imported", "vocaloid"],
+  "model": {
+    "type": "vrm",
+    "path": "assets/live2d/vrm/HatsuneMikuNT.vrm",
+    "scale": 1.0
+  },
+  "images": {
+    "avatar": "",
+    "card": ""
+  },
+  "persona": {
+    "name": "Miku"
+  },
+  "accessories": [],
+  "hitReactions": {},
+  "expressionFallback": {}
+}

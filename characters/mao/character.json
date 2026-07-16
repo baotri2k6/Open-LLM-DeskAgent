@@ -1,0 +1,40 @@
+{
+  "id": "mao",
+  "name": "Mao",
+  "version": "1.0.0",
+  "description": "Nhan vat Mao tu bo suu tap Live2D Cubism",
+  "tags": ["cubism", "live2d"],
+  "model": {
+    "type": "live2d",
+    "path": "assets/live2d/mao_en/runtime/mao_pro.model3.json",
+    "scale": 0.85
+  },
+  "images": {
+    "avatar": "",
+    "card": ""
+  },
+  "persona": {
+    "name": "Mao"
+  },
+  "accessories": [
+    { "id": "exp02", "label": "😊 Cuoi", "expressionName": "exp_02", "type": "expression" },
+    { "id": "exp04", "label": "😃 Vui ve", "expressionName": "exp_04", "type": "expression" },
+    { "id": "exp05", "label": "😢 Buon", "expressionName": "exp_05", "type": "expression" },
+    { "id": "exp06", "label": "🤔 Suy nghi", "expressionName": "exp_06", "type": "expression" },
+    { "id": "exp07", "label": "😮 Ngac nhien", "expressionName": "exp_07", "type": "expression" },
+    { "id": "exp08", "label": "😠 Tuc gian", "expressionName": "exp_08", "type": "expression" }
+  ],
+  "hitReactions": {
+    "head": [
+      { "expression": "angry", "motion": "shake" },
+      { "expression": "focused", "motion": "thinking" },
+      { "expression": "surprised", "motion": "thinking" }
+    ],
+    "body": [
+      { "expression": "smile", "motion": "nod" },
+      { "expression": "happy", "motion": "excited" },
+      { "expression": "smile", "motion": "look_side" }
+    ]
+  },
+  "expressionFallback": {}
+}

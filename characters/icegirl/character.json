@@ -1,0 +1,90 @@
+{
+  "id": "icegirl",
+  "name": "IceGirl",
+  "version": "1.0.0",
+  "description": "Nhan vat mac dinh - co gai bang gia de thuong",
+  "tags": ["default", "anime", "live2d"],
+  "model": {
+    "type": "live2d",
+    "path": "assets/live2d/IceGirl/IceGirl.model3.json",
+    "scale": 0.85
+  },
+  "images": {
+    "avatar": "",
+    "card": ""
+  },
+  "persona": {
+    "name": "IceGirl"
+  },
+  "accessories": [
+    {
+      "id": "gamepad",
+      "label": "🎮 Tay cam",
+      "paramId": "ShouBing",
+      "type": "toggle",
+      "defaultValue": 0,
+      "activeValue": 1
+    },
+    {
+      "id": "catears",
+      "label": "🐱 Tai meo",
+      "paramId": "Param53",
+      "type": "toggle",
+      "defaultValue": 0,
+      "activeValue": 1
+    },
+    {
+      "id": "crown",
+      "label": "👑 Vuong mien",
+      "paramId": "Param40",
+      "type": "toggle",
+      "defaultValue": 0,
+      "activeValue": 1
+    },
+    {
+      "id": "wings",
+      "label": "🪶 Canh",
+      "paramId": "Param41",
+      "type": "toggle",
+      "defaultValue": 0,
+      "activeValue": 1
+    },
+    {
+      "id": "headset",
+      "label": "🎧 Tai nghe",
+      "paramId": "JiaJu",
+      "type": "toggle",
+      "defaultValue": 0,
+      "activeValue": 1
+    },
+    {
+      "id": "ponytail",
+      "label": "💇 Duoi ngua",
+      "paramId": "Param51",
+      "type": "hair",
+      "defaultValue": 0,
+      "activeValue": 1
+    },
+    {
+      "id": "loosehair",
+      "label": "💇 Toc xoa",
+      "paramId": "Param51",
+      "type": "hair",
+      "defaultValue": 0,
+      "activeValue": 2
+    }
+  ],
+  "hitReactions": {
+    "head": [
+      { "expression": "angry", "motion": "shake" },
+      { "expression": "thinking", "motion": "thinking" },
+      { "expression": "surprised", "motion": "nod" }
+    ],
+    "body": [
+      { "expression": "smile", "motion": "nod" },
+      { "expression": "happy", "motion": "excited" },
+      { "expression": "wink", "motion": "nod" }
+    ]
+  },
+  "expressionFallback": {}
+}

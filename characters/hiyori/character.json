@@ -1,0 +1,42 @@
+{
+  "id": "hiyori",
+  "name": "Hiyori",
+  "version": "1.0.0",
+  "description": "Nhan vat Hiyori tu bo mau Live2D chinh thuc",
+  "tags": ["cubism", "live2d"],
+  "model": {
+    "type": "live2d",
+    "path": "assets/live2d/hiyori_en/hiyori_pro/runtime/hiyori_pro_t11.model3.json",
+    "scale": 0.85
+  },
+  "images": {
+    "avatar": "",
+    "card": ""
+  },
+  "persona": {
+    "name": "Hiyori"
+  },
+  "accessories": [],
+  "hitReactions": {
+    "head": [
+      { "expression": "thinking", "motion": "thinking" }
+    ],
+    "body": [
+      { "expression": "smile", "motion": "nod" },
+      { "expression": "happy", "motion": "excited" },
+      { "expression": "thinking", "motion": "thinking" }
+    ]
+  },
+  "expressionFallback": {
+    "smile": "excited",
+    "friendly": "excited",
+    "happy": "excited",
+    "excited": "excited",
+    "thinking": "thinking",
+    "focused": "thinking",
+    "sad": "sad",
+    "angry": "shake",
+    "surprised": "surprised",
+    "wink": "excited"
+  }
+}

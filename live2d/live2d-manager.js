@@ -596,6 +596,14 @@ export class AvatarController {
     this._backend?.setAccessory(paramId, value);
   }
 
+  getModelId() {
+    return AssetRegistry.resolvePathToId(this._modelPath);
+  }
+
+  getActiveAccessories() {
+    return this._backend?._activeAccessories || {};
+  }
+
   setState({ expression, emotion, motion, lipsync } = {}) {
     const expr = normalizeExpression(expression ?? emotion ?? "normal");
     const requestedMotion =

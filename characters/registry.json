@@ -1,0 +1,30 @@
+{
+  "version": "2.0.0",
+  "characters": [
+    {
+      "id": "icegirl",
+      "path": "characters/icegirl/character.json",
+      "default": true
+    },
+    {
+      "id": "huohuo",
+      "path": "characters/huohuo/character.json",
+      "default": false
+    },
+    {
+      "id": "mao",
+      "path": "characters/mao/character.json",
+      "default": false
+    },
+    {
+      "id": "hiyori",
+      "path": "characters/hiyori/character.json",
+      "default": false
+    },
+    {
+      "id": "miku",
+      "path": "characters/miku/character.json",
+      "default": false
+    }
+  ]
+}

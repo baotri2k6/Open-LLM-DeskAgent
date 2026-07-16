@@ -714,6 +714,75 @@ if (btnQuickEmotions && emotionsPopup) {
   });
 }
 
+const btnQuickAccessories = document.getElementById("btnQuickAccessories");
+const accessoriesPopup = document.getElementById("accessoriesPopup");
+
+if (btnQuickAccessories && accessoriesPopup) {
+  btnQuickAccessories.addEventListener("click", (e) => {
+    e.stopPropagation();
+    
+    // Auto-populate based on current model's accessories
+    const mId = (avatar as any).getModelId?.() || "icegirl";
+    const accessories = AssetRegistry.getAccessories(mId);
+    
+    if (accessories && accessories.length > 0) {
+      accessoriesPopup.innerHTML = "";
+      const activeStates = (avatar as any).getActiveAccessories?.() || {};
+
+      accessories.forEach((acc: any) => {
+        const btn = document.createElement("button");
+        btn.textContent = acc.label || acc.id;
+        
+        // Custom styling for accessories button
+        btn.style.textAlign = "left";
+        btn.style.paddingLeft = "12px";
+        
+        // Check if any of the paramIds associated with this accessory are active
+        let isCurrentlyActive = false;
+        if (acc.paramId) {
+            const checkParam = Array.isArray(acc.paramId) ? acc.paramId[0] : acc.paramId;
+            // If the active value matches acc.activeValue, it's ON
+            if (activeStates[checkParam] === (acc.activeValue || 1)) {
+                isCurrentlyActive = true;
+            }
+        }
+        
+        // Set visual state
+        btn.style.background = isCurrentlyActive ? "rgba(37, 99, 235, 0.08)" : "transparent";
+        btn.style.color = isCurrentlyActive ? "#2563eb" : "";
+
+        btn.onclick = (ev) => {
+          ev.stopPropagation();
+          isCurrentlyActive = !isCurrentlyActive;
+          const newVal = isCurrentlyActive ? (acc.activeValue || 1) : (acc.defaultValue || 0);
+          btn.style.background = isCurrentlyActive ? "rgba(37, 99, 235, 0.08)" : "transparent";
+          btn.style.color = isCurrentlyActive ? "#2563eb" : "";
+          
+          if (acc.paramId) {
+            if (Array.isArray(acc.paramId)) {
+              acc.paramId.forEach((pid: string) => (avatar as any).setAccessory(pid, newVal));
+            } else {
+              (avatar as any).setAccessory(acc.paramId, newVal);
+            }
+          }
+        };
+        accessoriesPopup.appendChild(btn);
+      });
+    } else {
+      accessoriesPopup.innerHTML = '<div style="padding:12px; font-size:12px; color:#999; text-align:center;">Không có phụ kiện</div>';
+    }
+    
+    accessoriesPopup.classList.toggle("hidden");
+    if (!emotionsPopup?.classList.contains("hidden")) {
+      emotionsPopup?.classList.add("hidden");
+    }
+  });
+
+  document.addEventListener("click", () => {
+    accessoriesPopup.classList.add("hidden");
+  });
+}
+
 const btnCalibration = document.getElementById("btnCalibration");
 if (btnCalibration) {
   btnCalibration.addEventListener("click", () => {
@@ -1031,7 +1100,9 @@ function updateMouseInteractivity(clientX: number, clientY: number) {
     document.getElementById("controlPanel"),
     document.getElementById("chatPanel"),
     document.querySelector(".right-floating-stack"),
-    document.getElementById("loadingBox")
+    document.getElementById("loadingBox"),
+    document.getElementById("emotionsPopup"),
+    document.getElementById("accessoriesPopup")
   ];
 
   for (const el of elementsToCheck) {

@@ -1,0 +1,57 @@
+{
+  "id": "huohuo",
+  "name": "Huohuo",
+  "version": "1.0.0",
+  "description": "Phan quan tap su nho nhan tu Honkai: Star Rail",
+  "tags": ["honkai", "live2d"],
+  "model": {
+    "type": "live2d",
+    "path": "assets/live2d/huohuo2/huohuo/huohuo.model3.json",
+    "scale": 0.75
+  },
+  "images": {
+    "avatar": "",
+    "card": ""
+  },
+  "persona": {
+    "name": "Huohuo"
+  },
+  "accessories": [
+    {
+      "id": "cushion",
+      "label": "🧸 Goi om",
+      "paramId": ["Param99", "Param119", "Param120", "Param121", "Param122"],
+      "type": "toggle",
+      "defaultValue": 0,
+      "activeValue": 1
+    },
+    {
+      "id": "flag1",
+      "label": "🚩 La co 1",
+      "paramId": "Param63",
+      "type": "flag",
+      "defaultValue": 0,
+      "activeValue": 1
+    },
+    {
+      "id": "flag2",
+      "label": "🚩 La co 2",
+      "paramId": ["Param63", "Param127"],
+      "type": "flag",
+      "defaultValue": 0,
+      "activeValue": 1
+    }
+  ],
+  "hitReactions": {
+    "head": [
+      { "expression": "surprised", "motion": "excited" },
+      { "expression": "sad", "motion": "shake" },
+      { "expression": "angry", "motion": "shake" }
+    ],
+    "body": [
+      { "expression": "smile", "motion": "nod" },
+      { "expression": "happy", "motion": "zhentou" }
+    ]
+  },
+  "expressionFallback": {}
+}
