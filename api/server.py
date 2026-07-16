@@ -45,6 +45,27 @@ from runtime.eventbus.message_router import MessageRouter
 logger = get_logger("ai-companion.server")
 router = MessageRouter()
 
+
+def clean_for_tts(text: str) -> str:
+    """Làm sạch text trước khi đưa vào TTS — loại bỏ tag, markdown, ký tự đặc biệt.
+    
+    Port từ J.A.I.son filter pipeline — dùng nhất quán ở mọi chỗ trong TTS pipeline.
+    """
+    # Xóa emotion/motion tags: [emotion:happy], [motion:nod], [thinking]
+    text = re.sub(r"\[.*?\]", "", text)
+    # Xóa markdown bold/italic: **text**, *text*, __text__, _text_
+    text = re.sub(r"\*{1,2}([^*]+)\*{1,2}", r"\1", text)
+    text = re.sub(r"_{1,2}([^_]+)_{1,2}", r"\1", text)
+    # Xóa inline code: `code`
+    text = re.sub(r"`[^`]+`", "", text)
+    # Xóa code blocks: ```...```
+    text = re.sub(r"```[\s\S]*?```", "", text)
+    # Xóa dấu ngoặc đơn
+    text = text.replace("(", "").replace(")", "")
+    # Xóa nhiều dấu cách thừa
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
 def is_safe_zip_path(zip_path: str) -> bool:
     if not zip_path:
         return False
@@ -248,49 +269,74 @@ def start_background_loop():
 
 
 async def _speak_and_notify_proactive(full_reply, type_name):
+    """P0-2: Proactive TTS dùng SentenceAudioStreamer — phát câu đầu ngay, không đợi full response."""
     global _ai_busy
     try:
         from persona.dialogue.emotion_parser import EmotionStreamParser
         parser = EmotionStreamParser()
         clean_reply_parts = []
         final_emotion = "thinking"
-        
+
         emo_chunk = parser.feed(full_reply)
         if emo_chunk and emo_chunk.get("emotion"):
             final_emotion = emo_chunk["emotion"]
-        
+
         safe_t = parser.flush_text()
         if safe_t:
             clean_reply_parts.append(safe_t)
         leftover = parser.flush_all()
         if leftover:
             clean_reply_parts.append(leftover)
-            
+
         clean_reply = "".join(clean_reply_parts).strip()
-        
-        audio_url = None
-        duration_ms = 0
+        if not clean_reply:
+            return
+
         tts = get_tts()
-        if tts and clean_reply:
-            speak_text = re.sub(r"\[.*?\]", "", clean_reply).strip()
-            try:
-                from runtime.state.state_store import state_store, CompanionState
-                await state_store.transition(CompanionState.SPEAKING)
-                
-                tts_result = await tts.speak(speak_text)
-                if tts_result.get("success") and tts_result.get("audio_url"):
-                    audio_url = tts_result["audio_url"]
-                    duration_ms = tts_result.get("duration_ms", 0)
-            except Exception as e:
-                logger.warning(f"Proactive TTS speak failed: {e}")
-                
+        if not tts:
+            # Không có TTS — vẫn trigger notification nhưng không có audio
+            trigger_notification({
+                "type": type_name,
+                "text": clean_reply,
+                "emotion": final_emotion,
+                "audio_url": None,
+                "duration_ms": 0
+            })
+            return
+
+        # Dùng SentenceAudioStreamer để stream audio theo từng câu (J.A.I.son pattern)
+        audio_chunks = []
+
+        def collect_chunk(chunk):
+            """Collector thay vì gửi qua WebSocket — gom audio chunks lại."""
+            if chunk.get("type") == "audio":
+                audio_chunks.append(chunk)
+
+        from runtime.state.state_store import state_store, CompanionState
+        await state_store.transition(CompanionState.SPEAKING)
+
+        streamer = SentenceAudioStreamer(tts, collect_chunk)
+
+        # Feed từng câu vào streamer — clean_for_tts sẽ được gọi trong _speak_sentence
+        for sentence in re.split(r"(?<=[.!?])\s+", clean_reply):
+            if sentence.strip():
+                await streamer.feed_text(sentence + " ")
+
+        await streamer.flush()
+
+        # Trigger notification với toàn bộ audio chunks để frontend phát lần lượt
+        first_audio = audio_chunks[0] if audio_chunks else None
         trigger_notification({
             "type": type_name,
             "text": clean_reply,
             "emotion": final_emotion,
-            "audio_url": audio_url,
-            "duration_ms": duration_ms
+            "audio_url": first_audio["audio_url"] if first_audio else None,
+            "duration_ms": sum(c.get("duration_ms", 0) for c in audio_chunks),
+            "audio_chunks": audio_chunks
         })
+
+    except Exception as e:
+        logger.warning("Proactive TTS speak failed: %s", e)
     finally:
         from runtime.state.state_store import state_store, CompanionState
         await state_store.transition(CompanionState.IDLE)
@@ -561,7 +607,7 @@ async def _twitch_commentator_loop():
             duration_ms = 0
             tts = get_tts()
             if tts and clean_reply:
-                speak_text = re.sub(r"\[.*?\]", "", clean_reply).strip()
+                speak_text = clean_for_tts(clean_reply)  # P0-1: dùng clean_for_tts nhất quán
                 try:
                     tts_result = await tts.speak(speak_text)
                     if tts_result.get("success") and tts_result.get("audio_url"):
@@ -660,10 +706,8 @@ class SentenceAudioStreamer:
                 logger.warning("Error in SentenceAudioStreamer worker loop: %s", e)
 
     async def _speak_sentence(self, sentence: str):
-        # Lọc sạch các thẻ cảm xúc còn sót lại nếu có
-        clean_s = re.sub(r"\[.*?\]", "", sentence).strip()
-        # Lọc bỏ dấu ngoặc đơn
-        clean_s = clean_s.replace("(", "").replace(")", "").strip()
+        # P0-1: Dùng clean_for_tts nhất quán — loại bỏ tag, markdown, ngoặc đơn
+        clean_s = clean_for_tts(sentence)
         if not clean_s:
             return
             
@@ -1478,30 +1522,62 @@ class CompanionRequestHandler(BaseHTTPRequestHandler):
             tts_service = get_tts()
             audio_streamer = SentenceAudioStreamer(tts_service, self._send_chunk) if tts_service else None
             
-            full_reply_parts = []
+            text_chunks = []
             current_emotion = initial_emotion
 
-            async for chunk in cognition.reason_stream(text, context, image=image):
-                if _generation_interrupted:
-                    logger.info("Generation interrupted by client request.")
-                    break
-                if chunk["type"] == "request_approval":
-                    self._send_chunk(chunk)
-                elif chunk["type"] == "emotion":
-                    current_emotion = chunk["emotion"]
-                    self._send_chunk(chunk)
-                elif chunk["type"] == "text":
-                    safe_text = chunk["text"]
-                    full_reply_parts.append(safe_text)
-                    self._send_chunk(chunk)
-                    if audio_streamer and not chunk.get("thought"):
-                        await audio_streamer.feed_text(safe_text)
+            # P2: Fan-out multiplexor — UI + TTS + Emotion chạy song song (J.A.I.son pattern)
+            async def _ui_collect_consumer(stream):
+                """Consumer 1: gửi text/approval ra UI và collect full reply."""
+                async for chunk in stream:
+                    if _generation_interrupted:
+                        logger.info("Generation interrupted by client request.")
+                        break
+                    if chunk["type"] == "request_approval":
+                        self._send_chunk(chunk)
+                    elif chunk["type"] == "text":
+                        text_chunks.append(chunk["text"])
+                        self._send_chunk(chunk)
+
+            async def _tts_consumer(stream):
+                """Consumer 2: feed vào SentenceAudioStreamer — TTS song song với UI."""
+                if not audio_streamer:
+                    return
+                async for chunk in stream:
+                    if _generation_interrupted:
+                        break
+                    if chunk["type"] == "text" and not chunk.get("thought"):
+                        await audio_streamer.feed_text(chunk["text"])
+
+            async def _emotion_consumer(stream):
+                """Consumer 3: detect emotion từ LLM tag."""
+                nonlocal current_emotion
+                async for chunk in stream:
+                    if chunk["type"] == "emotion":
+                        current_emotion = chunk["emotion"]
+                        self._send_chunk(chunk)
+
+            from utils.stream_helpers import fanout
+            await fanout(
+                cognition.reason_stream(text, context, image=image),
+                [_ui_collect_consumer, _tts_consumer, _emotion_consumer]
+            )
 
             # Flush remaining buffer của audio streamer
             if audio_streamer:
                 await audio_streamer.flush()
 
-            full_reply = "".join(full_reply_parts).strip()
+            full_reply = "".join(text_chunks).strip()
+
+            # P1: Emotion roberta fallback — nếu LLM không trả về emotion tag
+            if current_emotion in ("thinking", initial_emotion):
+                try:
+                    from persona.dialogue.emotion_roberta import detect_emotion
+                    detected = detect_emotion(full_reply)
+                    if detected and detected != "normal":
+                        current_emotion = detected
+                        self._send_chunk({"type": "emotion", "emotion": current_emotion})
+                except Exception:
+                    pass  # Silent fallback — không crash nếu model chưa load
 
             # Ghi nhận hội thoại để tự phản chiếu ký ức và gọi Memory Write-back
             try:
@@ -1947,6 +2023,16 @@ def main() -> None:
             # Đăng ký các tác vụ ngầm chạy tuần kỳ vào event loop
             asyncio.run_coroutine_threadsafe(_autonomous_agent_loop(), _background_loop)
             asyncio.run_coroutine_threadsafe(_twitch_commentator_loop(), _background_loop)
+
+            # P1: Preload emotion roberta model ở background để tránh latency lần đầu
+            def _preload_emotion_model():
+                try:
+                    from persona.dialogue.emotion_roberta import preload
+                    preload()
+                except Exception as e:
+                    logger.warning("Emotion roberta model preload skipped: %s", e)
+            import threading as _threading
+            _threading.Thread(target=_preload_emotion_model, daemon=True).start()
 
             # ── Khởi động Life Loop (autonomous companion cycle) ──────────
             try:
