@@ -82,6 +82,16 @@ class PixiLive2DBackend {
     this._modelPath = modelPath;
     this._app = null;
     this._model = null;
+    this._scaleVal = 1.0;
+  }
+
+  setScale(scale) {
+    this._scaleVal = parseFloat(scale) || 1.0;
+    if (this._app && this._app.renderer && this._model) {
+      const cw = this._container.clientWidth || 280;
+      const ch = this._container.clientHeight || 390;
+      this._fitModel(cw, ch);
+    }
   }
 
   async init() {
@@ -201,9 +211,23 @@ class PixiLive2DBackend {
       this._model.internalModel?.originalHeight ||
       500;
 
-    const scale = Math.min(w / origW, h / origH) * scaleMultiplier;
+    let scale = Math.min(w / origW, h / origH) * scaleMultiplier * this._scaleVal;
+    
+    // Clamp scale to prevent character from being cut off by the sides
+    const maxScaleW = w / origW;
+    if (scale > maxScaleW) {
+      scale = maxScaleW;
+    }
+    
+    // If the model is taller than the canvas, position it such that the head remains
+    // visible at the top (y = 0) and the feet are allowed to overflow below the canvas.
+    let posY = h * 0.98;
+    if (origH * scale > h * 0.98) {
+      posY = origH * scale;
+    }
+    
     this._model.scale.set(scale);
-    this._model.position.set(w / 2, h * 0.98);
+    this._model.position.set(w / 2, posY);
     this._model.anchor.set(0.5, 1.0);
   }
 
@@ -391,6 +415,15 @@ class CSSFallbackBackend {
     this._img = imgEl;
     this._light = lightEl;
     this._lipInterval = null;
+    this._scaleVal = 1.0;
+  }
+
+  setScale(scale) {
+    this._scaleVal = parseFloat(scale) || 1.0;
+    if (this._img) {
+      this._img.style.transform = `scale(${this._scaleVal})`;
+      this._img.style.transformOrigin = "bottom center";
+    }
   }
 
   async init() {
@@ -470,6 +503,7 @@ export class AvatarController {
     this._spineCanvas = wrap?.querySelector("#spineCanvas");
     this._backend = null;
     this._state = { expression: "normal", motion: "idle" };
+    this._scale = 1.0;
     // Temporary fallback path — will be overwritten in _init once registry is loaded
     this._modelPath = "../../assets/live2d/IceGirl/IceGirl.model3.json";
     this.readyPromise = this._init();
@@ -525,6 +559,7 @@ export class AvatarController {
       const vrmOk = await vrmBackend.init().catch(() => false);
       if (vrmOk) {
         this._backend = vrmBackend;
+        this._backend.setScale?.(this._scale);
         if (this._img) this._img.style.display = "none";
         return;
       }
@@ -543,6 +578,7 @@ export class AvatarController {
       const spineOk = await spineBackend.init().catch(() => false);
       if (spineOk) {
         this._backend = spineBackend;
+        this._backend.setScale?.(this._scale);
         if (this._img) this._img.style.display = "none";
         return;
       }
@@ -558,6 +594,7 @@ export class AvatarController {
 
     if (pixiOk) {
       this._backend = pixiBackend;
+      this._backend.setScale?.(this._scale);
       if (this._img) this._img.style.display = "none";
     } else {
       this._backend = new CSSFallbackBackend(
@@ -566,7 +603,13 @@ export class AvatarController {
         this._light,
       );
       await this._backend.init();
+      this._backend.setScale?.(this._scale);
     }
+  }
+
+  setScale(scale) {
+    this._scale = scale;
+    this._backend?.setScale?.(scale);
   }
 
   /**

@@ -450,6 +450,34 @@ function registerAiIpc(ipcMain, windows) {
         try {
             const response = await requestJSON("POST", "/config/update", { key, value });
             sendToTargets("config:updated", { key, value });
+            if (key === "app.avatarScale") {
+                const scale = parseFloat(value) || 1.0;
+                const AVATAR_WINDOW_WIDTH = 420;
+                const AVATAR_WINDOW_HEIGHT = 640;
+                const avatarWin = electron_1.BrowserWindow.getAllWindows().find(win => {
+                    try {
+                        return win.webContents.getURL().includes("avatar.html") || win.webContents.getURL().includes("overlay");
+                    }
+                    catch {
+                        return false;
+                    }
+                });
+                if (avatarWin && !avatarWin.isDestroyed()) {
+                    const [curX, curY] = avatarWin.getPosition();
+                    const display = electron_1.screen.getDisplayNearestPoint({ x: curX, y: curY });
+                    const { width: sw, height: sh } = display.workArea;
+                    const newW = Math.min(sw, Math.round(AVATAR_WINDOW_WIDTH * scale));
+                    const newH = Math.min(sh, Math.round(AVATAR_WINDOW_HEIGHT * scale));
+                    const [curW, curH] = avatarWin.getSize();
+                    const newX = curX + curW - newW;
+                    const newY = curY + curH - newH;
+                    const wasResizable = avatarWin.isResizable();
+                    avatarWin.setResizable(true);
+                    avatarWin.setSize(newW, newH);
+                    avatarWin.setPosition(newX, newY);
+                    avatarWin.setResizable(wasResizable);
+                }
+            }
             return response;
         }
         catch (err) {

@@ -100,6 +100,14 @@ export class VRMBackend {
     this._mixer = null;
     this._currentAction = null;
     this._gltfLoader = null;
+    this._scaleVal = 1.0;
+  }
+
+  setScale(scale) {
+    this._scaleVal = parseFloat(scale) || 1.0;
+    if (this._vrm) {
+      this._vrm.scene.scale.set(this._scaleVal, this._scaleVal, this._scaleVal);
+    }
   }
 
   _onMouseDown(e) {
@@ -332,6 +340,9 @@ export class VRMBackend {
       VRMUtils.removeUnnecessaryVertices(gltf.scene);
       try { VRMUtils.combineSkeletons(gltf.scene); } catch {}
 
+      if (this._scaleVal) {
+        vrm.scene.scale.set(this._scaleVal, this._scaleVal, this._scaleVal);
+      }
       this._scene.add(vrm.scene);
 
       // ── Initialize AnimationMixer ────────────────────────────────

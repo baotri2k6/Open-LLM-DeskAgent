@@ -54,6 +54,7 @@ interface IAvatarController {
   startLipSync(amp: number): void;
   stopLipSync(): void;
   containsPoint(x: number, y: number): boolean;
+  setScale(scale: string | number): void;
 }
 
 const avatar = new AvatarController({
@@ -386,11 +387,10 @@ function updateAvatarBackground(path: string) {
   }
 }
 
-function updateAvatarOffset(x: string | number, y: string | number, scale: string | number = 1.0) {
+function updateAvatarOffset(x: string | number, y: string | number) {
   const wrap = document.getElementById("avatarWrap");
   if (wrap) {
-    wrap.style.transform = `translate(${x || 0}px, ${y || 0}px) scale(${scale || 1.0})`;
-    wrap.style.transformOrigin = "bottom center";
+    wrap.style.transform = `translate(${x || 0}px, ${y || 0}px)`;
   }
 }
 
@@ -415,7 +415,8 @@ async function loadConfig(): Promise<void> {
       const posX = res.app?.avatarX || res.avatar_x || 0;
       const posY = res.app?.avatarY || res.avatar_y || 0;
       const scale = res.app?.avatarScale || res.avatar_scale || 1.0;
-      updateAvatarOffset(posX, posY, scale);
+      updateAvatarOffset(posX, posY);
+      avatar.setScale(scale);
     }
   } catch (err) {
     console.warn("[config] Failed to load initial configuration:", err);
@@ -840,7 +841,8 @@ if (btnCalibration) {
       const posX = res.app?.avatarX || res.avatar_x || 0;
       const posY = res.app?.avatarY || res.avatar_y || 0;
       const scale = res.app?.avatarScale || res.avatar_scale || 1.0;
-      updateAvatarOffset(posX, posY, scale);
+      updateAvatarOffset(posX, posY);
+      avatar.setScale(scale);
     });
   } else if (key === "app.backgroundImage") {
     updateAvatarBackground(value || "");

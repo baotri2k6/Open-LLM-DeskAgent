@@ -69,9 +69,13 @@ function getCompanionConfig(): any {
 }
 
 function getAvatarWindowSize(): { width: number; height: number } {
+  const conf = getCompanionConfig();
+  const scale = parseFloat(conf.app && conf.app.avatarScale) || 1.0;
+  const { width: sw, height: sh } = screen.getPrimaryDisplay().workArea;
+  
   return {
-    width: AVATAR_WINDOW_WIDTH,
-    height: AVATAR_WINDOW_HEIGHT,
+    width: Math.min(sw, Math.round(AVATAR_WINDOW_WIDTH * scale)),
+    height: Math.min(sh, Math.round(AVATAR_WINDOW_HEIGHT * scale)),
   };
 }
 
@@ -266,6 +270,12 @@ function startPython(): void {
 function createAvatarWindow(): BrowserWindow {
   const { x, y, width: sw, height: sh } = screen.getPrimaryDisplay().workArea;
   const { width, height } = getAvatarWindowSize();
+  const logDir = getLogDirectory();
+  if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+  fs.appendFileSync(
+    path.join(logDir, "window_bounds.log"),
+    `${new Date().toISOString()} | CREATE | Calculated size: ${width}x${height} | Display workarea: ${sw}x${sh} at ${x},${y}\n`
+  );
 
   avatarWin = new BrowserWindow({
     width,
@@ -298,6 +308,17 @@ function createAvatarWindow(): BrowserWindow {
       );
     },
   );
+
+  avatarWin.on("resize", () => {
+    if (!avatarWin) return;
+    const [w, h] = avatarWin.getSize();
+    const [wx, wy] = avatarWin.getPosition();
+    fs.appendFileSync(
+      path.join(logDir, "window_bounds.log"),
+      `${new Date().toISOString()} | RESIZE | Size: ${w}x${h} | Pos: ${wx},${wy}\n`
+    );
+  });
+
   avatarWin.loadFile(path.join(__dirname, "..", "renderer", "overlay", "index.html"));
   avatarWin.on("closed", () => {
     avatarWin = null;

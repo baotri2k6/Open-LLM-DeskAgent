@@ -322,11 +322,10 @@ function updateAvatarBackground(path) {
     }
   }
 }
-function updateAvatarOffset(x, y, scale = 1) {
+function updateAvatarOffset(x, y) {
   const wrap = document.getElementById("avatarWrap");
   if (wrap) {
-    wrap.style.transform = `translate(${x || 0}px, ${y || 0}px) scale(${scale || 1})`;
-    wrap.style.transformOrigin = "bottom center";
+    wrap.style.transform = `translate(${x || 0}px, ${y || 0}px)`;
   }
 }
 async function loadConfig() {
@@ -347,7 +346,8 @@ async function loadConfig() {
       const posX = res.app?.avatarX || res.avatar_x || 0;
       const posY = res.app?.avatarY || res.avatar_y || 0;
       const scale = res.app?.avatarScale || res.avatar_scale || 1;
-      updateAvatarOffset(posX, posY, scale);
+      updateAvatarOffset(posX, posY);
+      avatar.setScale(scale);
     }
   } catch (err) {
     console.warn("[config] Failed to load initial configuration:", err);
@@ -702,7 +702,8 @@ window.companion.on("config:updated", ({ key, value }) => {
       const posX = res.app?.avatarX || res.avatar_x || 0;
       const posY = res.app?.avatarY || res.avatar_y || 0;
       const scale = res.app?.avatarScale || res.avatar_scale || 1;
-      updateAvatarOffset(posX, posY, scale);
+      updateAvatarOffset(posX, posY);
+      avatar.setScale(scale);
     });
   } else if (key === "app.backgroundImage") {
     updateAvatarBackground(value || "");
